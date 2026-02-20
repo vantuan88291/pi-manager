@@ -1,38 +1,90 @@
+import { ComponentType } from "react"
 import {
   Image,
   ImageStyle,
   StyleProp,
+  TextStyle,
   TouchableOpacity,
   TouchableOpacityProps,
   View,
   ViewProps,
   ViewStyle,
 } from "react-native"
+import AntDesign from "@expo/vector-icons/AntDesign"
+import Entypo from "@expo/vector-icons/Entypo"
+import EvilIcons from "@expo/vector-icons/EvilIcons"
+import Feather from "@expo/vector-icons/Feather"
+import FontAwesome from "@expo/vector-icons/FontAwesome"
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5"
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6"
+import Fontisto from "@expo/vector-icons/Fontisto"
+import Foundation from "@expo/vector-icons/Foundation"
+import Ionicons from "@expo/vector-icons/Ionicons"
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons"
+import MaterialIcons from "@expo/vector-icons/MaterialIcons"
+import Octicons from "@expo/vector-icons/Octicons"
+import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons"
+import Zocial from "@expo/vector-icons/Zocial"
 
 import { useAppTheme } from "@/theme/context"
 
+export const fontRegistry = {
+  AntDesign,
+  Entypo,
+  EvilIcons,
+  Feather,
+  FontAwesome,
+  FontAwesome5,
+  FontAwesome6,
+  Fontisto,
+  Foundation,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons,
+  Octicons,
+  SimpleLineIcons,
+  Zocial,
+} as const
+
+export type FontFamily = keyof typeof fontRegistry
+
 export type IconTypes = keyof typeof iconRegistry
 
-type BaseIconProps = {
+type FontIconProps = {
   /**
-   * The name of the icon
+   * The icon font family from @expo/vector-icons (e.g. "Ionicons", "MaterialIcons")
+   */
+  font: FontFamily
+  /**
+   * The name of the icon in the selected font family
+   */
+  icon: string
+}
+
+type ImageIconProps = {
+  font?: undefined
+  /**
+   * The name of the registered PNG icon
    */
   icon: IconTypes
+}
 
+type BaseIconProps = (FontIconProps | ImageIconProps) & {
   /**
    * An optional tint color for the icon
    */
   color?: string
 
   /**
-   * An optional size for the icon. If not provided, the icon will be sized to the icon's resolution.
+   * An optional size for the icon. For PNG icons defaults to the image resolution,
+   * for font icons defaults to 24.
    */
   size?: number
 
   /**
-   * Style overrides for the icon image
+   * Style overrides for the icon (ImageStyle for PNG, TextStyle for font icons)
    */
-  style?: StyleProp<ImageStyle>
+  style?: StyleProp<ImageStyle | TextStyle>
 
   /**
    * Style overrides for the icon container
@@ -42,6 +94,41 @@ type BaseIconProps = {
 
 type PressableIconProps = Omit<TouchableOpacityProps, "style"> & BaseIconProps
 type IconProps = Omit<ViewProps, "style"> & BaseIconProps
+
+type VectorIconProps = {
+  name: string
+  size?: number
+  color?: string
+  style?: StyleProp<TextStyle>
+}
+
+function IconContent({
+  icon,
+  font,
+  color,
+  size,
+  style,
+}: {
+  icon: string
+  font?: FontFamily
+  color: string
+  size?: number
+  style?: StyleProp<ImageStyle | TextStyle>
+}) {
+  if (font) {
+    const FontComponent = fontRegistry[font] as unknown as ComponentType<VectorIconProps>
+    return <FontComponent name={icon} size={size ?? 24} color={color} style={style as TextStyle} />
+  }
+
+  const $imageStyle: StyleProp<ImageStyle> = [
+    $imageStyleBase,
+    { tintColor: color },
+    size !== undefined && { width: size, height: size },
+    style as StyleProp<ImageStyle>,
+  ]
+
+  return <Image style={$imageStyle} source={iconRegistry[icon as IconTypes]} />
+}
 
 /**
  * A component to render a registered icon.
@@ -53,25 +140,25 @@ type IconProps = Omit<ViewProps, "style"> & BaseIconProps
 export function PressableIcon(props: PressableIconProps) {
   const {
     icon,
+    font,
     color,
     size,
-    style: $imageStyleOverride,
+    style: $styleOverride,
     containerStyle: $containerStyleOverride,
     ...pressableProps
   } = props
 
   const { theme } = useAppTheme()
 
-  const $imageStyle: StyleProp<ImageStyle> = [
-    $imageStyleBase,
-    { tintColor: color ?? theme.colors.text },
-    size !== undefined && { width: size, height: size },
-    $imageStyleOverride,
-  ]
-
   return (
     <TouchableOpacity {...pressableProps} style={$containerStyleOverride}>
-      <Image style={$imageStyle} source={iconRegistry[icon]} />
+      <IconContent
+        icon={icon}
+        font={font}
+        color={color ?? theme.colors.text}
+        size={size}
+        style={$styleOverride}
+      />
     </TouchableOpacity>
   )
 }
@@ -86,25 +173,25 @@ export function PressableIcon(props: PressableIconProps) {
 export function Icon(props: IconProps) {
   const {
     icon,
+    font,
     color,
     size,
-    style: $imageStyleOverride,
+    style: $styleOverride,
     containerStyle: $containerStyleOverride,
     ...viewProps
   } = props
 
   const { theme } = useAppTheme()
 
-  const $imageStyle: StyleProp<ImageStyle> = [
-    $imageStyleBase,
-    { tintColor: color ?? theme.colors.text },
-    size !== undefined && { width: size, height: size },
-    $imageStyleOverride,
-  ]
-
   return (
     <View {...viewProps} style={$containerStyleOverride}>
-      <Image style={$imageStyle} source={iconRegistry[icon]} />
+      <IconContent
+        icon={icon}
+        font={font}
+        color={color ?? theme.colors.text}
+        size={size}
+        style={$styleOverride}
+      />
     </View>
   )
 }

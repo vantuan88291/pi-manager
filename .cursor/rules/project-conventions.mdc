@@ -64,6 +64,32 @@ export function Button(props: ButtonProps) {
 }
 ```
 
+**Hooks must be at the top** of the component body, before any early returns or logic. A hook after a conditional return violates Rules of Hooks and will crash.
+
+```typescript
+// BAD — hook after early return
+export function MyScreen() {
+  if (!ready) return null
+  const { themed } = useAppTheme() // crash risk
+}
+
+// GOOD — all hooks first
+export function MyScreen() {
+  const { themed } = useAppTheme()
+  if (!ready) return null
+}
+```
+
+**Conditional rendering**: always use `!!` to coerce to boolean. Without it, a falsy string/number leaks raw text into the render tree and crashes on RN.
+
+```tsx
+// BAD — if errorMessage is "" it renders an empty string node → crash
+{errorMessage && <Text text={errorMessage} />}
+
+// GOOD
+{!!errorMessage && <Text text={errorMessage} />}
+```
+
 For screens, use `FC` with named function expression:
 
 ```typescript
@@ -76,6 +102,19 @@ export const WelcomeScreen: FC = function WelcomeScreen() {
   )
 }
 ```
+
+## Icons
+
+Always use `@expo/vector-icons` font icons via the `Icon` component's `font` prop. Do NOT import vector icon fonts directly.
+
+```tsx
+// GOOD — use Icon component with font prop
+<Icon font="Ionicons" icon="home" size={24} />
+<Icon font="MaterialIcons" icon="settings" size={20} color={theme.colors.tint} />
+<PressableIcon font="Feather" icon="edit" size={18} onPress={handleEdit} />
+```
+
+Available fonts: `AntDesign`, `Entypo`, `EvilIcons`, `Feather`, `FontAwesome`, `FontAwesome5`, `FontAwesome6`, `Fontisto`, `Foundation`, `Ionicons`, `MaterialCommunityIcons`, `MaterialIcons`, `Octicons`, `SimpleLineIcons`, `Zocial`.
 
 ## Styling
 
@@ -125,9 +164,39 @@ Type-safe keys via `TxKeyPath`. Translation files: `app/i18n/en.ts`, etc.
 - `navigationRef` for imperative navigation
 - Navigation state persisted via MMKV in dev
 
-## State Management (React Context)
+## State Management
 
-Context is the primary global state solution. No Redux/MobX/Zustand.
+**Local state first**: Always extract logic and local state into custom hooks (`useXxx`). Only use Context when state needs to be shared across multiple screens/components.
+
+```typescript
+// app/screens/ProfileScreen.tsx — screen stays thin
+export const ProfileScreen: FC = function ProfileScreen() {
+  const { themed } = useAppTheme()
+  const { user, isLoading, refresh } = useProfile()
+  // ...render only
+}
+
+// app/hooks/useProfile.ts — logic lives here
+export function useProfile() {
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true)
+    const result = await api.getProfile()
+    if (result.kind === "ok") setUser(result.user)
+    setIsLoading(false)
+  }, [])
+
+  useEffect(() => { refresh() }, [])
+
+  return { user, isLoading, refresh }
+}
+```
+
+### When to use Context (global state)
+
+Only when data is needed by **multiple unrelated components/screens** — e.g. theme, auth session, user preferences. No Redux/MobX/Zustand.
 
 Pattern: `createContext<T | null>(null)` + Provider + custom hook with null-guard.
 
@@ -189,6 +258,15 @@ MMKV wrapper at `@/utils/storage`:
 - Hooks/Utils: camelCase (`useHeader.tsx`, `formatDate.ts`)
 - Config: camelCase (`config.base.ts`, `config.dev.ts`)
 - Types: camelCase (`types.ts`, `navigationTypes.ts`)
+
+## Code Generation (Ignite CLI)
+
+Scaffold screens and components via `ignite-cli@11.4.0`:
+
+- `npm run gscreen <ScreenName>` → creates `app/screens/<ScreenName>Screen.tsx`
+- `npm run gcomponent <ComponentName>` → creates `app/components/<ComponentName>.tsx`
+
+Prefer generators over manual file creation to ensure consistent structure.
 
 ## Formatting (Prettier)
 
