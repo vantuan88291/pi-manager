@@ -1,0 +1,195 @@
+---
+description: Coding conventions and patterns for the pi-manager React Native project
+alwaysApply: true
+---
+
+# Pi-Manager Project Conventions
+
+## Tech Stack
+
+- Expo SDK 54, React Native 0.81.5, React 19, TypeScript (strict)
+- Navigation: React Navigation v7
+- Storage: react-native-mmkv
+- i18n: i18next + react-i18next
+- API: apisauce
+- Testing: Jest + jest-expo + @testing-library/react-native
+
+## Project Structure
+
+```
+app/
+├── app.tsx              # Root component, provider hierarchy
+├── components/          # Reusable UI components
+├── config/              # Environment configs (base/dev/prod)
+├── i18n/                # Translations (en.ts, es.ts, fr.ts...)
+├── navigators/          # Stack/Tab navigators
+├── screens/             # Screen components
+├── services/api/        # API class + types + error handling
+├── theme/               # Theme context, colors, spacing, typography
+└── utils/               # Custom hooks, storage, helpers
+```
+
+## Import Conventions
+
+Path aliases: `@/*` → `app/*`, `@assets/*` → `assets/*`
+
+Order: React → React Native → third-party → `@/` aliases → relative
+
+```typescript
+import { FC } from "react"
+import { View, ViewStyle } from "react-native"
+import { useMMKVString } from "react-native-mmkv"
+import { Screen } from "@/components/Screen"
+import { useAppTheme } from "@/theme/context"
+```
+
+Restricted imports (use project components instead):
+- No `Text`, `Button`, `TextInput` from `react-native` → use `@/components/*`
+- No `SafeAreaView` from `react-native` → use `react-native-safe-area-context`
+- No default `import React` → use named: `import { FC } from "react"`
+
+## Component Patterns
+
+Named function exports, no default exports:
+
+```typescript
+export interface ButtonProps extends PressableProps {
+  preset?: "default" | "filled" | "reversed"
+  tx?: TxKeyPath
+}
+
+export function Button(props: ButtonProps) {
+  const { themed } = useAppTheme()
+  return <Pressable style={themed($container)} {...props} />
+}
+```
+
+For screens, use `FC` with named function expression:
+
+```typescript
+export const WelcomeScreen: FC = function WelcomeScreen() {
+  const { themed, theme } = useAppTheme()
+  return (
+    <Screen preset="fixed" contentContainerStyle={$styles.flex1}>
+      {/* content */}
+    </Screen>
+  )
+}
+```
+
+## Styling
+
+**`$` prefix** for all style constants, defined outside the component.
+
+Themed styles use `ThemedStyle<T>` — a function receiving the `Theme` object:
+
+```typescript
+const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  flex: 1,
+  backgroundColor: colors.background,
+  paddingHorizontal: spacing.lg,
+})
+```
+
+Static styles are plain objects:
+
+```typescript
+const $image: ImageStyle = { height: 100, width: 100 }
+```
+
+Apply via `themed()` from `useAppTheme()`:
+
+```tsx
+<View style={themed($container)} />
+<View style={themed([$base, $bottomContainerInsets])} />
+```
+
+Shared styles: `$styles.flex1`, `$styles.row` from `@/theme/styles`.
+
+## i18n
+
+Use `tx` prop for translations, `text` prop for raw strings:
+
+```tsx
+<Text tx="welcomeScreen:readyForLaunch" />
+<Text tx="common:ok" txOptions={{ count: 5 }} />
+<Text text="Raw string" />
+```
+
+Type-safe keys via `TxKeyPath`. Translation files: `app/i18n/en.ts`, etc.
+
+## Navigation
+
+- Navigators in `app/navigators/`
+- Types: `AppStackParamList`, `AppStackScreenProps<T>`
+- `navigationRef` for imperative navigation
+- Navigation state persisted via MMKV in dev
+
+## State Management (React Context)
+
+Context is the primary global state solution. No Redux/MobX/Zustand.
+
+Pattern: `createContext<T | null>(null)` + Provider + custom hook with null-guard.
+
+```typescript
+export const MyContext = createContext<MyContextType | null>(null)
+
+export const MyProvider: FC<PropsWithChildren> = ({ children }) => {
+  const value = useMemo(() => ({ ... }), [deps])
+  return <MyContext.Provider value={value}>{children}</MyContext.Provider>
+}
+
+export const useMyContext = () => {
+  const context = useContext(MyContext)
+  if (!context) throw new Error("useMyContext must be used within MyProvider")
+  return context
+}
+```
+
+Providers registered in `app/app.tsx`:
+
+```
+SafeAreaProvider → KeyboardProvider → ThemeProvider → AppNavigator
+```
+
+Use `useMemo` for context value, `useCallback` for exposed functions.
+Persistence: `useMMKVString` / `useMMKVObject` from `react-native-mmkv`.
+
+## API Services
+
+`Api` class in `app/services/api/` using `apisauce`:
+
+```typescript
+async getEpisodes(): Promise<{ kind: "ok"; episodes: Episode[] } | GeneralApiProblem> {
+  const response = await this.apisauce.get("/episodes")
+  if (!response.ok) return getGeneralApiProblem(response)
+  return { kind: "ok", episodes: response.data }
+}
+```
+
+Error handling via discriminated union `GeneralApiProblem`.
+
+## Storage
+
+MMKV wrapper at `@/utils/storage`:
+- `loadString(key)` / `saveString(key, value)`
+- `load<T>(key)` / `save(key, value)` (JSON)
+- `remove(key)` / `clear()`
+
+## TypeScript
+
+- `interface` for component props (extendable)
+- `type` for unions, utilities, theme types
+- Strict mode, no implicit any
+- `_` prefix to suppress unused var warnings
+
+## File Naming
+
+- Components/Screens: PascalCase (`Button.tsx`, `WelcomeScreen.tsx`)
+- Hooks/Utils: camelCase (`useHeader.tsx`, `formatDate.ts`)
+- Config: camelCase (`config.base.ts`, `config.dev.ts`)
+- Types: camelCase (`types.ts`, `navigationTypes.ts`)
+
+## Formatting (Prettier)
+
+- `printWidth: 100`, no semicolons, double quotes, trailing commas
