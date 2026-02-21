@@ -847,22 +847,107 @@ in `AppNavigator.tsx` and `navigationTypes.ts`.
 
 #### 6.4.2 Control Menu Screen
 
-**Preset:** `fixed` (no scroll needed, content fits viewport)
+**Preset:** `scroll` (scrollable when menu items grow beyond viewport)
 
 **Header:** Standard `Header` component, title "Control"
 
-**Body — feature grid (2 columns, gap `md`):**
-- `FeatureCard` Wi-Fi — icon: wifi, subtitle shows current SSID or "Disconnected", navigates to WifiScreen
-- `FeatureCard` Bluetooth — icon: bluetooth, subtitle shows "{n} devices connected" or "Off", navigates to BluetoothScreen
-- `FeatureCard` Audio — icon: speaker, subtitle shows "Vol: 72%" or "Muted", navigates to AudioScreen
-- `FeatureCard` Camera — icon: camera, subtitle shows "Streaming" or "Offline", navigates to CameraScreen
+**Data-driven design:** The menu is rendered from a `MENU_ITEMS` array. Adding a new feature
+to the menu requires only adding an entry to this array — no layout or component changes needed.
 
-**Body — danger zone (below grid, full-width):**
-- `Button` preset "default" with red text color: "Reboot Device"
-- On press: shows `ConfirmDialog` "Are you sure? The device will restart and disconnect."
-- On confirm: emits `system:reboot` event
+```typescript
+// app/screens/ControlMenuScreen.tsx
 
-**Components used:** `FeatureCard` (new), `Button`, `ConfirmDialog` (new)
+import type { IconTypes } from "@/components/Icon"
+import type { AppStackParamList } from "@/navigators/navigationTypes"
+import type { TxKeyPath } from "@/i18n"
+
+interface MenuItem {
+  id: string                                   // unique key
+  tx: TxKeyPath                                // i18n label, e.g. "controlMenu:wifi"
+  icon: IconTypes                              // icon name from Icon component
+  screen: keyof AppStackParamList              // navigate target
+  subtitle?: () => string                      // dynamic subtitle (hook result, live status)
+  danger?: boolean                             // true = red styling, shows confirm dialog
+  confirmTx?: TxKeyPath                        // confirm dialog message (required if danger)
+  socketEvent?: string                         // if set, emit this event instead of navigating
+}
+
+const MENU_ITEMS: MenuItem[] = [
+  {
+    id: "wifi",
+    tx: "controlMenu:wifi",
+    icon: "wifi",
+    screen: "Wifi",
+  },
+  {
+    id: "bluetooth",
+    tx: "controlMenu:bluetooth",
+    icon: "bluetooth",
+    screen: "Bluetooth",
+  },
+  {
+    id: "audio",
+    tx: "controlMenu:audio",
+    icon: "speaker",
+    screen: "Audio",
+  },
+  {
+    id: "camera",
+    tx: "controlMenu:camera",
+    icon: "camera",
+    screen: "Camera",
+  },
+  {
+    id: "reboot",
+    tx: "controlMenu:reboot",
+    icon: "reload",
+    screen: "Dashboard",        // not used when socketEvent is set
+    danger: true,
+    confirmTx: "controlMenu:rebootConfirm",
+    socketEvent: "system:reboot",
+  },
+  // Adding a new menu item: just append here.
+  // Example — GPIO control (future):
+  // {
+  //   id: "gpio",
+  //   tx: "controlMenu:gpio",
+  //   icon: "chip",
+  //   screen: "Gpio",
+  // },
+]
+```
+
+**Rendering:** `FlatList` with `numColumns={2}`, renders each item as a `FeatureCard`.
+Items with `danger: true` render full-width below the grid as a separate section.
+
+**Subtitle logic:** Each card can show a live subtitle (e.g. current SSID, volume %).
+Subtitles come from a `useMenuSubtitles()` hook that subscribes to the relevant socket
+modules and returns a `Record<string, string>` keyed by `MenuItem.id`.
+
+```typescript
+// app/hooks/useMenuSubtitles.ts
+export function useMenuSubtitles(): Record<string, string> {
+  const wifiStatus = useWifiStatus()       // from wifi socket module
+  const btStatus = useBluetoothStatus()    // from bluetooth socket module
+  const audioState = useAudioState()       // from audio socket module
+  const cameraState = useCameraState()     // from camera socket module
+
+  return {
+    wifi: wifiStatus?.ssid ?? "Disconnected",
+    bluetooth: btStatus?.connectedDevices.length
+      ? `${btStatus.connectedDevices.length} connected`
+      : "Off",
+    audio: audioState?.muted ? "Muted" : `Vol: ${audioState?.volume ?? 0}%`,
+    camera: cameraState?.streaming ? "Streaming" : "Offline",
+  }
+}
+```
+
+**Tap behavior:**
+- Normal item: `navigation.navigate(item.screen)`
+- Danger item: show `ConfirmDialog` with `item.confirmTx` message → on confirm, emit `item.socketEvent`
+
+**Components used:** `FeatureCard` (new), `ConfirmDialog` (new), `FlatList`
 
 #### 6.4.3 Wi-Fi Screen
 
