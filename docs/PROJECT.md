@@ -766,33 +766,52 @@ authenticated and whitelisted). But the frontend must show a `ConfirmDialog` for
 ### 6.1 Design Principles
 
 - **Dark-first**: The app targets a Pi terminal/IoT audience. Dark theme is default, light optional.
-- **Card-based layout**: Every feature section is a Card with rounded corners, subtle shadows.
-- **Consistent spacing**: Use theme spacing tokens (`xs` 8, `sm` 12, `md` 16, `lg` 24, `xl` 32).
+- **Colorful & vibrant**: Every feature has its own accent color. Cards, icons, and progress bars use color to communicate meaning — not just black/white/gray.
+- **Card-based layout**: Every feature section is a Card with rounded corners (borderRadius `md` = 16), subtle shadows, and tinted icon badges.
+- **Generous spacing**: Items in lists and grids always have visible gaps. No elements touching or feeling cramped. Minimum gap between cards/items = `sm` (12px), preferred = `md` (16px).
 - **Minimal chrome**: No heavy headers. Thin tab bar at the bottom. Content fills the screen.
-- **Status colors**: green = healthy/connected, amber = warning/loading, red = error/disconnected.
+- **Status colors**: green = healthy/connected, amber = warning/loading, red = error/disconnected. These colors appear frequently — on badges, progress bars, icons, and text.
 - **Responsive**: Works in 375px (Telegram Mini App) up to 768px (tablet/desktop browser).
 - **Smooth transitions**: Use `react-native-reanimated` for layout animations, skeleton loaders while data loads.
-- **All-or-nothing access**: If you're in the whitelist, you have full access. No role tiers — keeps it simple for a personal Pi manager.
+- **All-or-nothing access**: If you're in the whitelist, you have full access. No role tiers.
 
 ### 6.2 Color Palette (extended for Pi Manager)
 
-Build on top of the existing Ignite theme. Override/extend in `app/theme/colors.ts`:
+**IMPORTANT:** The Ignite default palette (warm neutrals, brown tints) MUST be replaced with
+this modern IoT palette. Update both `app/theme/colors.ts` and `app/theme/colorsDark.ts`.
+Do NOT keep the default Ignite browns/beiges — they make the app look dull and monotone.
 
 ```
 Semantic Token        Light Mode          Dark Mode           Usage
 ────────────────────  ──────────────────  ──────────────────  ─────────────────────────
-background            #F4F2F1 (n200)      #1A1A2E             Screen backgrounds
-surface               #FFFFFF (n100)      #16213E             Card backgrounds
-surfaceElevated       #FFFFFF             #1F3460             Elevated cards, modals
-text                  #191015 (n800)      #E8E8E8             Primary text
-textDim               #564E4A (n600)      #8A8A9A             Secondary text, labels
-border                #D7CEC9 (n300)      #2A2A4A             Card borders, dividers
-tint                  #4F46E5             #818CF8             Primary action (indigo)
-tintDim               #6366F1             #6366F180           Inactive/disabled tint
-success               #10B981             #34D399             Connected, healthy
-warning               #F59E0B             #FBBF24             Loading, caution
-error                 #EF4444             #F87171             Disconnected, errors
-info                  #3B82F6             #60A5FA             Informational badges
+background            #F0F2F5             #0F172A             Screen backgrounds (cool gray, not warm beige)
+surface               #FFFFFF             #1E293B             Card backgrounds
+surfaceElevated       #FFFFFF             #334155             Elevated cards, modals, bottom sheets
+text                  #1E293B             #F1F5F9             Primary text
+textDim               #64748B             #94A3B8             Secondary text, labels, captions
+border                #E2E8F0             #334155             Card borders, dividers (subtle, not heavy)
+tint                  #6366F1             #818CF8             Primary action color (indigo)
+tintDim               #A5B4FC             #6366F180           Inactive/disabled tint
+success               #10B981             #34D399             Connected, healthy, good values
+warning               #F59E0B             #FBBF24             Loading, caution, moderate values
+error                 #EF4444             #F87171             Disconnected, errors, critical values
+info                  #3B82F6             #60A5FA             Informational badges, links
+```
+
+**Feature accent colors** — each feature has a unique tint used for its icon badge and highlights:
+
+```
+Feature       Accent Color        Icon Badge BG (light)     Icon Badge BG (dark)
+────────────  ──────────────────  ────────────────────────  ──────────────────────
+CPU / System  #6366F1 (indigo)    #EEF2FF                   #312E81
+Temperature   #F59E0B (amber)     #FFFBEB                   #78350F
+Memory        #8B5CF6 (violet)    #F5F3FF                   #4C1D95
+Disk          #06B6D4 (cyan)      #ECFEFF                   #164E63
+Wi-Fi         #3B82F6 (blue)      #EFF6FF                   #1E3A5F
+Bluetooth     #6366F1 (indigo)    #EEF2FF                   #312E81
+Audio         #EC4899 (pink)      #FDF2F8                   #831843
+Camera        #10B981 (emerald)   #ECFDF5                   #064E3B
+Settings      #64748B (slate)     #F1F5F9                   #334155
 ```
 
 ### 6.3 Typography Scale
@@ -811,6 +830,120 @@ stat          32px    Bold          Large stat numbers (CPU 45%)
 statUnit      14px    Medium        Units next to stats (%, °C, MB)
 ```
 
+### 6.8 Styling Rules (mandatory for all screens)
+
+> AI must follow these rules when building any screen. These rules prevent the "flat monotone"
+> look and ensure a professional, visually rich UI.
+
+#### 6.8.1 Spacing & Gaps
+
+- **Screen padding:** `md` (16px) on all sides.
+- **Section gap:** `lg` (24px) vertical gap between sections (e.g., between stats grid and network card).
+- **Grid gap:** `sm` (12px) both horizontal and vertical between grid items. Use `gap` property on the container, NOT `marginBottom` alone on children. If `gap` is unsupported, use `marginBottom: sm` on items AND `columnGap: sm` or padding-based approach.
+- **Card internal padding:** `md` (16px) on all sides.
+- **List item spacing:** `sm` (12px) gap between list items. Never stack items with 0 gap.
+- **Button row gap:** `sm` (12px) between side-by-side buttons.
+
+#### 6.8.2 Card Styling
+
+Every card must have:
+- `backgroundColor`: `surface` token (white in light, #1E293B in dark)
+- `borderRadius`: `md` (16px)
+- `borderWidth`: 1, `borderColor`: `border` token
+- `shadowColor`: dark in light mode, none in dark mode
+- `shadowOffset`: { width: 0, height: 2 }, `shadowOpacity`: 0.06, `shadowRadius`: 8
+- `padding`: `md` (16px)
+
+Do NOT use the default Ignite Card component borders (they are too heavy). Override card styles
+to match these lighter, modern borders.
+
+#### 6.8.3 Icon Badges (colored icon containers)
+
+Icons in cards and list items must NOT be bare icons floating in space.
+They must sit inside a **colored badge container**:
+
+```typescript
+// Example: StatCard icon badge
+const $iconBadge: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  width: 40,
+  height: 40,
+  borderRadius: 12,
+  backgroundColor: "#EEF2FF",  // from feature accent table — light icon badge bg
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: spacing.xs,
+})
+// The icon itself is rendered inside this badge, with the feature accent color as tint.
+```
+
+Rules:
+- Badge size: 40x40 for stat cards, 48x48 for feature cards, 36x36 for list items
+- Badge borderRadius: 12
+- Badge background: the light/dark "Icon Badge BG" color from the feature accent table
+- Icon color: the feature's accent color (e.g., indigo for CPU, amber for temperature)
+- This applies to: StatCard icons, FeatureCard icons, list item left icons
+
+#### 6.8.4 Progress Bar Colors
+
+Progress bars must use **color based on the value being shown**, not a single default color:
+
+- CPU usage: indigo (#6366F1), shifts to amber >70%, red >90%
+- Temperature: green (#10B981) <60°C, amber (#F59E0B) 60-75°C, red (#EF4444) >75°C
+- Memory: violet (#8B5CF6), shifts to amber >70%, red >90%
+- Disk: cyan (#06B6D4), shifts to amber >70%, red >90%
+- Wi-Fi signal: green >70%, amber 40-70%, red <40%
+
+Progress bar track (background): `border` token color. Progress bar height: 6px. Border radius: 3px.
+
+#### 6.8.5 Stat Values
+
+Large stat numbers (e.g., "45%", "52°C") must be visually prominent:
+- Font size: 28-32px, weight: Bold
+- Color: `text` token (primary), NOT dimmed
+- Unit text (%, °C, GB): smaller (14px), `textDim` color, placed next to the value with `xxs` gap
+
+#### 6.8.6 Section Headers
+
+Section titles (e.g., "Network", "Connected Devices") must have:
+- Weight: SemiBold, size: 16-18px
+- Color: `text` token
+- `marginBottom: sm` (12px) below the title before content
+- Optional right-side action (e.g., "Scan" button) aligned to the right of the same row
+
+#### 6.8.7 List Items
+
+List items (Wi-Fi networks, Bluetooth devices, settings rows) must have:
+- `paddingVertical: sm` (12px) — gives breathing room
+- `paddingHorizontal: md` (16px)
+- Separator line between items: 1px, `border` token color, with `marginLeft` to align past the icon
+- Left icon in a colored badge (see 6.8.3)
+- Right side: value text or chevron icon in `textDim` color
+- Touch feedback: subtle background color change on press (use `Pressable` with `pressed` state → `surfaceElevated` background)
+
+#### 6.8.8 FeatureCard (Control Menu Grid)
+
+Each feature card in the Control Menu must feel tappable and visually distinct:
+- Height: ~120px
+- Top section: large colored icon badge (48x48, using feature accent color)
+- Below icon: feature name in `cardTitle` weight
+- Below name: status subtitle in `caption` size, `textDim` color
+- Left colored accent bar: 4px wide vertical bar on the left edge of the card, using the feature's accent color. This makes each card visually unique even at a glance.
+- On press: scale to 0.97 + subtle shadow increase
+
+#### 6.8.9 Empty & Loading States
+
+- **Loading:** Use `SkeletonLoader` with subtle shimmer animation. Skeleton shapes must match the final layout (rounded rect for cards, circles for icons, thin rects for text lines).
+- **Empty:** Center an icon + message vertically. Icon: 64px, `textDim` color. Text below: `body` size, `textDim`.
+
+#### 6.8.10 Color Temperature Rule
+
+Never have a screen that is only gray/white/black. Every screen must have at least:
+- 1 accent-colored element (icon badge, progress bar, or status badge)
+- Status indicators in semantic color (green/amber/red)
+- The screen's feature accent color visible somewhere
+
+This prevents the "monotone dashboard" problem.
+
 ### 6.4 Screen Layouts
 
 #### 6.4.1 Dashboard Screen
@@ -824,24 +957,51 @@ in `AppNavigator.tsx` and `navigationTypes.ts`.
 
 **Header area:**
 - Thin custom header (not navigation header), height 48px
-- Left: `ConnectionBadge` showing socket status (green dot + "Connected")
+- Left: `ConnectionBadge` showing socket status (green dot + "Connected" / red dot + "Offline")
+  - The badge uses `success` / `error` color tokens — always colorful, not gray
 - Center: app title "Pi Manager" in `cardTitle` weight
-- Right: settings gear icon, navigates to SettingsScreen
+- Right: settings gear icon (in `textDim` color), navigates to SettingsScreen
 
-**Body — stats grid (2 columns, gap `sm`):**
-- Row 1: `StatCard` CPU usage (value "45%", progress bar, caption "Cortex-A72") | `StatCard` Temperature (value "52°C", progress bar color shifts green→amber→red based on thresholds: <60 green, 60–75 amber, >75 red)
-- Row 2: `StatCard` Memory (value "1.2 / 4 GB", progress bar) | `StatCard` Disk (value "12 / 32 GB", progress bar)
+**Body — stats grid (2 columns, gap `sm` = 12px):**
+
+Each `StatCard` follows section 6.8 styling rules strictly:
+- Card has `surface` background, `border` token border (1px), borderRadius 16, padding `md`
+- Top-left: **colored icon badge** (40x40, borderRadius 12, background from feature accent table)
+  - CPU icon badge: bg #EEF2FF dark:#312E81, icon color #6366F1 dark:#818CF8
+  - Temperature icon badge: bg #FFFBEB dark:#78350F, icon color #F59E0B dark:#FBBF24
+  - Memory icon badge: bg #F5F3FF dark:#4C1D95, icon color #8B5CF6 dark:#A78BFA
+  - Disk icon badge: bg #ECFEFF dark:#164E63, icon color #06B6D4 dark:#22D3EE
+- Top-right: label text in `textDim`
+- Center: stat value in 28px Bold (e.g., "45%"), `text` color — NOT dimmed
+- Bottom: **colored progress bar** matching the feature accent (see 6.8.4 for threshold color shifts)
+- Below progress bar: caption in 12px `textDim` (e.g., "Cortex-A72", "System Thermal")
+
+Row 1: CPU card | Temperature card
+Row 2: Memory card | Disk card
+Gap between rows AND columns: `sm` (12px). Use `gap: 12` on the grid container.
+
+**Section gap: `lg` (24px) between stats grid and next section.**
 
 **Body — network card (full-width):**
-- `Card` with heading "Network"
-- List of network interfaces, each row: interface name (wlan0, eth0), IP address, up/down status indicator
-- Interfaces with no IP show "Not connected" in `textDim` color
+- `SectionHeader` title "Network" with `sectionTitle` styling
+- `Card` with `surface` background, borderRadius 16
+- Each network interface is a row with:
+  - Left: colored badge (36x36, blue bg #EFF6FF dark:#1E3A5F) with network icon (#3B82F6 dark:#60A5FA)
+  - Center: interface name bold (wlan0, eth0) + IP address in `textDim` below
+  - Right: colored status dot — `success` green if up, `error` red if down
+- Rows separated by 1px `border` color divider
+- Interfaces with no IP show "Not connected" in `textDim` + red dot
+
+**Section gap: `lg` (24px) before device info.**
 
 **Body — device info card (full-width):**
-- `Card` with heading "Device Info"
-- Key-value rows: Hostname, OS (distro + codename), Kernel, Uptime (formatted as "3d 14h 22m")
+- `SectionHeader` title "Device Info"
+- `Card` with `surface` background
+- Key-value rows: Hostname, OS, Kernel, Uptime (formatted as "3d 14h 22m")
+- Keys in `textDim`, values in `text` color, aligned right
+- Icon badge on left: slate colored (bg #F1F5F9 dark:#334155, icon #64748B)
 
-**Loading state:** All StatCards show `SkeletonLoader` until first `system:stats` event arrives.
+**Loading state:** All StatCards show `SkeletonLoader` with shimmer animation until first `system:stats` event. Skeleton shapes match the final layout: rounded rect for icon badge, thin rect for label, large rect for value, thin rect for progress bar.
 
 **Components used:** `StatCard`, `ConnectionBadge`, `ProgressBar`, `SkeletonLoader`, `Card`, `SectionHeader`
 
@@ -866,8 +1026,11 @@ interface MenuItem {
   tx: TxKeyPath                                // i18n label, e.g. "controlMenu:wifi"
   icon: IconTypes                              // icon name from Icon component
   screen: keyof AppStackParamList              // navigate target
+  accent: string                               // feature accent color (from 6.2 table)
+  accentBgLight: string                        // icon badge bg for light mode
+  accentBgDark: string                         // icon badge bg for dark mode
   subtitle?: () => string                      // dynamic subtitle (hook result, live status)
-  danger?: boolean                             // true = red styling, shows confirm dialog
+  danger?: boolean                             // true = red styling, overrides accent with error
   confirmTx?: TxKeyPath                        // confirm dialog message (required if danger)
   socketEvent?: string                         // if set, emit this event instead of navigating
 }
@@ -878,30 +1041,45 @@ const MENU_ITEMS: MenuItem[] = [
     tx: "controlMenu:wifi",
     icon: "wifi",
     screen: "Wifi",
+    accent: "#3B82F6",
+    accentBgLight: "#EFF6FF",
+    accentBgDark: "#1E3A5F",
   },
   {
     id: "bluetooth",
     tx: "controlMenu:bluetooth",
     icon: "bluetooth",
     screen: "Bluetooth",
+    accent: "#6366F1",
+    accentBgLight: "#EEF2FF",
+    accentBgDark: "#312E81",
   },
   {
     id: "audio",
     tx: "controlMenu:audio",
     icon: "speaker",
     screen: "Audio",
+    accent: "#EC4899",
+    accentBgLight: "#FDF2F8",
+    accentBgDark: "#831843",
   },
   {
     id: "camera",
     tx: "controlMenu:camera",
     icon: "camera",
     screen: "Camera",
+    accent: "#10B981",
+    accentBgLight: "#ECFDF5",
+    accentBgDark: "#064E3B",
   },
   {
     id: "reboot",
     tx: "controlMenu:reboot",
     icon: "reload",
-    screen: "Dashboard",        // not used when socketEvent is set
+    screen: "Dashboard",
+    accent: "#EF4444",
+    accentBgLight: "#FEF2F2",
+    accentBgDark: "#7F1D1D",
     danger: true,
     confirmTx: "controlMenu:rebootConfirm",
     socketEvent: "system:reboot",
@@ -913,14 +1091,30 @@ const MENU_ITEMS: MenuItem[] = [
   //   tx: "controlMenu:gpio",
   //   icon: "chip",
   //   screen: "Gpio",
+  //   accent: "#F59E0B",
+  //   accentBgLight: "#FFFBEB",
+  //   accentBgDark: "#78350F",
   // },
 ]
 ```
 
-**Rendering:** `FlatList` with `numColumns={2}`, renders each item as a `FeatureCard`.
-Items with `danger: true` render full-width below the grid as a separate section.
+**Rendering:** `FlatList` with `numColumns={2}`, gap `sm` (12px) between items. Screen padding `md`.
 
-**Subtitle logic:** Each card can show a live subtitle (e.g. current SSID, volume %).
+Each `FeatureCard` must follow section 6.8.8:
+- Card: `surface` bg, borderRadius 16, padding `md`, height ~120px
+- **Left accent bar:** 4px wide, feature accent color, runs the full height of the card
+- **Icon badge:** 48x48, borderRadius 12, feature accent bg from 6.2 table, icon in feature accent color
+- **Title:** `cardTitle` weight (16px SemiBold)
+- **Subtitle:** `caption` size (12px), `textDim` — shows live status from `useMenuSubtitles()`
+- **Touch feedback:** scale 0.97 animation on press
+
+Each `MenuItem` also carries an `accent` field (color string from the feature accent table in 6.2).
+This accent is passed to `FeatureCard` for badge bg and left bar rendering.
+
+Items with `danger: true` render full-width below the grid as a separate section, styled with
+`error` color accent bar, `error` colored icon badge bg (#FEF2F2 dark:#7F1D1D), `error` icon tint.
+
+**Subtitle logic:** Each card shows a live subtitle (e.g. current SSID, volume %).
 Subtitles come from a `useMenuSubtitles()` hook that subscribes to the relevant socket
 modules and returns a `Record<string, string>` keyed by `MenuItem.id`.
 
@@ -1378,6 +1572,176 @@ SafeAreaProvider
 
 ## 12. Development Roadmap
 
+### Phase 0 — Theme Foundation (do this FIRST, before any UI work)
+
+> **Why first?** Every component uses `themed()` and reads from `colors.*` tokens.
+> If the palette stays as Ignite defaults (warm beige/brown), all UI will look dull
+> regardless of how well the screens are designed. This phase takes ~30 minutes
+> but transforms the entire visual identity of the app.
+
+- [ ] **Redesign `app/theme/colors.ts`** (light mode) — replace Ignite palette with Pi Manager palette
+- [ ] **Redesign `app/theme/colorsDark.ts`** (dark mode) — modern dark IoT palette
+- [ ] **Add new semantic tokens** to both files: `surface`, `surfaceElevated`, `success`, `warning`, `info`, `tintDim`
+- [ ] **Add feature accent map** export for components to reference per-feature colors
+- [ ] Verify both files export the same shape (required by `types.ts`: `Colors = typeof colorsLight | typeof colorsDark`)
+
+**Files to change:**
+- `app/theme/colors.ts` — full rewrite of palette + semantic tokens
+- `app/theme/colorsDark.ts` — full rewrite of palette + semantic tokens
+
+**Exact target values (copy-paste ready):**
+
+`app/theme/colors.ts` (light mode):
+```typescript
+const palette = {
+  neutral100: "#FFFFFF",
+  neutral200: "#F8FAFC",
+  neutral300: "#F1F5F9",
+  neutral400: "#E2E8F0",
+  neutral500: "#94A3B8",
+  neutral600: "#64748B",
+  neutral700: "#475569",
+  neutral800: "#1E293B",
+  neutral900: "#0F172A",
+
+  primary100: "#E0E7FF",
+  primary200: "#C7D2FE",
+  primary300: "#A5B4FC",
+  primary400: "#818CF8",
+  primary500: "#6366F1",
+  primary600: "#4F46E5",
+
+  secondary100: "#DBEAFE",
+  secondary200: "#BFDBFE",
+  secondary300: "#93C5FD",
+  secondary400: "#60A5FA",
+  secondary500: "#3B82F6",
+
+  accent100: "#ECFDF5",
+  accent200: "#D1FAE5",
+  accent300: "#6EE7B7",
+  accent400: "#34D399",
+  accent500: "#10B981",
+
+  angry100: "#FEF2F2",
+  angry500: "#EF4444",
+
+  overlay20: "rgba(15, 23, 42, 0.2)",
+  overlay50: "rgba(15, 23, 42, 0.5)",
+} as const
+
+export const colors = {
+  palette,
+  transparent: "rgba(0, 0, 0, 0)",
+  text: palette.neutral800,
+  textDim: palette.neutral600,
+  background: "#F0F2F5",
+  border: palette.neutral400,
+  tint: palette.primary500,
+  tintInactive: palette.neutral400,
+  tintDim: palette.primary300,
+  separator: palette.neutral400,
+  error: palette.angry500,
+  errorBackground: palette.angry100,
+  surface: palette.neutral100,
+  surfaceElevated: palette.neutral100,
+  success: "#10B981",
+  warning: "#F59E0B",
+  info: "#3B82F6",
+} as const
+```
+
+`app/theme/colorsDark.ts` (dark mode):
+```typescript
+const palette = {
+  neutral100: "#0F172A",
+  neutral200: "#1E293B",
+  neutral300: "#334155",
+  neutral400: "#475569",
+  neutral500: "#64748B",
+  neutral600: "#94A3B8",
+  neutral700: "#CBD5E1",
+  neutral800: "#F1F5F9",
+  neutral900: "#FFFFFF",
+
+  primary100: "#312E81",
+  primary200: "#3730A3",
+  primary300: "#4F46E5",
+  primary400: "#6366F1",
+  primary500: "#818CF8",
+  primary600: "#A5B4FC",
+
+  secondary100: "#1E3A5F",
+  secondary200: "#1E40AF",
+  secondary300: "#3B82F6",
+  secondary400: "#60A5FA",
+  secondary500: "#93C5FD",
+
+  accent100: "#064E3B",
+  accent200: "#065F46",
+  accent300: "#10B981",
+  accent400: "#34D399",
+  accent500: "#6EE7B7",
+
+  angry100: "#7F1D1D",
+  angry500: "#F87171",
+
+  overlay20: "rgba(0, 0, 0, 0.2)",
+  overlay50: "rgba(0, 0, 0, 0.5)",
+} as const
+
+export const colors = {
+  palette,
+  transparent: "rgba(0, 0, 0, 0)",
+  text: "#F1F5F9",
+  textDim: "#94A3B8",
+  background: "#0F172A",
+  border: "#334155",
+  tint: "#818CF8",
+  tintInactive: "#475569",
+  tintDim: "#6366F180",
+  separator: "#334155",
+  error: "#F87171",
+  errorBackground: "#7F1D1D",
+  surface: "#1E293B",
+  surfaceElevated: "#334155",
+  success: "#34D399",
+  warning: "#FBBF24",
+  info: "#60A5FA",
+} as const
+```
+
+**Feature accent map** (add as new file `app/theme/featureColors.ts`):
+```typescript
+export const featureColors = {
+  cpu:         { accent: "#6366F1", badgeLight: "#EEF2FF", badgeDark: "#312E81" },
+  temperature: { accent: "#F59E0B", badgeLight: "#FFFBEB", badgeDark: "#78350F" },
+  memory:      { accent: "#8B5CF6", badgeLight: "#F5F3FF", badgeDark: "#4C1D95" },
+  disk:        { accent: "#06B6D4", badgeLight: "#ECFEFF", badgeDark: "#164E63" },
+  wifi:        { accent: "#3B82F6", badgeLight: "#EFF6FF", badgeDark: "#1E3A5F" },
+  bluetooth:   { accent: "#6366F1", badgeLight: "#EEF2FF", badgeDark: "#312E81" },
+  audio:       { accent: "#EC4899", badgeLight: "#FDF2F8", badgeDark: "#831843" },
+  camera:      { accent: "#10B981", badgeLight: "#ECFDF5", badgeDark: "#064E3B" },
+  settings:    { accent: "#64748B", badgeLight: "#F1F5F9", badgeDark: "#334155" },
+  system:      { accent: "#6366F1", badgeLight: "#EEF2FF", badgeDark: "#312E81" },
+} as const
+
+export type FeatureKey = keyof typeof featureColors
+```
+
+Usage in components:
+```typescript
+import { featureColors } from "@/theme/featureColors"
+import { useAppTheme } from "@/theme/context"
+
+// Inside component:
+const { theme } = useAppTheme()
+const cpu = featureColors.cpu
+const badgeBg = theme.isDark ? cpu.badgeDark : cpu.badgeLight
+// badgeBg → "#EEF2FF" (light) or "#312E81" (dark)
+// cpu.accent → "#6366F1" (icon tint color, same in both modes)
+```
+
 ### Phase 1 — Foundation
 
 - [ ] Create `server/` folder with Node.js + Express + Socket.IO project
@@ -1391,7 +1755,6 @@ SafeAreaProvider
 - [ ] Build new components: StatCard, ProgressBar, ConnectionBadge, SkeletonLoader
 - [ ] Rename WelcomeScreen → DashboardScreen (reuse existing file as initial route, rewrite content)
 - [ ] Set up BottomTab navigation (Dashboard, Control, Settings)
-- [ ] Extend color palette for dark-first IoT theme
 
 ### Phase 2 — Core Peripherals
 
