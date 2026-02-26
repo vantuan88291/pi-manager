@@ -377,7 +377,7 @@ bluetooth:scan                      bluetooth:status
 bluetooth:pair                       (response via ack only; then bluetooth:status)
 bluetooth:unpair                    audio:state
 audio:set_volume                    camera:offer / camera:answer / camera:ice_candidate  (WebRTC signaling)
-audio:set_output                    camera:snapshot_result
+audio:set_output                    camera:snapshot_result  (data payload; exception below)
 camera:start                        error  (global error channel)
 camera:stop
 camera:snapshot
@@ -385,7 +385,7 @@ storage:refresh                     storage:health
 
 (Auth is NOT in the event table — it uses Socket.IO
 handshake + connect_error, not custom events. See 4.1.)
-Command responses: use Socket.IO ack callback only (see 5.1). There are no `*_result` events for commands; client uses ack + optional status events (e.g. wifi:status, bluetooth:status) for updated state.
+**Command responses:** Ack-only for state-change commands (see 5.1). No `*_result` events for wifi/bluetooth/audio/system — use ack + status events. **Exception:** `camera:snapshot` returns image data via push event `camera:snapshot_result` (base64 payload too large for ack).
 ```
 
 ### 3.8 Adding a New Module (checklist)
@@ -497,14 +497,14 @@ The client handles this in `socket.on("connect_error")` and shows the appropriat
 // Client → Server
 "camera:start": (payload: { resolution: "480p" | "720p" | "1080p" }) => void
 "camera:stop": () => void
-"camera:snapshot": () => void
+"camera:snapshot": () => void   // ack = success/error; image data via camera:snapshot_result (large payload)
 
 // Bidirectional (WebRTC signaling)
 "camera:offer": (data: RTCSessionDescriptionInit) => void
 "camera:answer": (data: RTCSessionDescriptionInit) => void
 "camera:ice_candidate": (data: RTCIceCandidateInit) => void
 
-// Server → Client
+// Server → Client (only *_result event: snapshot returns base64 via push, not ack)
 "camera:snapshot_result": (data: { base64: string; timestamp: number }) => void
 "camera:error": (data: { message: string }) => void
 ```
@@ -551,12 +551,14 @@ The client handles this in `socket.on("connect_error")` and shows the appropriat
 
 ### 5.1 Command Acknowledgement & Timeout
 
-**Chosen approach: ack only (no _result events).** All command events use the Socket.IO ack callback:
+**Chosen approach: ack-only for command state-change.** All state-changing commands use the Socket.IO ack callback:
 client sends `socket.emit(event, payload, (err, data) => { ... })`; server calls the ack once with
-`(null, result)` on success or `(errorObject)` on failure. There are **no** `*_result` events for any command
+`(null, result)` on success or `(errorObject)` on failure. There are **no** `*_result` events for those commands
 (e.g. no `wifi:connect_result`, no `bluetooth:pair_result`). For async commands (e.g. wifi:connect, bluetooth:pair),
 server may call ack with `{ accepted: true }` when the operation is started, then the client relies on
 **status events** (`wifi:status`, `bluetooth:status`) for the final outcome.
+
+**Exception — data-heavy response:** `camera:snapshot` returns the image via push event **`camera:snapshot_result`** (payload: `{ base64, timestamp }`), not via ack, because the base64 payload is too large for ack. Client should still use ack for `camera:snapshot` to get immediate success/error (e.g. "capture started" or "camera busy"); the actual image is delivered asynchronously on `camera:snapshot_result`. Alternatively, server may ack with `(null, { accepted: true })` and only emit `camera:snapshot_result` with the data — either way, the spec keeps one push event for the image data.
 
 The client must handle both success and timeout (ack not called within T ms = timeout).
 
@@ -579,8 +581,8 @@ function emitWithAck<T>(
 }
 ```
 
-Server side: for every command handler, call the ack once: `ack(null, result)` or `ack(new Error("..."))`.
-Do not emit a separate `*_result` event for that command.
+Server side: for every state-change command handler, call the ack once: `ack(null, result)` or `ack(new Error("..."))`.
+Do not emit a separate `*_result` event for that command. The only push `*_result` is `camera:snapshot_result` for the image payload (see exception above).
 
 **Timeout values per command type:**
 
@@ -2011,4 +2013,4 @@ cloudflared tunnel run pi-manager
 
 ---
 
-*Last updated: 2026-02-20*
+*Last updated: 2026-02-21*

@@ -121,6 +121,8 @@ to match these lighter, modern borders.
 Icons in cards and list items must NOT be bare icons floating in space.
 They must sit inside a **colored badge container**:
 
+**Icon source:** Use the project `Icon` component (`@/components/Icon`). It supports **font icons** from `@expo/vector-icons` (e.g. Ionicons, MaterialCommunityIcons): pass `font` + `icon` (icon name string) for wifi, bluetooth, camera, speaker, etc. For Tab Bar and any custom artwork, use the same Icon with font icons, or PNG/SVG from `assets/icons/` (iconRegistry or react-native-svg). Do not assume a single “icon font” for the whole app — the codebase supports both font and image icons; prefer **font icons** for feature/category icons so names like "wifi", "bluetooth", "camera" work without adding assets.
+
 ```typescript
 // Example: StatCard icon badge
 const $iconBadge: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -276,14 +278,15 @@ to the menu requires only adding an entry to this array — no layout or compone
 ```typescript
 // app/screens/ControlMenuScreen.tsx
 
-import type { IconTypes } from "@/components/Icon"
+import type { FontFamily } from "@/components/Icon"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 import type { TxKeyPath } from "@/i18n"
 
 interface MenuItem {
   id: string                                   // unique key
   tx: TxKeyPath                                // i18n label, e.g. "controlMenu:wifi"
-  icon: IconTypes                              // icon name from Icon component
+  font: FontFamily                             // icon font (e.g. "Ionicons", "MaterialCommunityIcons")
+  icon: string                                 // icon name within that font (e.g. "wifi", "bluetooth")
   screen: keyof AppStackParamList              // navigate target
   accent: string                               // feature accent color (from 6.2 table)
   accentBgLight: string                        // icon badge bg for light mode
@@ -298,6 +301,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: "wifi",
     tx: "controlMenu:wifi",
+    font: "Ionicons",
     icon: "wifi",
     screen: "Wifi",
     accent: "#3B82F6",
@@ -307,6 +311,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: "bluetooth",
     tx: "controlMenu:bluetooth",
+    font: "Ionicons",
     icon: "bluetooth",
     screen: "Bluetooth",
     accent: "#6366F1",
@@ -316,7 +321,8 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: "audio",
     tx: "controlMenu:audio",
-    icon: "speaker",
+    font: "Ionicons",
+    icon: "volume-high",
     screen: "Audio",
     accent: "#EC4899",
     accentBgLight: "#FDF2F8",
@@ -325,6 +331,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: "camera",
     tx: "controlMenu:camera",
+    font: "Ionicons",
     icon: "camera",
     screen: "Camera",
     accent: "#10B981",
@@ -334,6 +341,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: "storage",
     tx: "controlMenu:storage",
+    font: "MaterialCommunityIcons",
     icon: "harddisk",
     screen: "Storage",
     accent: "#06B6D4",
@@ -343,6 +351,7 @@ const MENU_ITEMS: MenuItem[] = [
   {
     id: "reboot",
     tx: "controlMenu:reboot",
+    font: "Ionicons",
     icon: "reload",
     screen: "Dashboard",
     accent: "#EF4444",
@@ -357,6 +366,7 @@ const MENU_ITEMS: MenuItem[] = [
   // {
   //   id: "gpio",
   //   tx: "controlMenu:gpio",
+  //   font: "MaterialCommunityIcons",
   //   icon: "chip",
   //   screen: "Gpio",
   //   accent: "#F59E0B",
@@ -434,7 +444,7 @@ export function useMenuSubtitles(): Record<string, string> {
   - Network name as title
   - `TextField` for password (hidden if network is Open)
   - `Button` "Connect" (preset "filled")
-  - Shows inline error message on `wifi:connect_result` failure
+  - **Connect flow (ack-only):** On "Connect" tap, call `emitWithAck("wifi:connect", { ssid, password })`. Show inline error from ack error (or from result e.g. `accepted: false` if server uses that). On ack success, do not close the sheet yet — wait for `wifi:status` with `connected: true` and `ssid` matching the selected network, then close sheet and show "Connected" (or navigate back). If ack returns an error, show that message inline and keep sheet open.
 
 **Empty state:** If no networks found after scan, show `EmptyState` "No networks found. Try scanning again."
 
@@ -461,7 +471,7 @@ export function useMenuSubtitles(): Record<string, string> {
   - Left: type-based icon
   - Center: device name or MAC
   - Right: RSSI value in dBm (e.g., "-42 dBm"), color-coded (strong > -50: green, medium -50 to -70: amber, weak < -70: red)
-- On tap: shows `ConfirmDialog` "Pair with {name}?" → on confirm emits `bluetooth:pair`
+- On tap: shows `ConfirmDialog` "Pair with {name}?" → on confirm call `emitWithAck("bluetooth:pair", { mac, pin? })`. No `bluetooth:pair_result` event — use ack for immediate error; rely on `bluetooth:status` (device list / paired state) for success. Show inline error from ack if present; on ack success, wait for status update to reflect paired/connected then dismiss.
 - If device requires PIN: follow up with a `BottomSheet` containing a `TextField` for PIN input
 
 **Disabled state:** When Bluetooth power is off, show overlay message "Bluetooth is turned off" with the toggle to turn it on.
@@ -710,7 +720,7 @@ AppStack (NativeStack, headerShown: false)
 ### Tab Bar Configuration
 
 - Height: 60px (includes safe area)
-- Icons: custom SVG icons from `assets/icons/`
+- Icons: use `Icon` component with font icons (e.g. Ionicons/MaterialCommunityIcons) or custom assets from `assets/icons/` (PNG/SVG)
 - Active color: `tint` (indigo)
 - Inactive color: `textDim`
 - Background: `surface`
@@ -718,3 +728,4 @@ AppStack (NativeStack, headerShown: false)
 
 ---
 
+*Last updated: 2026-02-21*
