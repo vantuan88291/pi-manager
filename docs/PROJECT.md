@@ -8,7 +8,7 @@
 ## 1. Overview
 
 **Pi Manager** is a mobile-first dashboard for remotely managing a Raspberry Pi device.
-It provides real-time monitoring (CPU, RAM, disk), peripheral control (Wi-Fi, Bluetooth, audio),
+It provides real-time monitoring (CPU, RAM, disk, SSD health), peripheral control (Wi-Fi, Bluetooth, audio),
 and camera streaming (WebRTC) — all through a React Native Web app embedded inside a Telegram Mini App.
 
 ### Deployment Flow
@@ -93,7 +93,8 @@ pi-manager/
 │   │   │       ├── wifi.ts         #    nmcli wrapper
 │   │   │       ├── bluetooth.ts    #    bluetoothctl wrapper
 │   │   │       ├── audio.ts        #    amixer / pactl wrapper
-│   │   │       └── camera.ts       #    libcamera + WebRTC signaling
+│   │   │       ├── camera.ts       #    libcamera + WebRTC signaling
+│   │   │       └── storage.ts      #    nvme-cli wrapper (NVMe SSD health)
 │   │   ├── auth/
 │   │   │   ├── telegram.ts         #    Validate Telegram initData HMAC
 │   │   │   └── whitelist.ts        #    Load/check/manage allowed Telegram user IDs
@@ -112,6 +113,7 @@ pi-manager/
 │   │   ├── bluetooth.ts            #    BluetoothDevice, BluetoothStatus
 │   │   ├── audio.ts                #    AudioState
 │   │   ├── camera.ts               #    RTCSignal, CameraConfig
+│   │   ├── storage.ts              #    StorageHealth, DiskPartition
 │   │   └── telegram.ts             #    TelegramUser, AuthPayload
 │   └── constants/
 │       └── events.ts               #    Event name string literals
@@ -497,6 +499,7 @@ audio:set_output                    camera:snapshot_result
 camera:start                        error  (global error channel)
 camera:stop
 camera:snapshot
+storage:refresh                     storage:health
 
 (Auth is NOT in the event table — it uses Socket.IO
 handshake + connect_error, not custom events. See 4.1.)
@@ -625,7 +628,32 @@ The client handles this in `socket.on("connect_error")` and shows the appropriat
 "camera:error": (data: { message: string }) => void
 ```
 
-### 4.8 Global Error Channel
+### 4.8 Storage Module (SSD Health)
+
+```typescript
+// Client → Server
+"storage:refresh": () => void                  // force re-read S.M.A.R.T. data
+
+// Server → Client (once on subscribe + on refresh)
+"storage:health": (data: StorageHealth) => void
+```
+
+**Server implementation notes:**
+- Uses `nvme-cli` only (Pi 5 + M.2 HAT+ = NVMe SSD).
+- Command: `nvme smart-log /dev/nvme0n1 -o json` → parsed JSON output.
+- Drive info: `nvme id-ctrl /dev/nvme0n1 -o json` → model, serial, firmware.
+- Partition data: `df --output=source,target,fstype,size,used,pcent -B1` → parsed.
+- Data is NOT polled on interval (unlike system:stats). It is fetched once on subscribe
+  and on explicit `storage:refresh`. S.M.A.R.T. reads take ~1s and shouldn't be spammed.
+- Prerequisite: `sudo apt install nvme-cli` on the Pi.
+- **Permission:** `nvme smart-log` requires read access to `/dev/nvme0n1` (typically root).
+  Since the Node.js server runs as a systemd service, grant access via one of:
+  - Run the service as root (simplest for single-user Pi), or
+  - Add a udev rule to allow the service user read access:
+    `SUBSYSTEM=="nvme", MODE="0664", GROUP="pimanager"` in `/etc/udev/rules.d/99-nvme.rules`,
+    then add the service user to the `pimanager` group.
+
+### 4.9 Global Error Channel
 
 ```typescript
 // Server → Client (any module can emit this)
@@ -708,6 +736,7 @@ Sensitive commands are rate-limited per socket connection to prevent accidental 
 | `audio:set_volume` | 20 | 5s (client debounces, but server also protects) |
 | `camera:start` | 3 | 30s |
 | `camera:snapshot` | 5 | 10s |
+| `storage:refresh` | 3 | 30s |
 
 **Implementation:** Simple in-memory counter per `socket.id + event`. On limit exceed,
 server emits `error` with code `"RATE_LIMITED"` and does not execute the command.
@@ -811,6 +840,7 @@ Wi-Fi         #3B82F6 (blue)      #EFF6FF                   #1E3A5F
 Bluetooth     #6366F1 (indigo)    #EEF2FF                   #312E81
 Audio         #EC4899 (pink)      #FDF2F8                   #831843
 Camera        #10B981 (emerald)   #ECFDF5                   #064E3B
+Storage/SSD   #06B6D4 (cyan)      #ECFEFF                   #164E63
 Settings      #64748B (slate)     #F1F5F9                   #334155
 ```
 
@@ -1073,6 +1103,15 @@ const MENU_ITEMS: MenuItem[] = [
     accentBgDark: "#064E3B",
   },
   {
+    id: "storage",
+    tx: "controlMenu:storage",
+    icon: "harddisk",
+    screen: "Storage",
+    accent: "#06B6D4",
+    accentBgLight: "#ECFEFF",
+    accentBgDark: "#164E63",
+  },
+  {
     id: "reboot",
     tx: "controlMenu:reboot",
     icon: "reload",
@@ -1125,6 +1164,7 @@ export function useMenuSubtitles(): Record<string, string> {
   const btStatus = useBluetoothStatus()    // from bluetooth socket module
   const audioState = useAudioState()       // from audio socket module
   const cameraState = useCameraState()     // from camera socket module
+  const storageHealth = useStorageHealth() // from storage socket module
 
   return {
     wifi: wifiStatus?.ssid ?? "Disconnected",
@@ -1133,6 +1173,7 @@ export function useMenuSubtitles(): Record<string, string> {
       : "Off",
     audio: audioState?.muted ? "Muted" : `Vol: ${audioState?.volume ?? 0}%`,
     camera: cameraState?.streaming ? "Streaming" : "Offline",
+    storage: `Wear: ${storageHealth?.percentageUsed ?? 0}%`,
   }
 }
 ```
@@ -1256,7 +1297,79 @@ export function useMenuSubtitles(): Record<string, string> {
 
 **Components used:** `VideoPlayer` (new), `Button`, `Header`
 
-#### 6.4.7 Settings Screen
+#### 6.4.7 Storage / SSD Health Screen
+
+**Preset:** `scroll`
+
+**Header:** `Header` with back arrow, title "Storage Health", right action: refresh icon button
+(emits `storage:refresh`, shows brief spin animation while fetching).
+
+**Section 1 — Health Overview (full-width Card, prominent):**
+- Top row: large colored **health status badge**
+  - "Healthy" → `success` green bg (#ECFDF5 dark:#064E3B), green text, checkmark icon
+  - "Warning" → `warning` amber bg (#FFFBEB dark:#78350F), amber text, alert-triangle icon
+  - "Critical" → `error` red bg (#FEF2F2 dark:#7F1D1D), red text, alert-circle icon
+  - Status is derived from `percentageUsed`: <80% = Healthy, 80-95% = Warning, >95% = Critical
+- Below badge: drive model name in `cardTitle` weight (e.g., "Samsung 970 EVO Plus 250GB")
+- Below model: drive type label in `caption`, `textDim` (e.g., "NVMe SSD")
+
+**Section 2 — Key Metrics (2-column grid, gap `sm`):**
+Four `StatCard`-style metric cards, each with colored icon badge:
+
+- **Lifespan Used** — icon: heart-pulse (cyan badge #ECFEFF dark:#164E63, icon #06B6D4)
+  - Value: "12%" (from `percentageUsed`), progress bar (cyan → amber >70% → red >90%)
+  - Caption: "Estimated lifespan remaining"
+
+- **Temperature** — icon: thermometer (amber badge #FFFBEB dark:#78350F, icon #F59E0B)
+  - Value: "38°C" (from `temperature`)
+  - Progress bar: green <50°C, amber 50-70°C, red >70°C
+  - Caption: "Drive thermal"
+
+- **Total Written** — icon: arrow-down-circle (violet badge #F5F3FF dark:#4C1D95, icon #8B5CF6)
+  - Value: "2.4 TB" (calculated from `dataUnitsWritten × 512000 / 1e12`)
+  - Caption: "Lifetime writes"
+
+- **Power On** — icon: clock (blue badge #EFF6FF dark:#1E3A5F, icon #3B82F6)
+  - Value: "1,247 hrs" (from `powerOnHours`, formatted with comma separator)
+  - Caption: "Total runtime"
+
+**Section 3 — Drive Details (full-width Card):**
+Key-value list with `sm` gap between rows:
+- **Device:** `/dev/nvme0n1` — `textDim` key, `text` value
+- **Serial:** `S4EWNX0M...` — truncated with "..." if long, tap to copy full serial
+- **Firmware:** `2B2QEXM7`
+- **Interface:** `NVMe`
+- **Capacity:** `232.9 GB` (formatted from `size`)
+- **Used Space:** `89.2 / 232.9 GB` (from disk usage, with small progress bar inline)
+
+Each row has a thin `border` separator line between items. Keys are `textDim`, values are `text`.
+
+**Section 4 — S.M.A.R.T. Details (full-width Card, collapsible):**
+- Card heading: "S.M.A.R.T. Data" with chevron toggle (collapsed by default)
+- When expanded: key-value list of NVMe smart-log attributes:
+  - Each row: attribute name (left, `body` weight) + raw value (right, monospace font)
+  - Rows with abnormal values highlighted with `warning` or `error` left border (4px):
+    - `mediaErrors > 0` → `error`
+    - `unsafeShutdowns > 10` → `warning`
+    - `availableSpare < availableSpareThreshold` → `error`
+    - `criticalWarning > 0` → `error`
+  - Attributes shown: Available Spare, Available Spare Threshold, Media Errors,
+    Unsafe Shutdowns, Error Log Entries, Critical Warning, Data Units Read, Data Units Written
+
+**Section 5 — Disk Partitions (full-width Card):**
+- Card heading: "Partitions"
+- List of mounted partitions, each row:
+  - Left: folder icon in slate badge (36x36)
+  - Center: mount point (`/`, `/boot`, `/media/usb0`) in `body` weight, filesystem type below in `caption`
+  - Right: usage bar (thin, 80px wide) + "89.2 GB / 232.9 GB" in `caption`
+  - Usage bar color: cyan, shifts to amber >70%, red >90%
+
+**Loading state:** Skeleton loaders matching each section shape. Health badge → rounded rect,
+stat cards → 2x2 skeleton grid, details → key-value skeleton rows.
+
+**Components used:** `StatCard`, `ProgressBar`, `Card`, `SectionHeader`, `Header`, `IconBadge`
+
+#### 6.4.8 Settings Screen
 
 **Preset:** `scroll`
 
@@ -1278,7 +1391,7 @@ export function useMenuSubtitles(): Record<string, string> {
 
 **Components used:** `Card`, `ConnectionBadge`, existing theme/i18n utilities
 
-#### 6.4.8 Access Denied Screen
+#### 6.4.9 Access Denied Screen
 
 **When shown:** After `connect_error` with message `"ACCESS_DENIED"` (user not in whitelist).
 
@@ -1354,11 +1467,12 @@ AppStack (NativeStack, headerShown: false)
     │   └── DashboardScreen             # System stats overview
     │
     ├── ControlTab (NativeStack)
-    │   ├── ControlMenuScreen           # Feature grid (Wi-Fi, BT, Audio, Camera)
+    │   ├── ControlMenuScreen           # Feature grid (Wi-Fi, BT, Audio, Camera, Storage)
     │   ├── WifiScreen                  # Wi-Fi management
     │   ├── BluetoothScreen             # Bluetooth management
     │   ├── AudioScreen                 # Audio control
-    │   └── CameraScreen                # WebRTC live view
+    │   ├── CameraScreen                # WebRTC live view
+    │   └── StorageScreen               # SSD health & S.M.A.R.T. data
     │
     └── SettingsTab (NativeStack)
         └── SettingsScreen              # Theme, language, connection info
@@ -1483,6 +1597,36 @@ interface CameraConfig {
   resolution: CameraResolution
   fps: number
   bitrate: number           // kbps
+}
+
+// shared/types/storage.ts
+interface StorageHealth {
+  device: string                  // "/dev/nvme0n1"
+  model: string                   // "Samsung 970 EVO Plus 250GB"
+  serial: string                  // drive serial number
+  firmware: string                // firmware version
+  size: number                    // bytes, total capacity
+  temperature: number             // °C
+  percentageUsed: number          // 0–100, lifespan consumed
+  powerOnHours: number            // total hours powered on
+  dataUnitsWritten: number        // data units written (each unit = 512KB × 1000)
+  dataUnitsRead: number           // data units read
+  mediaErrors: number             // media/integrity errors (should be 0)
+  unsafeShutdowns: number         // unexpected power loss count
+  errorLogEntries: number         // number of error log entries
+  availableSpare: number          // 0–100%, remaining spare blocks
+  availableSpareThreshold: number // threshold below which spare is critical
+  criticalWarning: number         // critical warning bitmap (0 = no warnings)
+  partitions: DiskPartition[]     // mounted partitions from df
+}
+
+interface DiskPartition {
+  device: string                  // "/dev/nvme0n1p1"
+  mount: string                   // "/"
+  filesystem: string              // "ext4", "vfat"
+  size: number                    // bytes
+  used: number                    // bytes
+  percent: number                 // 0–100
 }
 
 // shared/types/telegram.ts
@@ -1722,6 +1866,7 @@ export const featureColors = {
   bluetooth:   { accent: "#6366F1", badgeLight: "#EEF2FF", badgeDark: "#312E81" },
   audio:       { accent: "#EC4899", badgeLight: "#FDF2F8", badgeDark: "#831843" },
   camera:      { accent: "#10B981", badgeLight: "#ECFDF5", badgeDark: "#064E3B" },
+  storage:     { accent: "#06B6D4", badgeLight: "#ECFEFF", badgeDark: "#164E63" },
   settings:    { accent: "#64748B", badgeLight: "#F1F5F9", badgeDark: "#334155" },
   system:      { accent: "#6366F1", badgeLight: "#EEF2FF", badgeDark: "#312E81" },
 } as const
@@ -1761,6 +1906,7 @@ const badgeBg = theme.isDark ? cpu.badgeDark : cpu.badgeLight
 - [ ] Wi-Fi module (server + client) + WifiScreen
 - [ ] Bluetooth module (server + client) + BluetoothScreen
 - [ ] Audio module (server + client) + AudioScreen
+- [ ] Storage module (server: nvme-cli → client: useStorageHealth) + StorageScreen
 - [ ] Build components: NetworkListItem, DeviceListItem, VolumeSlider, BottomSheet
 - [ ] ControlMenuScreen with FeatureCard grid
 - [ ] SettingsScreen (theme, language, connection info)
@@ -2295,6 +2441,7 @@ import type { SystemStats, SystemInfo } from "./system"
 import type { WifiNetwork, WifiStatus } from "./wifi"
 import type { BluetoothDevice, BluetoothStatus } from "./bluetooth"
 import type { AudioState } from "./audio"
+import type { StorageHealth } from "./storage"
 import type { TelegramUser } from "./telegram"
 
 // ─── Client → Server ────────────────────────────────────────────────
@@ -2333,6 +2480,9 @@ export interface ClientToServerEvents {
   "camera:snapshot": () => void
   "camera:answer": (data: RTCSessionDescriptionInit) => void
   "camera:ice_candidate": (data: RTCIceCandidateInit) => void
+
+  // Storage / SSD Health
+  "storage:refresh": () => void
 }
 
 // ─── Server → Client ────────────────────────────────────────────────
@@ -2363,6 +2513,9 @@ export interface ServerToClientEvents {
   "camera:ice_candidate": (data: RTCIceCandidateInit) => void
   "camera:snapshot_result": (data: { base64: string; timestamp: number }) => void
   "camera:error": (data: { message: string }) => void
+
+  // Storage / SSD Health
+  "storage:health": (data: StorageHealth) => void
 
   // Global error
   "error": (data: { module: string; code: string; message: string }) => void
