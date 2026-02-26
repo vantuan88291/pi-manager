@@ -1,13 +1,13 @@
 # AI Work Plan — Pi Manager (PM Setup)
 
 > AI-consumable execution setup.
-> **Source of truth:** `docs/OVERVIEW.md`, `docs/BACKEND.md`, `docs/UI.md` (do not use `docs/PROJECT.md` — deprecated).
+> **Source of truth:** `docs/OVERVIEW.md`, `docs/backend/README.md`, `docs/ui/README.md`.
 
 ---
 
 ## 1) Rules (must-follow)
 
-- Follow spec: **OVERVIEW.md** (architecture, structure, roadmap summary), **BACKEND.md** (socket, server, data types, commands), **UI.md** (screens, components, styling).
+- Follow spec: **OVERVIEW.md** (architecture, structure, roadmap summary), **docs/backend/README.md** (socket, server, data types, commands), **docs/ui/README.md** (screens, components, styling).
 - Follow conventions: `.cursor/rules/project-conventions.mdc`
 
 ---
@@ -32,7 +32,7 @@ Optional helper (only if needed): **MiniMax 2.5** for CI/E2E notes/checklists.
 
 ## 3) Workflow (mandatory)
 
-- Pick the next task from **OVERVIEW.md Section 12 (Roadmap summary)** or the detailed checklists in **BACKEND.md** / **UI.md**.
+- Pick the next task from **OVERVIEW.md Section 12 (Roadmap summary)** or the detailed checklists in **docs/backend/README.md** / **docs/ui/README.md**.
 - Create a branch: `feat/<short-task>`
 - Implement the task.
 - Open a PR with:

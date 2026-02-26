@@ -1,8 +1,8 @@
 # Pi Manager — Overview & Architecture
 
 > Part of Pi Manager spec. See also:
-> - [BACKEND.md](./BACKEND.md) — socket, server, deployment, data types, commands, quick start
-> - [UI.md](./UI.md) — screens, components, styling, navigation
+> - [backend/README.md](./backend/README.md) — backend + socket spec (split docs)
+> - [ui/README.md](./ui/README.md) — UI spec (split docs)
 
 ---
 
@@ -91,12 +91,12 @@ pi-manager/
 │
 ├── docs/
 │   ├── OVERVIEW.md                 # This file — architecture, structure, roadmap summary
-│   ├── BACKEND.md                  # Socket, server, data types, commands, quick start
-│   └── UI.md                       # Screens, components, styling
+│   └── backend/README.md           # Backend + socket spec (index; split docs)
+│   └── ui/README.md                # UI spec (index; split docs)
 └── package.json                   # Root workspace config
 ```
 
-**Where to find more:** Data types, tech stack tables, commands, environment variables, and Quick Start are in [BACKEND.md](./BACKEND.md). Screen layouts, component library, and navigation are in [UI.md](./UI.md).
+**Where to find more:** Data types, tech stack tables, commands, environment variables, and Quick Start are in [backend/README.md](./backend/README.md). Screen layouts, component library, and navigation are in [ui/README.md](./ui/README.md).
 
 ---
 
@@ -116,10 +116,10 @@ SafeAreaProvider
 ## 11. Current State (as-is)
 
 - Scaffolded with Ignite CLI (Infinite Red boilerplate). **No `server/` or `shared/` yet** — to be created in Phase 1.
-- **Navigation:** App stack currently has `Welcome`, `Login` only. UI spec (TelegramAuthScreen, MainTabs with Dashboard/Control/Settings) is **planned** — see UI.md.
+- **Navigation:** App stack currently has `Welcome`, `Login` only. UI spec (TelegramAuthScreen, MainTabs with Dashboard/Control/Settings) is **planned** — see `docs/ui/README.md`.
 - `WelcomeScreen` exists and will be reused as the main Dashboard (rename + rewrite in Phase 1).
 - Theme system: light/dark, Space Grotesk, spacing tokens, `themed()` helper. No Socket.IO or Telegram integration yet.
-- Full task breakdown: see BACKEND.md (server/socket) and UI.md (screens/components).
+- Full task breakdown: see `docs/backend/README.md` (server/socket) and `docs/ui/README.md` (screens/components).
 
 ---
 
@@ -134,7 +134,7 @@ SafeAreaProvider
 | **Phase 4** | Telegram — Bot + Mini App, auth flow, Cloudflare Tunnel guide. |
 | **Phase 5** | Safety & production — ack/timeout, rate limits, validation, production build (static + Express), cloudflared + systemd, E2E/CI. |
 
-Detailed checklists and copy-paste snippets (e.g. theme palette) are in BACKEND.md and UI.md.
+Detailed checklists and copy-paste snippets (e.g. theme palette) are in `docs/backend/README.md` and `docs/ui/README.md`.
 
 ---
 
