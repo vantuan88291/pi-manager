@@ -1,7 +1,11 @@
 # Pi Manager — Project Specification
 
-> AI-consumable document. This is the single source of truth for project architecture,
-> socket protocol, UI design, and implementation guidelines. Keep it current.
+> **DEPRECATED.** This file is no longer the source of truth. It has been replaced by:
+> - **[OVERVIEW.md](./OVERVIEW.md)** — architecture, structure, roadmap summary
+> - **[BACKEND.md](./BACKEND.md)** — socket, server, deployment, data types, commands, quick start
+> - **[UI.md](./UI.md)** — screens, components, styling, navigation
+>
+> Do not use this file for implementation. Use the three files above instead.
 
 ---
 
