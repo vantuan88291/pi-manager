@@ -1,6 +1,7 @@
 import { FC } from "react"
-import { View, ViewStyle, Pressable, type TextStyle } from "react-native"
+import { View, ViewStyle, Pressable } from "react-native"
 
+import { Header } from "@/components/Header"
 import { Icon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
@@ -26,6 +27,8 @@ export const SettingsScreen: FC = function SettingsScreen() {
 
   return (
     <Screen preset="scroll">
+      <Header title="Settings" titleMode="center" />
+
       <View style={themed($card)}>
         {SETTINGS_ITEMS.map((item, index) => (
           <Pressable key={item.id} style={themed([$settingsRow, index > 0 && $settingsDivider])}>
@@ -61,5 +64,5 @@ const $iconBadge: ThemedStyle<ViewStyle> = ({ colors }) => ({ width: 36, height:
 const $settingsContent: ViewStyle = { flex: 1 }
 const $settingsValue: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 4 }
 const $appInfo: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({ marginTop: spacing.xl, alignItems: "center", paddingVertical: spacing.lg })
-const $appInfoTitle: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text, marginBottom: 4 })
+const $appInfoTitle: ThemedStyle<ViewStyle> = ({ colors }) => ({ color: colors.text, marginBottom: 4 })
 const $copyright: ViewStyle = { marginTop: 8 }

@@ -1,9 +1,9 @@
 import { FC } from "react"
 import { View, ViewStyle } from "react-native"
 
+import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
 import { FeatureCard } from "@/components/FeatureCard"
-import { Text } from "@/components/Text"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 
@@ -30,6 +30,8 @@ export const ControlMenuScreen: FC = function ControlMenuScreen() {
 
   return (
     <Screen preset="scroll">
+      <Header title="Control" titleMode="center" />
+
       <View style={$gridContainer}>
         {MENU_ITEMS.map((item) => (
           <View key={item.id} style={themed($cardWrapper)}>

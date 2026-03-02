@@ -1,7 +1,8 @@
 import { FC, useState } from "react"
-import { View, ViewStyle, RefreshControl, type TextStyle } from "react-native"
+import { View, ViewStyle, RefreshControl } from "react-native"
 
 import { ConnectionBadge } from "@/components/ConnectionBadge"
+import { Header } from "@/components/Header"
 import { Icon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
 import { SectionHeader } from "@/components/SectionHeader"
@@ -40,6 +41,8 @@ export const DashboardScreen: FC = function DashboardScreen() {
 
   return (
     <Screen preset="scroll" ScrollViewProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }}>
+      <Header title="Dashboard" titleMode="center"  />
+
       <View style={themed($statusRow)}>
         <ConnectionBadge status="connected" />
         <Text text="raspberrypi" size="sm" color="textDim" />
@@ -64,7 +67,7 @@ export const DashboardScreen: FC = function DashboardScreen() {
             </View>
             <View style={$networkInfo}>
               <Text text={net.name} weight="medium" />
-              <Text text={net.ip ?? "Not connected"} size="xs" color={net.ip ? "textDim" : "error"} />
+              <Text text={net.ip ?? "Not connected"} size="xs" color="textDim" />
             </View>
             <View style={[$statusDot, { backgroundColor: net.status === "up" ? "#10B981" : "#EF4444" }]} />
           </View>
