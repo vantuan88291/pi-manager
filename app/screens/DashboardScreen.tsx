@@ -40,9 +40,7 @@ export const DashboardScreen: FC = function DashboardScreen() {
   return (
     <View style={themed($container)}>
       <View style={themed($header)}>
-        <ConnectionBadge status="connected" />
-        <Text text="Pi Manager" size="md" weight="semiBold" style={themed($headerTitle)} />
-        <Icon font="Ionicons" icon="settings-outline" color={theme.colors.textDim} size={24} />
+        <Text text="Dashboard" size="lg" weight="bold" style={themed($headerTitle)} />
       </View>
 
       <ScrollView
@@ -50,6 +48,11 @@ export const DashboardScreen: FC = function DashboardScreen() {
         contentContainerStyle={themed($scrollContent)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
+        <View style={themed($statusRow)}>
+          <ConnectionBadge status="connected" />
+          <Text text="raspberrypi" size="sm" color="textDim" />
+        </View>
+
         <View style={themed($statsGrid)}>
           <StatCard label={mockStats.cpu.label} value={`${mockStats.cpu.value}%`} progress={mockStats.cpu.value} progressColor={theme.colors.tint} caption={mockStats.cpu.caption} icon={{ font: "Ionicons", name: "hardware-chip", color: "#6366F1", badgeBg: "#EEF2FF" }} />
           <StatCard label={mockStats.temperature.label} value={`${mockStats.temperature.value}`} unit="°C" progress={mockStats.temperature.value} progressColor={mockStats.temperature.value > 60 ? "#F59E0B" : "#10B981"} caption={mockStats.temperature.caption} icon={{ font: "Ionicons", name: "thermometer", color: "#F59E0B", badgeBg: "#FFFBEB" }} />
@@ -95,13 +98,14 @@ const $header: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ flexDirectio
 const $headerTitle = { color: "#1E293B" as any }
 const $scrollView: ViewStyle = { flex: 1 }
 const $scrollContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({ padding: spacing.md })
+const $statusRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm })
 const $statsGrid: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", gap: spacing.md, marginBottom: spacing.md })
-const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginTop: spacing.lg, marginBottom: spacing.xs })
-const $card: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md })
-const $networkRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", alignItems: "center", paddingVertical: spacing.xs })
+const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginTop: spacing.lg, marginBottom: spacing.xs, paddingHorizontal: spacing.md })
+const $card: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginHorizontal: spacing.md, marginBottom: spacing.md })
+const $networkRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", alignItems: "center", paddingVertical: spacing.sm })
 const $networkDivider: ThemedStyle<ViewStyle> = ({ colors }) => ({ borderTopWidth: 1, borderTopColor: colors.border })
 const $networkIconBadge: ViewStyle = { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginRight: 12 }
 const $networkInfo: ViewStyle = { flex: 1 }
 const $statusDot: ViewStyle = { width: 8, height: 8, borderRadius: 4 }
-const $deviceRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.xs })
+const $deviceRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.sm })
 const $deviceDivider: ThemedStyle<ViewStyle> = ({ colors }) => ({ borderTopWidth: 1, borderTopColor: colors.border })
