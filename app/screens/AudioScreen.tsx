@@ -44,10 +44,6 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
     setSelectedDevice(deviceId)
   }
 
-  const handleTestSound = () => {
-    // Mock
-  }
-
   const VolumeSlider = ({ value, disabled }: {
     value: number
     disabled?: boolean
@@ -56,7 +52,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
     
     return (
       <View style={$sliderContainer}>
-        <Text text="🔊" size="lg" />
+        <Text text="🔊" size="lg" color="text" />
         <Pressable style={[$sliderTrack, { backgroundColor: disabled ? theme.colors.border : theme.colors.palette.neutral300 }]} onPress={(e) => {
           const { locationX } = e.nativeEvent
           const newValue = Math.round((locationX / 280) * 100)
@@ -75,7 +71,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
             ]}
           />
         </Pressable>
-        <Text text="🔊" size="lg" />
+        <Text text="🔊" size="lg" color="text" />
       </View>
     )
   }
@@ -85,78 +81,58 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
       <Header title="Audio" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       {/* Volume Control */}
-      <Card style={$card}>
-        <Text text="Volume" size="lg" weight="semiBold" style={$cardTitle} color="text" />
-        
-        <VolumeSlider
-          value={isMuted ? 0 : sliderValue}
-          disabled={isMuted}
-        />
-        
-        <Text
-          text={isMuted ? "Muted" : `${sliderValue}%`}
-          size="xl"
-          weight="bold"
-          style={$volumeText}
-        />
-        
-        <Button
-          text={isMuted ? "Unmute" : "Mute"}
-          preset="default"
-          onPress={handleMuteToggle}
-          style={$muteButton}
-        />
-      </Card>
+      <Card 
+        heading="Volume"
+        ContentComponent={
+          <>
+            <VolumeSlider value={isMuted ? 0 : sliderValue} disabled={isMuted} />
+            <Text text={isMuted ? "Muted" : `${sliderValue}%`} size="xl" weight="bold" color="text" style={$volumeText} />
+            <Button text={isMuted ? "Unmute" : "Mute"} preset="default" onPress={handleMuteToggle} style={$muteButton} />
+          </>
+        }
+      />
 
       {/* Output Device */}
-      <Card style={$card}>
-        <Text text="Output Device" size="lg" weight="semiBold" style={$cardTitle} color="text" />
-        
-        <View style={$deviceList}>
-          {MOCK_DEVICES.map((device) => (
-            <Pressable
-              key={device.id}
-              style={[
-                $deviceItem,
-                selectedDevice === device.id && $deviceItemSelected
-              ]}
-              onPress={() => handleDeviceSelect(device.id)}
-            >
-              <View style={$deviceIconContainer}>
-                <Text text={device.icon} size="lg" />
-              </View>
-              <Text text={device.name} size="md" weight="medium" style={$deviceName} color="text" />
-              <View style={[
-                $radioIndicator,
-                selectedDevice === device.id && $radioSelected
-              ]}>
-                {selectedDevice === device.id && <View style={$radioInner} />}
-              </View>
-            </Pressable>
-          ))}
-        </View>
-      </Card>
-
-      {/* Test Sound */}
-      <Button
-        text="Test Sound"
-        preset="filled"
-        onPress={handleTestSound}
-        style={$testButton}
+      <Card 
+        heading="Output Device"
+        ContentComponent={
+          <View style={$deviceList}>
+            {MOCK_DEVICES.map((device) => (
+              <Pressable
+                key={device.id}
+                style={[
+                  $deviceItem,
+                  selectedDevice === device.id && $deviceItemSelected
+                ]}
+                onPress={() => handleDeviceSelect(device.id)}
+              >
+                <View style={$deviceIconContainer}>
+                  <Text text={device.icon} size="lg" />
+                </View>
+                <Text text={device.name} size="md" weight="medium" color="text" style={$deviceName} />
+                <View style={[
+                  $radioIndicator,
+                  selectedDevice === device.id && $radioSelected
+                ]}>
+                  {selectedDevice === device.id && <View style={$radioInner} />}
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        }
       />
+
+      <Button text="Test Sound" preset="filled" onPress={() => {}} style={$testButton} />
     </Screen>
   )
 }
-
-const $card: ViewStyle = { marginHorizontal: 16, marginBottom: 16 }
-const $cardTitle: TextStyle = { marginBottom: 16 }
-const $volumeText: TextStyle = { textAlign: "center", marginBottom: 16 }
 
 const $sliderContainer: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }
 const $sliderTrack: ViewStyle = { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" }
 const $sliderFill: ViewStyle = { position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 3 }
 const $sliderThumb: ViewStyle = { position: "absolute", top: -9, width: 24, height: 24, borderRadius: 12, marginLeft: -12 }
 
+const $volumeText: TextStyle = { textAlign: "center", marginBottom: 16 }
 const $muteButton: ViewStyle = { alignSelf: "center" }
 
 const $deviceList: ViewStyle = { gap: 8 }
@@ -169,4 +145,4 @@ const $radioIndicator: ViewStyle = { width: 22, height: 22, borderRadius: 11, bo
 const $radioSelected: ViewStyle = { borderColor: "#3B82F6" }
 const $radioInner: ViewStyle = { width: 12, height: 12, borderRadius: 6, backgroundColor: "#3B82F6" }
 
-const $testButton: ViewStyle = { marginHorizontal: 16, marginTop: 8 }
+const $testButton: ViewStyle = { marginHorizontal: 16, marginTop: 16 }
