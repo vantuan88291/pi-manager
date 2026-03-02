@@ -73,8 +73,8 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
     if (!selectedNetwork) return
     setConnectError(null)
     setTimeout(() => {
-      if (selectedNetwork.security !== "Open" && !password) {
-        setConnectError("Password required")
+      if (selectedNetwork.security === "Open" ? false : !password || password.length < 8) {
+        setConnectError(selectedNetwork.security !== "Open" && !password ? "Password required" : "Password must be at least 8 characters")
         return
       }
       setShowConnectSheet(false)

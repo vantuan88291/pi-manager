@@ -41,7 +41,8 @@ const S_MART_DATA = [
 ]
 
 const getHealthStatus = (p: number) => p < 80 ? "healthy" : p < 95 ? "warning" : "critical"
-const getHealthColor = (s: string, theme: any) => s === "healthy" ? { bg: theme.colors.success + "20", text: theme.colors.success } : s === "warning" ? { bg: theme.colors.warning + "20", text: theme.colors.warning } : { bg: theme.colors.error + "20", text: theme.colors.error }
+const alpha = (color: string, opacity: number) => color + Math.round(opacity * 255).toString(16).padStart(2, "0").toUpperCase()
+const getHealthColor = (s: string, theme: any) => s === "healthy" ? { bg: alpha(theme.colors.success, 0.12), text: theme.colors.success } : s === "warning" ? { bg: alpha(theme.colors.warning, 0.12), text: theme.colors.warning } : { bg: alpha(theme.colors.error, 0.12), text: theme.colors.error }
 const formatNumber = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 
 export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ navigation }) {

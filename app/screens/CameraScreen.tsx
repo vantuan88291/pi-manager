@@ -44,7 +44,7 @@ export const CameraScreen: FC<CameraScreenProps> = function CameraScreen({ navig
     if (isStreaming) { handleStop(); setTimeout(() => handleStart(), 500) }
   }
 
-  const videoBg = theme.isDark ? theme.colors.palette?.neutral900 : "#1E293B"
+  const videoBg = theme.isDark ? "#0F172A" : "#1E293B"
 
   return (
     <Screen preset="fixed">
