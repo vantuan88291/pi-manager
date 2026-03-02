@@ -51,6 +51,45 @@ const fonts = {
   },
 }
 
+/**
+ * Typography size presets for Pi Manager
+ * 
+ * These semantic sizes should be used consistently across the app.
+ * Each size maps to a specific font size and weight for a consistent look.
+ */
+export const sizes = {
+  /** 24px - Screen titles (Dashboard, Wi-Fi...) */
+  screenTitle: 24,
+  /** 18px - Section headings inside screens */
+  sectionTitle: 18,
+  /** 16px - Card headings */
+  cardTitle: 16,
+  /** 14px - General text, descriptions */
+  body: 14,
+  /** 12px - Timestamps, secondary info */
+  caption: 12,
+  /** 32px - Large stat numbers (CPU 45%) */
+  stat: 32,
+  /** 14px - Units next to stats (%, °C, MB) */
+  statUnit: 14,
+} as const
+
+/**
+ * Typography weight presets
+ */
+export const weights = {
+  /** 300 */
+  light: "300" as const,
+  /** 400 */
+  regular: "400" as const,
+  /** 500 */
+  medium: "500" as const,
+  /** 600 */
+  semiBold: "600" as const,
+  /** 700 */
+  bold: "700" as const,
+} as const
+
 export const typography = {
   /**
    * The fonts are available to use, but prefer using the semantic name.
@@ -68,4 +107,14 @@ export const typography = {
    * Lets get fancy with a monospace font!
    */
   code: Platform.select({ ios: fonts.courier, android: fonts.monospace }),
+  /**
+   * Semantic size presets
+   */
+  sizes,
+  /**
+   * Weight presets
+   */
+  weights,
 }
+
+export type Typography = typeof typography

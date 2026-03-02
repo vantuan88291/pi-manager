@@ -1,50 +1,137 @@
+/**
+ * Pi Manager Dark Theme Colors
+ * 
+ * Semantic tokens for IoT dashboard with modern, vibrant palette.
+ * Dark-first design - this is the default theme for Pi Manager.
+ */
+
 const palette = {
-  neutral900: "#FFFFFF",
-  neutral800: "#F4F2F1",
-  neutral700: "#D7CEC9",
-  neutral600: "#B6ACA6",
-  neutral500: "#978F8A",
-  neutral400: "#564E4A",
-  neutral300: "#3C3836",
-  neutral200: "#191015",
-  neutral100: "#000000",
+  // Neutral scale (cool gray, not warm beige)
+  neutral100: "#0F172A",
+  neutral200: "#1E293B",
+  neutral300: "#334155",
+  neutral400: "#475569",
+  neutral500: "#64748B",
+  neutral600: "#94A3B8",
+  neutral700: "#CBD5E1",
+  neutral800: "#E2E8F0",
+  neutral900: "#F8FAFC",
 
-  primary600: "#F4E0D9",
-  primary500: "#E8C1B4",
-  primary400: "#DDA28E",
-  primary300: "#D28468",
-  primary200: "#C76542",
-  primary100: "#A54F31",
+  // Primary (indigo)
+  primary100: "#312E81",
+  primary200: "#3730A3",
+  primary300: "#4F46E5",
+  primary400: "#6366F1",
+  primary500: "#818CF8",
+  primary600: "#A5B4FC",
 
-  secondary500: "#DCDDE9",
-  secondary400: "#BCC0D6",
-  secondary300: "#9196B9",
-  secondary200: "#626894",
-  secondary100: "#41476E",
+  // Secondary (slate for contrast)
+  secondary100: "#1E293B",
+  secondary200: "#334155",
+  secondary300: "#475569",
+  secondary400: "#64748B",
+  secondary500: "#94A3B8",
 
-  accent500: "#FFEED4",
-  accent400: "#FFE1B2",
-  accent300: "#FDD495",
-  accent200: "#FBC878",
-  accent100: "#FFBB50",
+  // Accent (violet for special highlights)
+  accent100: "#4C1D95",
+  accent200: "#5B21B6",
+  accent300: "#6D28D9",
+  accent400: "#7C3AED",
+  accent500: "#8B5CF6",
 
-  angry100: "#F2D6CD",
-  angry500: "#C03403",
+  // Success (emerald)
+  success100: "#064E3B",
+  success500: "#34D399",
 
-  overlay20: "rgba(25, 16, 21, 0.2)",
-  overlay50: "rgba(25, 16, 21, 0.5)",
+  // Warning (amber)
+  warning100: "#78350F",
+  warning500: "#FBBF24",
+
+  // Error (red)
+  error100: "#7F1D1D",
+  error500: "#F87171",
+
+  // Info (blue)
+  info100: "#1E3A5F",
+  info500: "#60A5FA",
+
+  // Overlays
+  overlay10: "rgba(0, 0, 0, 0.1)",
+  overlay20: "rgba(0, 0, 0, 0.2)",
+  overlay50: "rgba(0, 0, 0, 0.5)",
 } as const
 
 export const colors = {
+  /**
+   * Raw palette available for rare one-off cases.
+   * Prefer semantic names below.
+   */
   palette,
+
+  // === Semantic Tokens ===
+
+  /**
+   * Screen backgrounds (deep blue-black)
+   */
+  background: "#0F172A",
+
+  /**
+   * Card backgrounds
+   */
+  surface: "#1E293B",
+  surfaceElevated: "#334155",
+
+  /**
+   * Primary text
+   */
+  text: "#F1F5F9",
+
+  /**
+   * Secondary text, labels, captions
+   */
+  textDim: "#94A3B8",
+
+  /**
+   * Card borders, dividers (subtle, not heavy)
+   */
+  border: "#334155",
+
+  /**
+   * Primary action color (indigo)
+   */
+  tint: "#818CF8",
+
+  /**
+   * Inactive/disabled tint
+   */
+  tintDim: "rgba(99, 102, 241, 0.5)",
+
+  /**
+   * Connected, healthy, good values
+   */
+  success: "#34D399",
+
+  /**
+   * Loading, caution, moderate values
+   */
+  warning: "#FBBF24",
+
+  /**
+   * Disconnected, errors, critical values
+   */
+  error: "#F87171",
+
+  /**
+   * Informational badges, links
+   */
+  info: "#60A5FA",
+
+  // === Utility ===
+
   transparent: "rgba(0, 0, 0, 0)",
-  text: palette.neutral800,
-  textDim: palette.neutral600,
-  background: palette.neutral200,
-  border: palette.neutral400,
-  tint: palette.primary500,
-  tintInactive: palette.neutral300,
-  separator: palette.neutral300,
-  error: palette.angry500,
-  errorBackground: palette.angry100,
+  separator: "#334155",
+  errorBackground: "#7F1D1D",
+  tintInactive: "rgba(99, 102, 241, 0.5)",
 } as const
+
+export type Colors = typeof colors
