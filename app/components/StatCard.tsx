@@ -1,5 +1,5 @@
 import { FC } from "react"
-import { View, ViewStyle } from "react-native"
+import { View, ViewStyle, TextStyle } from "react-native"
 
 import { Icon, FontFamily } from "@/components/Icon"
 import { Text } from "@/components/Text"
@@ -57,7 +57,7 @@ const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroun
 const $iconBadge: ViewStyle = { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 }
 const $label: ViewStyle = { marginBottom: 4 }
 const $valueRow: ViewStyle = { flexDirection: "row", alignItems: "baseline", marginBottom: 8 }
-const $value = { color: "#1E293B" as any, fontSize: 28 }
+const $value: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text, fontSize: 28 })
 const $unit: ViewStyle = { marginLeft: 4 }
 const $progressBar: ViewStyle = { marginBottom: 4 }
 const $caption: ViewStyle = { marginTop: 4 }

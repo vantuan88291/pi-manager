@@ -90,3 +90,7 @@ web-build/
 # Dependency Graph Visualizations
 app-dependency-graph.svg
 app-dependency-graph.png
+# Yarn
+.yarn/install-state.gz
+.yarn/cache/
+.yarn/unplugged/

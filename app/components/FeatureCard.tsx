@@ -1,5 +1,5 @@
 import { FC } from "react"
-import { Pressable, PressableProps, View, ViewStyle } from "react-native"
+import { Pressable, PressableProps, View, ViewStyle, TextStyle } from "react-native"
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated"
 
 import { Icon, FontFamily } from "@/components/Icon"
@@ -34,13 +34,13 @@ export const FeatureCard: FC<FeatureCardProps> = ({ title, subtitle, icon, accen
       <View style={[$iconBadge, { backgroundColor: icon.badgeBg }]}>
         <Icon font={icon.font} icon={icon.name} color={icon.color} size={28} />
       </View>
-      <Text text={title} size="sm" weight="semiBold" style={themed($title) as ViewStyle} />
-      {subtitle && <Text text={subtitle} size="xs" color="textDim" style={$subtitle} />}
+      <Text text={title} size="sm" weight="semiBold" style={themed($title)} />
+      {subtitle && <Text text={subtitle} size="xs" color="textDim" style={themed($subtitle)} />}
     </AnimatedPressable>
   )
 }
 
 const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, height: 140, overflow: "hidden", alignItems: "center", justifyContent: "center" })
 const $iconBadge: ViewStyle = { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 12 }
-const $title = { color: "#1E293B" as any }
-const $subtitle = { marginTop: 4 }
+const $title: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text })
+const $subtitle: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.textDim, marginTop: 4 })

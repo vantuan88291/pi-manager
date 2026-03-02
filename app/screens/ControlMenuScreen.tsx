@@ -1,4 +1,5 @@
 import { FC } from "react"
+import type { TextStyle } from "react-native"
 import { ScrollView, View, ViewStyle } from "react-native"
 
 import { FeatureCard } from "@/components/FeatureCard"
@@ -34,7 +35,7 @@ export const ControlMenuScreen: FC = function ControlMenuScreen() {
       </View>
 
       <ScrollView contentContainerStyle={themed($scrollContent)}>
-        <View style={themed($gridContainer)}>
+        <View style={$gridContainer}>
           {MENU_ITEMS.map((item) => (
             <View key={item.id} style={themed($cardWrapper)}>
               <FeatureCard title={item.title} subtitle={item.subtitle} icon={item.icon} accentColor={item.accentColor} danger={item.danger} onPress={() => console.log(`Pressed ${item.id}`)} />
@@ -48,7 +49,7 @@ export const ControlMenuScreen: FC = function ControlMenuScreen() {
 
 const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({ flex: 1, backgroundColor: colors.background })
 const $header: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 56, paddingHorizontal: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border })
-const $headerTitle = { color: "#1E293B" as any }
+const $headerTitle: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text })
 const $scrollContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({ padding: spacing.md })
 const $gridContainer: ViewStyle = { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }
 const $cardWrapper: ThemedStyle<ViewStyle> = ({ spacing }) => ({ width: "48%", marginBottom: spacing.md })
