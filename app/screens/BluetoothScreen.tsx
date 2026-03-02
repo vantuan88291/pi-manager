@@ -4,7 +4,6 @@ import { View, ViewStyle, Pressable, Switch, TextStyle } from "react-native"
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
-import { Card } from "@/components/Card"
 import { Button } from "@/components/Button"
 import { SectionHeader } from "@/components/SectionHeader"
 import { useAppTheme } from "@/theme/context"
@@ -53,10 +52,24 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   const doPair = (d: BluetoothDevice) => { setPaired([...paired, { ...d, paired: true }]); setAvailable(available.filter(x => x.mac !== d.mac)) }
 
   const renderItem = (d: BluetoothDevice, isPaired: boolean) => (
-    <Pressable key={d.mac} style={[themed($item), isPaired && d.connected && { backgroundColor: theme.colors.success + "20" }]}>
-      <View style={[$icon, { backgroundColor: theme.isDark ? theme.colors.palette?.neutral800 : theme.colors.palette?.neutral200 }]}><Text text={getIcon(d.type)} size="lg" /></View>
-      <View style={$center}><Text text={d.name || d.mac} size="md" weight="medium" color="text" /><Text text={`${d.rssi} dBm`} size="xs" color="textDim" style={{ color: getRssiColor(d.rssi, theme) }} /></View>
-      <View style={$right}>{isPaired && <Text text="✓" size="sm" color="success" />}{!isPaired && <Button text="Pair" preset="filled" onPress={() => doPair(d)} />}</View>
+    <Pressable 
+      key={d.mac} 
+      style={[
+        themed($deviceItem), 
+        isPaired && d.connected && { backgroundColor: theme.colors.success + "20" }
+      ]}
+    >
+      <View style={[$deviceIcon, { backgroundColor: theme.isDark ? theme.colors.palette?.neutral800 : theme.colors.palette?.neutral200 }]}>
+        <Text text={getIcon(d.type)} size="lg" />
+      </View>
+      <View style={$deviceCenter}>
+        <Text text={d.name || d.mac} size="md" weight="medium" color="text" />
+        <Text text={`${d.rssi} dBm`} size="xs" color="textDim" style={{ color: getRssiColor(d.rssi, theme) }} />
+      </View>
+      <View style={$deviceRight}>
+        {isPaired && <Text text="✓" size="sm" color="success" />}
+        {!isPaired && <Button text="Pair" preset="filled" onPress={() => doPair(d)} />}
+      </View>
     </Pressable>
   )
 
@@ -68,7 +81,12 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
           <Text text="🔇" size="xxl" color="text" />
           <Text text="Bluetooth is turned off" size="lg" weight="medium" color="text" style={$disabledTitle} />
           <Text text="Turn on to scan for devices" size="sm" color="textDim" style={$disabledText} />
-          <Switch value={enabled} onValueChange={togglePower} trackColor={{ false: theme.colors.border, true: theme.colors.tint }} />
+          <Switch 
+            value={enabled} 
+            onValueChange={togglePower} 
+            trackColor={{ false: theme.colors.border, true: theme.colors.tint }} 
+            style={$powerSwitch}
+          />
         </View>
       </Screen>
     )
@@ -77,21 +95,36 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   return (
     <Screen preset="scroll">
       <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      
       <SectionHeader title="Paired Devices" style={$section} />
-      <View style={themed($list)}>{paired.length ? paired.map(d => renderItem(d, true)) : <Text text="No paired devices" size="sm" color="textDim" style={$empty} />}</View>
-      <SectionHeader title="Available Devices" rightAction={{ label: scanning ? "Scanning..." : "Scan", onPress: startScan }} style={$section} />
-      <View style={themed($list)}>{available.length ? available.map(d => renderItem(d, false)) : <Text text={scanning ? "Scanning..." : "No devices found"} size="sm" color="textDim" style={$empty} />}</View>
+      <View style={themed($deviceList)}>
+        {paired.length ? paired.map(d => renderItem(d, true)) : (
+          <Text text="No paired devices" size="sm" color="textDim" style={$empty} />
+        )}
+      </View>
+      
+      <SectionHeader 
+        title="Available Devices" 
+        rightAction={{ label: scanning ? "Scanning..." : "Scan", onPress: startScan }} 
+        style={$section} 
+      />
+      <View style={themed($deviceList)}>
+        {available.length ? available.map(d => renderItem(d, false)) : (
+          <Text text={scanning ? "Scanning..." : "No devices found"} size="sm" color="textDim" style={$empty} />
+        )}
+      </View>
     </Screen>
   )
 }
 
 const $section: ViewStyle = { marginHorizontal: 16, marginTop: 16, marginBottom: 8 }
-const $list: ViewStyle = { marginHorizontal: 16, borderRadius: 12, overflow: "hidden" }
-const $item: ViewStyle = { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1 }
-const $icon: ViewStyle = { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 }
-const $center: ViewStyle = { flex: 1 }
-const $right: ViewStyle = { alignItems: "flex-end", gap: 4 }
-const $empty: TextStyle = { textAlign: "center", padding: 20 }
+const $deviceList: ViewStyle = { marginHorizontal: 16, borderRadius: 12, overflow: "hidden" }
+const $deviceItem: ViewStyle = { flexDirection: "row", alignItems: "center", paddingVertical: 16, paddingHorizontal: 4 }
+const $deviceIcon: ViewStyle = { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 }
+const $deviceCenter: ViewStyle = { flex: 1 }
+const $deviceRight: ViewStyle = { alignItems: "flex-end", gap: 4 }
+const $empty: TextStyle = { textAlign: "center", padding: 24 }
 const $disabled: ViewStyle = { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }
 const $disabledTitle: TextStyle = { marginTop: 16, marginBottom: 8 }
 const $disabledText: TextStyle = { marginBottom: 24 }
+const $powerSwitch: ViewStyle = { marginTop: 16 }

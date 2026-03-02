@@ -1,5 +1,5 @@
 import { FC, useState } from "react"
-import { View, ViewStyle, FlatList, StyleSheet, Pressable, ActivityIndicator, Modal, TextStyle } from "react-native"
+import { View, ViewStyle, FlatList, Pressable, ActivityIndicator, TextStyle } from "react-native"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -9,6 +9,7 @@ import { Button } from "@/components/Button"
 import { TextField } from "@/components/TextField"
 import { SectionHeader } from "@/components/SectionHeader"
 import { ProgressBar } from "@/components/ProgressBar"
+import { ActionModal } from "@/components/ActionModal"
 import { useAppTheme } from "@/theme/context"
 import { getFeatureColor } from "@/theme/featureColors"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
@@ -46,7 +47,7 @@ const MOCK_NETWORKS: WifiNetwork[] = [
 
 export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation }) {
   const { themed, theme } = useAppTheme()
-  const { accent: wifiAccent, badge: wifiBadge } = getFeatureColor("wifi", theme.isDark)
+  const { accent: wifiAccent } = getFeatureColor("wifi", theme.isDark)
   const [networks] = useState<WifiNetwork[]>(MOCK_NETWORKS)
   const [currentConnection, setCurrentConnection] = useState<CurrentConnection | null>(MOCK_CURRENT)
   const [isScanning, setIsScanning] = useState(false)
@@ -93,14 +94,29 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
     return (
       <View style={$signalContainer}>
         {[1, 2, 3, 4].map((bar) => (
-          <View key={bar} style={[$signalBar, { height: 4 + bar * 3 }, bar <= bars ? { backgroundColor: theme.colors.success } : { backgroundColor: theme.colors.border }]} />
+          <View 
+            key={bar} 
+            style={[
+              $signalBar, 
+              { height: 4 + bar * 3 }, 
+              bar <= bars 
+                ? { backgroundColor: theme.colors.success } 
+                : { backgroundColor: theme.colors.border }
+            ]} 
+          />
         ))}
       </View>
     )
   }
 
   const renderNetworkItem = ({ item }: { item: WifiNetwork }) => (
-    <Pressable style={[themed($networkItem), item.connected && { backgroundColor: theme.colors.success + "20" }]} onPress={() => handleNetworkPress(item)}>
+    <Pressable 
+      style={[
+        themed($networkItem), 
+        item.connected && { backgroundColor: theme.colors.success + "20" }
+      ]} 
+      onPress={() => handleNetworkPress(item)}
+    >
       <View style={$networkLeft}>{renderSignalBars(item.signal)}</View>
       <View style={$networkCenter}>
         <Text text={item.ssid} size="md" weight="medium" color="text" />
@@ -108,7 +124,11 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
       </View>
       <View style={$networkRight}>
         {item.security !== "Open" && <Text text="🔒" size="sm" />}
-        {item.connected && <View style={{ backgroundColor: theme.colors.success + "30", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}><Text text="Connected" size="xs" color="success" /></View>}
+        {item.connected && (
+          <View style={{ backgroundColor: theme.colors.success + "30", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
+            <Text text="Connected" size="xs" color="success" />
+          </View>
+        )}
       </View>
     </Pressable>
   )
@@ -139,32 +159,83 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
     <Screen preset="scroll">
       <Header title="Wi-Fi" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
-      {currentConnection && <Card heading="Current Connection" ContentComponent={<>{currentConnectionContent}</>} style={$card} />}
+      {currentConnection && (
+        <Card heading="Current Connection" ContentComponent={<>{currentConnectionContent}</>} style={$card} />
+      )}
 
-      <SectionHeader title="Available Networks" rightAction={{ label: isScanning ? "Scanning..." : "Scan", onPress: handleScan }} style={$sectionHeader} />
+      <SectionHeader 
+        title="Available Networks" 
+        rightAction={{ label: isScanning ? "Scanning..." : "Scan", onPress: handleScan }} 
+        style={$sectionHeader} 
+      />
 
-      {isScanning && <View style={$scanningContainer}><ActivityIndicator size="small" color={theme.colors.tint} /><Text text="Scanning for networks..." size="sm" color="textDim" style={$scanningText} /></View>}
-
-      <FlatList data={networks} keyExtractor={(item) => item.bssid} renderItem={renderNetworkItem} scrollEnabled={false} style={$networkList} />
-
-      <Modal visible={showConnectSheet} transparent animationType="slide" onRequestClose={() => setShowConnectSheet(false)}>
-        <View style={$modalOverlay}>
-          <Pressable style={$modalBackdrop} onPress={() => setShowConnectSheet(false)} />
-          <View style={[themed($sheetContent), { backgroundColor: theme.colors.surface }]}>
-            {selectedNetwork && (
-              <>
-                <Text text={`Connect to "${selectedNetwork.ssid}"`} size="lg" weight="semiBold" color="text" style={$sheetTitle} />
-                {selectedNetwork.security !== "Open" && <TextField label="Password" value={password} onChangeText={setPassword} secureTextEntry placeholder="Enter password" style={$passwordInput} />}
-                {connectError && <Text text={connectError} size="sm" color="error" style={$errorText} />}
-                <View style={$sheetActions}>
-                  <Button text="Cancel" preset="default" onPress={() => setShowConnectSheet(false)} style={$sheetButton} />
-                  <Button text="Connect" preset="filled" onPress={handleConnect} style={$sheetButton} />
-                </View>
-              </>
-            )}
-          </View>
+      {isScanning && (
+        <View style={$scanningContainer}>
+          <ActivityIndicator size="small" color={theme.colors.tint} />
+          <Text text="Scanning for networks..." size="sm" color="textDim" style={$scanningText} />
         </View>
-      </Modal>
+      )}
+
+      <FlatList 
+        data={networks} 
+        keyExtractor={(item) => item.bssid} 
+        renderItem={renderNetworkItem} 
+        scrollEnabled={false} 
+        style={$networkList} 
+      />
+
+      {/* Reusable Modal */}
+      <ActionModal
+        visible={showConnectSheet}
+        onClose={() => setShowConnectSheet(false)}
+        title={selectedNetwork ? `Connect to "${selectedNetwork.ssid}"` : ""}
+        bottomComponent={
+          selectedNetwork?.security !== "Open" ? (
+            <>
+              {connectError && <Text text={connectError} size="sm" color="error" style={$errorText} />}
+              <View style={$modalActions}>
+                <Button 
+                  text="Cancel" 
+                  preset="default" 
+                  onPress={() => setShowConnectSheet(false)} 
+                  style={$modalButton} 
+                />
+                <Button 
+                  text="Connect" 
+                  preset="filled" 
+                  onPress={handleConnect} 
+                  style={$modalButton} 
+                />
+              </View>
+            </>
+          ) : (
+            <View style={$modalActions}>
+              <Button 
+                text="Cancel" 
+                preset="default" 
+                onPress={() => setShowConnectSheet(false)} 
+                style={$modalButtonFull} 
+              />
+              <Button 
+                text="Connect" 
+                preset="filled" 
+                onPress={handleConnect} 
+                style={$modalButtonFull} 
+              />
+            </View>
+          )
+        }
+      >
+        {selectedNetwork?.security !== "Open" && (
+          <TextField
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="Enter password"
+          />
+        )}
+      </ActionModal>
     </Screen>
   )
 }
@@ -189,11 +260,7 @@ const $signalBar: ViewStyle = { width: 5, borderRadius: 2 }
 const $scanningContainer: ViewStyle = { flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 16, gap: 8 }
 const $scanningText: TextStyle = { marginLeft: 8 }
 
-const $modalOverlay: ViewStyle = { flex: 1, justifyContent: "flex-end" }
-const $modalBackdrop: ViewStyle = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)" }
-const $sheetContent: ViewStyle = { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }
-const $sheetTitle: TextStyle = { marginBottom: 16 }
-const $passwordInput: ViewStyle = { marginBottom: 12 }
-const $errorText: TextStyle = { marginBottom: 12 }
-const $sheetActions: ViewStyle = { flexDirection: "row", gap: 12 }
-const $sheetButton: ViewStyle = { flex: 1 }
+const $errorText: TextStyle = { textAlign: "center" }
+const $modalActions: ViewStyle = { flexDirection: "row", gap: 12, marginTop: 8 }
+const $modalButton: ViewStyle = { flex: 1 }
+const $modalButtonFull: ViewStyle = { flex: 1, marginTop: 8 }
