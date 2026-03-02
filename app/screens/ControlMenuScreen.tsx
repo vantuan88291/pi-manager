@@ -47,7 +47,7 @@ export const ControlMenuScreen: FC = function ControlMenuScreen() {
 }
 
 const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({ flex: 1, backgroundColor: colors.background })
-const $header: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ paddingHorizontal: spacing.md, paddingVertical: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border })
+const $header: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 56, paddingHorizontal: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border })
 const $headerTitle = { color: "#1E293B" as any }
 const $scrollContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({ padding: spacing.md })
 const $gridContainer: ViewStyle = { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }
