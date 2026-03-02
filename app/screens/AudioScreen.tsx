@@ -30,15 +30,18 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
   const VolumeSlider = ({ value, disabled }: { value: number; disabled?: boolean }) => {
     const pct = Math.max(0, Math.min(100, value))
+    const trackColor = disabled ? theme.colors.border : theme.colors.palette?.neutral300 || "#E2E8F0"
+    const fillColor = disabled ? theme.colors.textDim : theme.colors.tint
+    
     return (
       <View style={$sliderContainer}>
         <Text text="🔊" size="lg" color="text" />
-        <Pressable style={[$sliderTrack, { backgroundColor: disabled ? theme.colors.border : "#E2E8F0" }]} onPress={(e) => {
+        <Pressable style={[$sliderTrack, { backgroundColor: trackColor }]} onPress={(e) => {
           const newVal = Math.round((e.nativeEvent.locationX / 280) * 100)
           handleVolumeComplete(Math.max(0, Math.min(100, newVal)))
         }}>
-          <View style={[$sliderFill, { width: `${pct}%`, backgroundColor: disabled ? "#94A3B8" : theme.colors.tint }]} />
-          <View style={[$sliderThumb, { left: `${pct}%`, backgroundColor: disabled ? "#94A3B8" : theme.colors.tint }]} />
+          <View style={[$sliderFill, { width: `${pct}%`, backgroundColor: fillColor }]} />
+          <View style={[$sliderThumb, { left: `${pct}%`, backgroundColor: fillColor }]} />
         </Pressable>
         <Text text="🔊" size="lg" color="text" />
       </View>
@@ -47,7 +50,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
   return (
     <Screen preset="fixed">
-      <Header title="Audio"  titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header title="Audio" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       <View style={$content}>
         <Card 
@@ -67,11 +70,11 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
           ContentComponent={
             <View style={$deviceList}>
               {MOCK_DEVICES.map((device) => (
-                <Pressable key={device.id} style={[$deviceItem, selectedDevice === device.id && $deviceItemSelected]} onPress={() => handleDeviceSelect(device.id)}>
+                <Pressable key={device.id} style={[$deviceItem, selectedDevice === device.id && { borderColor: theme.colors.tint, backgroundColor: theme.colors.tint + "15" }]} onPress={() => handleDeviceSelect(device.id)}>
                   <Text text={device.icon} size="lg" />
                   <Text text={device.name} size="md" weight="medium" color="text" style={$deviceName} />
-                  <View style={[$radioIndicator, selectedDevice === device.id && $radioSelected]}>
-                    {selectedDevice === device.id && <View style={$radioInner} />}
+                  <View style={[$radioIndicator, selectedDevice === device.id && { borderColor: theme.colors.tint }]}>
+                    {selectedDevice === device.id && <View style={[$radioInner, { backgroundColor: theme.colors.tint }]} />}
                   </View>
                 </Pressable>
               ))}
@@ -86,7 +89,6 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
   )
 }
 
-const $stickyHeader = { position: "sticky" as any, top: 0, zIndex: 100 }
 const $content: ViewStyle = { flex: 1, paddingHorizontal: 16 }
 const $card: ViewStyle = { marginBottom: 16 }
 const $sliderContainer: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }
@@ -97,9 +99,7 @@ const $volumeText: TextStyle = { textAlign: "center", marginBottom: 16 }
 const $muteButton: ViewStyle = { alignSelf: "center" }
 const $deviceList: ViewStyle = { gap: 12 }
 const $deviceItem: ViewStyle = { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" }
-const $deviceItemSelected: ViewStyle = { borderColor: "#3B82F6", backgroundColor: "#EFF6FF" }
 const $deviceName: TextStyle = { flex: 1, marginLeft: 12 }
 const $radioIndicator: ViewStyle = { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#E2E8F0", alignItems: "center", justifyContent: "center" }
-const $radioSelected: ViewStyle = { borderColor: "#3B82F6" }
-const $radioInner: ViewStyle = { width: 12, height: 12, borderRadius: 6, backgroundColor: "#3B82F6" }
+const $radioInner: ViewStyle = { width: 12, height: 12, borderRadius: 6 }
 const $testButton: ViewStyle = { marginTop: 8 }

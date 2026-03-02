@@ -9,6 +9,7 @@ import { StatCard } from "@/components/StatCard"
 import { ProgressBar } from "@/components/ProgressBar"
 import { SectionHeader } from "@/components/SectionHeader"
 import { useAppTheme } from "@/theme/context"
+import { getFeatureColor } from "@/theme/featureColors"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
 type StorageScreenProps = AppStackScreenProps<"Storage">
@@ -40,17 +41,19 @@ const S_MART_DATA = [
 ]
 
 const getHealthStatus = (p: number) => p < 80 ? "healthy" : p < 95 ? "warning" : "critical"
-const getHealthColor = (s: string) => s === "healthy" ? { bg: "#D1FAE5", text: "#059669", icon: "✓" } : s === "warning" ? { bg: "#FEF3C7", text: "#D97706", icon: "⚠️" } : { bg: "#FEE2E2", text: "#DC2626", icon: "❌" }
+const getHealthColor = (s: string, theme: any) => s === "healthy" ? { bg: theme.colors.success + "20", text: theme.colors.success } : s === "warning" ? { bg: theme.colors.warning + "20", text: theme.colors.warning } : { bg: theme.colors.error + "20", text: theme.colors.error }
 const formatNumber = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 
 export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ navigation }) {
+  const { theme } = useAppTheme()
+  const { accent: storageAccent } = getFeatureColor("storage", theme.isDark)
   const [showSmart, setShowSmart] = useState(false)
   const healthStatus = getHealthStatus(MOCK_STORAGE.percentageUsed)
-  const healthColor = getHealthColor(healthStatus)
+  const healthColor = getHealthColor(healthStatus, theme)
 
   return (
     <Screen preset="scroll">
-      <Header title="Storage Health"  titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header title="Storage Health" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       <View style={$container}>
         {/* Health Overview */}
@@ -60,7 +63,7 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
             <>
               <View style={$healthBadgeRow}>
                 <View style={[$healthBadge, { backgroundColor: healthColor.bg }]}>
-                  <Text text={healthColor.icon} size="lg" color={healthColor.text} />
+                  <Text text={healthStatus === "healthy" ? "✓" : "⚠️"} size="lg" color={healthColor.text} />
                   <Text text={healthStatus === "healthy" ? "Healthy" : healthStatus === "warning" ? "Warning" : "Critical"} size="md" weight="bold" color={healthColor.text} />
                 </View>
               </View>
@@ -74,10 +77,10 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
         {/* Key Metrics - 2x2 Grid */}
         <SectionHeader title="Key Metrics" style={$sectionHeader} />
         <View style={$metricsGrid}>
-          <View style={$metricCard}><StatCard label="Lifespan" value={`${MOCK_STORAGE.lifespanUsed}%`} progress={MOCK_STORAGE.lifespanUsed} progressColor="#06B6D4" caption="Lifetime left" icon={{ font: "MaterialCommunityIcons", name: "heart-pulse", color: "#06B6D4", badgeBg: "#ECFEFF" }} /></View>
-          <View style={$metricCard}><StatCard label="Temp" value={`${MOCK_STORAGE.temperature}°C`} progress={MOCK_STORAGE.temperature} progressColor="#10B981" caption="Drive thermal" icon={{ font: "MaterialCommunityIcons", name: "thermometer", color: "#F59E0B", badgeBg: "#FFFBEB" }} /></View>
-          <View style={$metricCard}><StatCard label="Written" value={MOCK_STORAGE.totalWritten} caption="Lifetime total" icon={{ font: "MaterialCommunityIcons", name: "arrow-down-circle", color: "#8B5CF6", badgeBg: "#F5F3FF" }} /></View>
-          <View style={$metricCard}><StatCard label="Power On" value={formatNumber(MOCK_STORAGE.powerOnHours)} unit="hrs" caption="Total runtime" icon={{ font: "MaterialCommunityIcons", name: "clock", color: "#3B82F6", badgeBg: "#EFF6FF" }} /></View>
+          <View style={$metricCard}><StatCard label="Lifespan" value={`${MOCK_STORAGE.lifespanUsed}%`} progress={MOCK_STORAGE.lifespanUsed} progressColor={storageAccent} caption="Lifetime left" icon={{ font: "MaterialCommunityIcons", name: "heart-pulse", color: storageAccent, badgeBg: theme.isDark ? "#164E63" : "#ECFEFF" }} /></View>
+          <View style={$metricCard}><StatCard label="Temp" value={`${MOCK_STORAGE.temperature}°C`} progress={MOCK_STORAGE.temperature} progressColor={theme.colors.success} caption="Drive thermal" icon={{ font: "MaterialCommunityIcons", name: "thermometer", color: theme.colors.warning, badgeBg: theme.isDark ? "#78350F" : "#FFFBEB" }} /></View>
+          <View style={$metricCard}><StatCard label="Written" value={MOCK_STORAGE.totalWritten} caption="Lifetime total" icon={{ font: "MaterialCommunityIcons", name: "arrow-down-circle", color: "#8B5CF6", badgeBg: theme.isDark ? "#4C1D95" : "#F5F3FF" }} /></View>
+          <View style={$metricCard}><StatCard label="Power On" value={formatNumber(MOCK_STORAGE.powerOnHours)} unit="hrs" caption="Total runtime" icon={{ font: "MaterialCommunityIcons", name: "clock", color: "#3B82F6", badgeBg: theme.isDark ? "#1E3A5F" : "#EFF6FF" }} /></View>
         </View>
 
         {/* Drive Details */}
@@ -94,7 +97,7 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
           ContentComponent={
             <Pressable onPress={() => setShowSmart(!showSmart)}>
               {showSmart && S_MART_DATA.map((item) => (
-                <View key={item.name} style={[$smartRow, item.status === "warning" && $smartRowWarning]}>
+                <View key={item.name} style={[$smartRow, item.status === "warning" && { borderLeftWidth: 3, borderLeftColor: theme.colors.warning, paddingLeft: 8 }]}>
                   <Text text={item.name} size="sm" color="text" />
                   <Text text={item.value} size="sm" color="text" style={$smartValue} />
                 </View>
@@ -124,7 +127,6 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
   )
 }
 
-const $stickyHeader = { position: "sticky" as any, top: 0, zIndex: 100 }
 const $container: ViewStyle = { paddingHorizontal: 16 }
 const $card: ViewStyle = { marginBottom: 16 }
 const $sectionHeader: ViewStyle = { marginTop: 8, marginBottom: 12 }
@@ -141,7 +143,6 @@ const $detailRow: ViewStyle = { flexDirection: "row", justifyContent: "space-bet
 const $detailKey: TextStyle = { width: 80 }
 
 const $smartRow: ViewStyle = { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8 }
-const $smartRowWarning: ViewStyle = { borderLeftWidth: 3, borderLeftColor: "#F59E0B", paddingLeft: 8 }
 const $smartValue: TextStyle = { fontFamily: "monospace" }
 
 const $partitionList: ViewStyle = { gap: 12 }

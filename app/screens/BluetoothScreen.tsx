@@ -8,6 +8,7 @@ import { Card } from "@/components/Card"
 import { Button } from "@/components/Button"
 import { SectionHeader } from "@/components/SectionHeader"
 import { useAppTheme } from "@/theme/context"
+import { getFeatureColor } from "@/theme/featureColors"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
 type BluetoothScreenProps = AppStackScreenProps<"Bluetooth">
@@ -33,10 +34,11 @@ const MOCK_AVAILABLE: BluetoothDevice[] = [
 ]
 
 const getIcon = (t: string) => t === "audio" ? "🎧" : t === "input" ? "⌨️" : t === "display" ? "📺" : "❓"
-const getRssiColor = (r: number) => r > -50 ? "#10B981" : r > -70 ? "#F59E0B" : "#EF4444"
+const getRssiColor = (r: number, theme: any) => r > -50 ? theme.colors.success : r > -70 ? theme.colors.warning : theme.colors.error
 
 export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   const { themed, theme } = useAppTheme()
+  const { accent: btAccent } = getFeatureColor("bluetooth", theme.isDark)
   const [enabled, setEnabled] = useState(true)
   const [scanning, setScanning] = useState(false)
   const [paired, setPaired] = useState(MOCK_PAIRED)
@@ -51,9 +53,9 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   const doPair = (d: BluetoothDevice) => { setPaired([...paired, { ...d, paired: true }]); setAvailable(available.filter(x => x.mac !== d.mac)) }
 
   const renderItem = (d: BluetoothDevice, isPaired: boolean) => (
-    <Pressable key={d.mac} style={[themed($item), isPaired && d.connected && themed($itemConnected)]}>
-      <View style={[$icon, { backgroundColor: theme.colors.palette.neutral200 }]}><Text text={getIcon(d.type)} size="lg" /></View>
-      <View style={$center}><Text text={d.name || d.mac} size="md" weight="medium" color="text" /><Text text={`${d.rssi} dBm`} size="xs" color="textDim" style={{ color: getRssiColor(d.rssi) }} /></View>
+    <Pressable key={d.mac} style={[themed($item), isPaired && d.connected && { backgroundColor: theme.colors.success + "20" }]}>
+      <View style={[$icon, { backgroundColor: theme.isDark ? theme.colors.palette?.neutral800 : theme.colors.palette?.neutral200 }]}><Text text={getIcon(d.type)} size="lg" /></View>
+      <View style={$center}><Text text={d.name || d.mac} size="md" weight="medium" color="text" /><Text text={`${d.rssi} dBm`} size="xs" color="textDim" style={{ color: getRssiColor(d.rssi, theme) }} /></View>
       <View style={$right}>{isPaired && <Text text="✓" size="sm" color="success" />}{!isPaired && <Button text="Pair" preset="filled" onPress={() => doPair(d)} />}</View>
     </Pressable>
   )
@@ -61,7 +63,7 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   if (!enabled) {
     return (
       <Screen preset="scroll">
-        <Header title="Bluetooth"  titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+        <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
         <View style={themed($disabled)}>
           <Text text="🔇" size="xxl" color="text" />
           <Text text="Bluetooth is turned off" size="lg" weight="medium" color="text" style={$disabledTitle} />
@@ -74,7 +76,7 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
 
   return (
     <Screen preset="scroll">
-      <Header title="Bluetooth"  titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
       <SectionHeader title="Paired Devices" style={$section} />
       <View style={themed($list)}>{paired.length ? paired.map(d => renderItem(d, true)) : <Text text="No paired devices" size="sm" color="textDim" style={$empty} />}</View>
       <SectionHeader title="Available Devices" rightAction={{ label: scanning ? "Scanning..." : "Scan", onPress: startScan }} style={$section} />
@@ -83,11 +85,9 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   )
 }
 
-const $stickyHeader = { position: "sticky" as any, top: 0, zIndex: 100 }
 const $section: ViewStyle = { marginHorizontal: 16, marginTop: 16, marginBottom: 8 }
-const $list: ViewStyle = { marginHorizontal: 16, borderRadius: 12, overflow: "hidden", backgroundColor: "#FFFFFF" }
-const $item: ViewStyle = { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: "#E2E8F0" }
-const $itemConnected: ViewStyle = { backgroundColor: "#D1FAE5" }
+const $list: ViewStyle = { marginHorizontal: 16, borderRadius: 12, overflow: "hidden" }
+const $item: ViewStyle = { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1 }
 const $icon: ViewStyle = { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 }
 const $center: ViewStyle = { flex: 1 }
 const $right: ViewStyle = { alignItems: "flex-end", gap: 4 }

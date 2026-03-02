@@ -10,6 +10,7 @@ import { TextField } from "@/components/TextField"
 import { SectionHeader } from "@/components/SectionHeader"
 import { ProgressBar } from "@/components/ProgressBar"
 import { useAppTheme } from "@/theme/context"
+import { getFeatureColor } from "@/theme/featureColors"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
 type WifiScreenProps = AppStackScreenProps<"Wifi">
@@ -45,6 +46,7 @@ const MOCK_NETWORKS: WifiNetwork[] = [
 
 export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation }) {
   const { themed, theme } = useAppTheme()
+  const { accent: wifiAccent, badge: wifiBadge } = getFeatureColor("wifi", theme.isDark)
   const [networks] = useState<WifiNetwork[]>(MOCK_NETWORKS)
   const [currentConnection, setCurrentConnection] = useState<CurrentConnection | null>(MOCK_CURRENT)
   const [isScanning, setIsScanning] = useState(false)
@@ -91,14 +93,14 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
     return (
       <View style={$signalContainer}>
         {[1, 2, 3, 4].map((bar) => (
-          <View key={bar} style={[$signalBar, { height: 4 + bar * 3 }, bar <= bars ? $signalBarActive : $signalBarInactive]} />
+          <View key={bar} style={[$signalBar, { height: 4 + bar * 3 }, bar <= bars ? { backgroundColor: theme.colors.success } : { backgroundColor: theme.colors.border }]} />
         ))}
       </View>
     )
   }
 
   const renderNetworkItem = ({ item }: { item: WifiNetwork }) => (
-    <Pressable style={[themed($networkItem), item.connected && themed($networkItemConnected)]} onPress={() => handleNetworkPress(item)}>
+    <Pressable style={[themed($networkItem), item.connected && { backgroundColor: theme.colors.success + "20" }]} onPress={() => handleNetworkPress(item)}>
       <View style={$networkLeft}>{renderSignalBars(item.signal)}</View>
       <View style={$networkCenter}>
         <Text text={item.ssid} size="md" weight="medium" color="text" />
@@ -106,7 +108,7 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
       </View>
       <View style={$networkRight}>
         {item.security !== "Open" && <Text text="🔒" size="sm" />}
-        {item.connected && <View style={themed($connectedBadge)}><Text text="Connected" size="xs" color="success" /></View>}
+        {item.connected && <View style={{ backgroundColor: theme.colors.success + "30", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}><Text text="Connected" size="xs" color="success" /></View>}
       </View>
     </Pressable>
   )
@@ -148,7 +150,7 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
       <Modal visible={showConnectSheet} transparent animationType="slide" onRequestClose={() => setShowConnectSheet(false)}>
         <View style={$modalOverlay}>
           <Pressable style={$modalBackdrop} onPress={() => setShowConnectSheet(false)} />
-          <View style={themed($sheetContent)}>
+          <View style={[themed($sheetContent), { backgroundColor: theme.colors.surface }]}>
             {selectedNetwork && (
               <>
                 <Text text={`Connect to "${selectedNetwork.ssid}"`} size="lg" weight="semiBold" color="text" style={$sheetTitle} />
@@ -177,23 +179,19 @@ const $signalProgress: ViewStyle = { flex: 1, flexDirection: "row", alignItems: 
 const $progressBar: ViewStyle = { flex: 1 }
 const $disconnectButton: ViewStyle = { marginTop: 12, alignSelf: "flex-end" }
 
-const $networkItem: ViewStyle = { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#E2E8F0" }
-const $networkItemConnected: ViewStyle = { backgroundColor: "#F1F5F9" }
+const $networkItem: ViewStyle = { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1 }
 const $networkLeft: ViewStyle = { width: 40 }
 const $networkCenter: ViewStyle = { flex: 1 }
 const $networkRight: ViewStyle = { alignItems: "flex-end", gap: 4 }
 const $signalContainer: ViewStyle = { flexDirection: "row", alignItems: "flex-end", gap: 2, height: 20 }
 const $signalBar: ViewStyle = { width: 4, borderRadius: 1 }
-const $signalBarActive: ViewStyle = { backgroundColor: "#10B981" }
-const $signalBarInactive: ViewStyle = { backgroundColor: "#E2E8F0" }
-const $connectedBadge: ViewStyle = { backgroundColor: "#D1FAE5", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }
 
 const $scanningContainer: ViewStyle = { flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 16, gap: 8 }
 const $scanningText: TextStyle = { marginLeft: 8 }
 
 const $modalOverlay: ViewStyle = { flex: 1, justifyContent: "flex-end" }
 const $modalBackdrop: ViewStyle = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)" }
-const $sheetContent: ViewStyle = { backgroundColor: "#FFFFFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }
+const $sheetContent: ViewStyle = { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }
 const $sheetTitle: TextStyle = { marginBottom: 16 }
 const $passwordInput: ViewStyle = { marginBottom: 12 }
 const $errorText: TextStyle = { marginBottom: 12 }
