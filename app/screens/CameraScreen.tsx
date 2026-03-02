@@ -130,6 +130,7 @@ export const CameraScreen: FC<CameraScreenProps> = function CameraScreen({ navig
   )
 }
 
+const $stickyHeader = { position: "sticky" as any, top: 0, zIndex: 100 }
 const $segmentedContainer: ViewStyle = { paddingHorizontal: 16, paddingTop: 8 }
 const $segmentedControl: ThemedStyle<ViewStyle> = ({ colors }) => ({ flexDirection: "row", backgroundColor: colors.palette.neutral200, borderRadius: 8, padding: 2 })
 const $segmentButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({ paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs, borderRadius: 6, flex: 1, alignItems: "center" })

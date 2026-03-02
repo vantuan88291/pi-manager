@@ -50,7 +50,7 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
 
   return (
     <Screen preset="scroll">
-      <Header title="Storage Health" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header title="Storage Health"  titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       <View style={$container}>
         {/* Health Overview */}
@@ -124,6 +124,7 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
   )
 }
 
+const $stickyHeader = { position: "sticky" as any, top: 0, zIndex: 100 }
 const $container: ViewStyle = { paddingHorizontal: 16 }
 const $card: ViewStyle = { marginBottom: 16 }
 const $sectionHeader: ViewStyle = { marginTop: 8, marginBottom: 12 }

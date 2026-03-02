@@ -47,7 +47,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
   return (
     <Screen preset="fixed">
-      <Header title="Audio" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header title="Audio"  titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       <View style={$content}>
         <Card 
@@ -86,6 +86,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
   )
 }
 
+const $stickyHeader = { position: "sticky" as any, top: 0, zIndex: 100 }
 const $content: ViewStyle = { flex: 1, paddingHorizontal: 16 }
 const $card: ViewStyle = { marginBottom: 16 }
 const $sliderContainer: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }

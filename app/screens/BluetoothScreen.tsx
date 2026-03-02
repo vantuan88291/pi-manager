@@ -61,7 +61,7 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   if (!enabled) {
     return (
       <Screen preset="scroll">
-        <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+        <Header title="Bluetooth"  titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
         <View style={themed($disabled)}>
           <Text text="🔇" size="xxl" color="text" />
           <Text text="Bluetooth is turned off" size="lg" weight="medium" color="text" style={$disabledTitle} />
@@ -74,7 +74,7 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
 
   return (
     <Screen preset="scroll">
-      <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header title="Bluetooth"  titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
       <SectionHeader title="Paired Devices" style={$section} />
       <View style={themed($list)}>{paired.length ? paired.map(d => renderItem(d, true)) : <Text text="No paired devices" size="sm" color="textDim" style={$empty} />}</View>
       <SectionHeader title="Available Devices" rightAction={{ label: scanning ? "Scanning..." : "Scan", onPress: startScan }} style={$section} />
@@ -83,6 +83,7 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   )
 }
 
+const $stickyHeader = { position: "sticky" as any, top: 0, zIndex: 100 }
 const $section: ViewStyle = { marginHorizontal: 16, marginTop: 16, marginBottom: 8 }
 const $list: ViewStyle = { marginHorizontal: 16, borderRadius: 12, overflow: "hidden", backgroundColor: "#FFFFFF" }
 const $item: ViewStyle = { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: "#E2E8F0" }
