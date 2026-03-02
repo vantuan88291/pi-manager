@@ -1,5 +1,5 @@
 import { FC, useState } from "react"
-import { View, ViewStyle, FlatList, Pressable, ActivityIndicator, Modal, TextStyle } from "react-native"
+import { View, ViewStyle, FlatList, StyleSheet, Pressable, ActivityIndicator, Modal, TextStyle } from "react-native"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -179,12 +179,12 @@ const $signalProgress: ViewStyle = { flex: 1, flexDirection: "row", alignItems: 
 const $progressBar: ViewStyle = { flex: 1 }
 const $disconnectButton: ViewStyle = { marginTop: 12, alignSelf: "flex-end" }
 
-const $networkItem: ViewStyle = { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1 }
-const $networkLeft: ViewStyle = { width: 40 }
+const $networkItem: ViewStyle = { flexDirection: "row", alignItems: "center", paddingVertical: 16, paddingHorizontal: 4 }
+const $networkLeft: ViewStyle = { width: 44 }
 const $networkCenter: ViewStyle = { flex: 1 }
 const $networkRight: ViewStyle = { alignItems: "flex-end", gap: 4 }
-const $signalContainer: ViewStyle = { flexDirection: "row", alignItems: "flex-end", gap: 2, height: 20 }
-const $signalBar: ViewStyle = { width: 4, borderRadius: 1 }
+const $signalContainer: ViewStyle = { flexDirection: "row", alignItems: "flex-end", gap: 3, height: 22 }
+const $signalBar: ViewStyle = { width: 5, borderRadius: 2 }
 
 const $scanningContainer: ViewStyle = { flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 16, gap: 8 }
 const $scanningText: TextStyle = { marginLeft: 8 }
