@@ -36,7 +36,7 @@ export const SettingsScreen: FC = function SettingsScreen() {
               <Icon font={item.icon.font} icon={item.icon.name} color={theme.colors.textDim} size={20} />
             </View>
             <View style={$settingsContent}>
-              <Text text={item.label} weight="medium" />
+              <Text text={item.label} weight="medium" color="text" />
             </View>
             {item.value && (
               <View style={$settingsValue}>
@@ -49,7 +49,7 @@ export const SettingsScreen: FC = function SettingsScreen() {
       </View>
 
       <View style={themed($appInfo)}>
-        <Text text="Pi Manager" size="md" weight="semiBold" style={themed($appInfoTitle)} />
+        <Text text="Pi Manager" size="md" weight="semiBold" color="text" />
         <Text text="Remote management for Raspberry Pi" color="textDim" size="sm" />
         <Text text="© 2024" color="textDim" size="xs" style={$copyright} />
       </View>
@@ -64,5 +64,4 @@ const $iconBadge: ThemedStyle<ViewStyle> = ({ colors }) => ({ width: 36, height:
 const $settingsContent: ViewStyle = { flex: 1 }
 const $settingsValue: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 4 }
 const $appInfo: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({ marginTop: spacing.xl, alignItems: "center", paddingVertical: spacing.lg })
-const $appInfoTitle: ThemedStyle<ViewStyle> = ({ colors }) => ({ color: colors.text, marginBottom: 4 })
 const $copyright: ViewStyle = { marginTop: 8 }

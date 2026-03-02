@@ -69,7 +69,7 @@ export const Text = forwardRef(function Text(props: TextProps, ref: ForwardedRef
 
   const preset: Presets = props.preset ?? "default"
   
-  const resolvedColor = color
+  const resolvedColor = color && (theme.colors as unknown as Record<string, string>)[color] ? (theme.colors as unknown as Record<string, string>)[color] : color
   const $styles: StyleProp<TextStyle> = [
     $rtlStyle,
     themed($presets[preset]),

@@ -41,7 +41,7 @@ export const DashboardScreen: FC = function DashboardScreen() {
 
   return (
     <Screen preset="scroll" ScrollViewProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }}>
-      <Header title="Dashboard" titleMode="center"  />
+      <Header title="Dashboard" titleMode="center" />
 
       <View style={themed($statusRow)}>
         <ConnectionBadge status="connected" />
@@ -62,14 +62,14 @@ export const DashboardScreen: FC = function DashboardScreen() {
       <View style={themed($card)}>
         {mockNetwork.map((net, index) => (
           <View key={net.name} style={themed([$networkRow, index > 0 && $networkDivider])}>
-            <View style={[$networkIconBadge, { backgroundColor: net.status === "up" ? "#EFF6FF" : "#F1F5F9" }]}>
+            <View style={[$networkIconBadge, { backgroundColor: net.status === "up" ? "#EFF6FF" : theme.colors.palette.neutral300 }]}>
               <Icon font="Ionicons" icon={net.status === "up" ? "wifi" : "wifi-outline"} color={net.status === "up" ? "#3B82F6" : theme.colors.textDim} size={18} />
             </View>
             <View style={$networkInfo}>
-              <Text text={net.name} weight="medium" />
-              <Text text={net.ip ?? "Not connected"} size="xs" color="textDim" />
+              <Text text={net.name} weight="medium" color="text" />
+              <Text text={net.ip ?? "Not connected"} size="xs" color={net.ip ? "textDim" : "error"} />
             </View>
-            <View style={[$statusDot, { backgroundColor: net.status === "up" ? "#10B981" : "#EF4444" }]} />
+            <View style={[$statusDot, { backgroundColor: net.status === "up" ? theme.colors.success : theme.colors.error }]} />
           </View>
         ))}
       </View>
@@ -79,7 +79,7 @@ export const DashboardScreen: FC = function DashboardScreen() {
         {Object.entries(mockDeviceInfo).map(([key, value], index) => (
           <View key={key} style={themed([$deviceRow, index > 0 && $deviceDivider])}>
             <Text text={key.charAt(0).toUpperCase() + key.slice(1)} color="textDim" size="sm" />
-            <Text text={value} weight="medium" size="sm" />
+            <Text text={value} weight="medium" size="sm" color="text" />
           </View>
         ))}
       </View>
