@@ -44,6 +44,10 @@ export interface TextProps extends RNTextProps {
    */
   size?: Sizes
   /**
+   * Text color - accepts theme color key or direct color string.
+   */
+  color?: string
+  /**
    * Children components.
    */
   children?: ReactNode
@@ -57,18 +61,21 @@ export interface TextProps extends RNTextProps {
  * @returns {JSX.Element} The rendered `Text` component.
  */
 export const Text = forwardRef(function Text(props: TextProps, ref: ForwardedRef<RNText>) {
-  const { weight, size, tx, txOptions, text, children, style: $styleOverride, ...rest } = props
-  const { themed } = useAppTheme()
+  const { weight, size, color, tx, txOptions, text, children, style: $styleOverride, ...rest } = props
+  const { themed, theme } = useAppTheme()
 
   const i18nText = tx && translate(tx, txOptions)
   const content = i18nText || text || children
 
   const preset: Presets = props.preset ?? "default"
+  
+  const resolvedColor = color
   const $styles: StyleProp<TextStyle> = [
     $rtlStyle,
     themed($presets[preset]),
     weight && $fontWeightStyles[weight],
     size && $sizeStyles[size],
+    resolvedColor && { color: resolvedColor },
     $styleOverride,
   ]
 
@@ -113,4 +120,5 @@ const $presets: Record<Presets, ThemedStyleArray<TextStyle>> = {
   formLabel: [$baseStyle, { ...$fontWeightStyles.medium }],
   formHelper: [$baseStyle, { ...$sizeStyles.sm, ...$fontWeightStyles.normal }],
 }
+
 const $rtlStyle: TextStyle = isRTL ? { writingDirection: "rtl" } : {}
