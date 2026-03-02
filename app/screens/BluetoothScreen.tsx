@@ -109,7 +109,7 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = function BluetoothScree
 
   return (
     <Screen preset="scroll">
-      <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} rightIcon="back" />
+      <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} >
 
       <SectionHeader title="Paired Devices" style={$sectionHeader} />
       <View style={themed($deviceList)}>
