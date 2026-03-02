@@ -86,7 +86,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
       {/* Volume Control */}
       <Card style={$card}>
-        <Text text="Volume" size="lg" weight="semiBold" style={$cardTitle} />
+        <Text text="Volume" size="lg" weight="semiBold" style={$cardTitle} color="text" />
         
         <VolumeSlider
           value={isMuted ? 0 : sliderValue}
@@ -110,7 +110,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
       {/* Output Device */}
       <Card style={$card}>
-        <Text text="Output Device" size="lg" weight="semiBold" style={$cardTitle} />
+        <Text text="Output Device" size="lg" weight="semiBold" style={$cardTitle} color="text" />
         
         <View style={$deviceList}>
           {MOCK_DEVICES.map((device) => (
@@ -125,7 +125,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
               <View style={$deviceIconContainer}>
                 <Text text={device.icon} size="lg" />
               </View>
-              <Text text={device.name} size="md" weight="medium" style={$deviceName} />
+              <Text text={device.name} size="md" weight="medium" style={$deviceName} color="text" />
               <View style={[
                 $radioIndicator,
                 selectedDevice === device.id && $radioSelected
