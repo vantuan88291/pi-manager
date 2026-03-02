@@ -1,8 +1,9 @@
 import { FC, useState } from "react"
-import { ScrollView, View, ViewStyle, TextStyle, RefreshControl } from "react-native"
+import { View, ViewStyle, RefreshControl, type TextStyle } from "react-native"
 
 import { ConnectionBadge } from "@/components/ConnectionBadge"
 import { Icon } from "@/components/Icon"
+import { Screen } from "@/components/Screen"
 import { SectionHeader } from "@/components/SectionHeader"
 import { StatCard } from "@/components/StatCard"
 import { Text } from "@/components/Text"
@@ -38,68 +39,53 @@ export const DashboardScreen: FC = function DashboardScreen() {
   }
 
   return (
-    <View style={themed($container)}>
-      <View style={themed($header)}>
-        <Text text="Dashboard" size="lg" weight="bold" style={themed($headerTitle)} />
+    <Screen preset="scroll" ScrollViewProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }}>
+      <View style={themed($statusRow)}>
+        <ConnectionBadge status="connected" />
+        <Text text="raspberrypi" size="sm" color="textDim" />
       </View>
 
-      <ScrollView
-        style={$scrollView}
-        contentContainerStyle={themed($scrollContent)}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <View style={themed($statusRow)}>
-          <ConnectionBadge status="connected" />
-          <Text text="raspberrypi" size="sm" color="textDim" />
-        </View>
+      <View style={themed($statsGrid)}>
+        <StatCard label={mockStats.cpu.label} value={`${mockStats.cpu.value}%`} progress={mockStats.cpu.value} progressColor={theme.colors.tint} caption={mockStats.cpu.caption} icon={{ font: "Ionicons", name: "hardware-chip", color: "#6366F1", badgeBg: "#EEF2FF" }} />
+        <StatCard label={mockStats.temperature.label} value={`${mockStats.temperature.value}`} unit="°C" progress={mockStats.temperature.value} progressColor={mockStats.temperature.value > 60 ? "#F59E0B" : "#10B981"} caption={mockStats.temperature.caption} icon={{ font: "Ionicons", name: "thermometer", color: "#F59E0B", badgeBg: "#FFFBEB" }} />
+      </View>
 
-        <View style={themed($statsGrid)}>
-          <StatCard label={mockStats.cpu.label} value={`${mockStats.cpu.value}%`} progress={mockStats.cpu.value} progressColor={theme.colors.tint} caption={mockStats.cpu.caption} icon={{ font: "Ionicons", name: "hardware-chip", color: "#6366F1", badgeBg: "#EEF2FF" }} />
-          <StatCard label={mockStats.temperature.label} value={`${mockStats.temperature.value}`} unit="°C" progress={mockStats.temperature.value} progressColor={mockStats.temperature.value > 60 ? "#F59E0B" : "#10B981"} caption={mockStats.temperature.caption} icon={{ font: "Ionicons", name: "thermometer", color: "#F59E0B", badgeBg: "#FFFBEB" }} />
-        </View>
+      <View style={themed($statsGrid)}>
+        <StatCard label={mockStats.memory.label} value={`${mockStats.memory.value}%`} progress={mockStats.memory.value} progressColor="#8B5CF6" caption={mockStats.memory.caption} icon={{ font: "Ionicons", name: "cube", color: "#8B5CF6", badgeBg: "#F5F3FF" }} />
+        <StatCard label={mockStats.disk.label} value={`${mockStats.disk.value}%`} progress={mockStats.disk.value} progressColor="#06B6D4" caption={mockStats.disk.caption} icon={{ font: "MaterialCommunityIcons", name: "harddisk", color: "#06B6D4", badgeBg: "#ECFEFF" }} />
+      </View>
 
-        <View style={themed($statsGrid)}>
-          <StatCard label={mockStats.memory.label} value={`${mockStats.memory.value}%`} progress={mockStats.memory.value} progressColor="#8B5CF6" caption={mockStats.memory.caption} icon={{ font: "Ionicons", name: "cube", color: "#8B5CF6", badgeBg: "#F5F3FF" }} />
-          <StatCard label={mockStats.disk.label} value={`${mockStats.disk.value}%`} progress={mockStats.disk.value} progressColor="#06B6D4" caption={mockStats.disk.caption} icon={{ font: "MaterialCommunityIcons", name: "harddisk", color: "#06B6D4", badgeBg: "#ECFEFF" }} />
-        </View>
-
-        <SectionHeader title="Network" style={themed($section)} />
-        <View style={themed($card)}>
-          {mockNetwork.map((net, index) => (
-            <View key={net.name} style={themed([$networkRow, index > 0 && $networkDivider])}>
-              <View style={[$networkIconBadge, { backgroundColor: net.status === "up" ? "#EFF6FF" : "#F1F5F9" }]}>
-                <Icon font="Ionicons" icon={net.status === "up" ? "wifi" : "wifi-outline"} color={net.status === "up" ? "#3B82F6" : theme.colors.textDim} size={18} />
-              </View>
-              <View style={$networkInfo}>
-                <Text text={net.name} weight="medium" />
-                <Text text={net.ip ?? "Not connected"} size="xs" color={net.ip ? "textDim" : "error"} />
-              </View>
-              <View style={[$statusDot, { backgroundColor: net.status === "up" ? "#10B981" : "#EF4444" }]} />
+      <SectionHeader title="Network" style={themed($section)} />
+      <View style={themed($card)}>
+        {mockNetwork.map((net, index) => (
+          <View key={net.name} style={themed([$networkRow, index > 0 && $networkDivider])}>
+            <View style={[$networkIconBadge, { backgroundColor: net.status === "up" ? "#EFF6FF" : "#F1F5F9" }]}>
+              <Icon font="Ionicons" icon={net.status === "up" ? "wifi" : "wifi-outline"} color={net.status === "up" ? "#3B82F6" : theme.colors.textDim} size={18} />
             </View>
-          ))}
-        </View>
-
-        <SectionHeader title="Device Info" style={themed($section)} />
-        <View style={themed($card)}>
-          {Object.entries(mockDeviceInfo).map(([key, value], index) => (
-            <View key={key} style={themed([$deviceRow, index > 0 && $deviceDivider])}>
-              <Text text={key.charAt(0).toUpperCase() + key.slice(1)} color="textDim" size="sm" />
-              <Text text={value} weight="medium" size="sm" />
+            <View style={$networkInfo}>
+              <Text text={net.name} weight="medium" />
+              <Text text={net.ip ?? "Not connected"} size="xs" color={net.ip ? "textDim" : "error"} />
             </View>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
+            <View style={[$statusDot, { backgroundColor: net.status === "up" ? "#10B981" : "#EF4444" }]} />
+          </View>
+        ))}
+      </View>
+
+      <SectionHeader title="Device Info" style={themed($section)} />
+      <View style={themed($card)}>
+        {Object.entries(mockDeviceInfo).map(([key, value], index) => (
+          <View key={key} style={themed([$deviceRow, index > 0 && $deviceDivider])}>
+            <Text text={key.charAt(0).toUpperCase() + key.slice(1)} color="textDim" size="sm" />
+            <Text text={value} weight="medium" size="sm" />
+          </View>
+        ))}
+      </View>
+    </Screen>
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({ flex: 1, backgroundColor: colors.background })
-const $header: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 56, paddingHorizontal: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border })
-const $headerTitle: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text })
-const $scrollView: ViewStyle = { flex: 1 }
-const $scrollContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({ padding: spacing.md })
 const $statusRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.md, paddingVertical: spacing.sm })
-const $statsGrid: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", gap: spacing.md, marginBottom: spacing.md })
+const $statsGrid: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", gap: spacing.md, marginBottom: spacing.md, paddingHorizontal: spacing.md })
 const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginTop: spacing.lg, marginBottom: spacing.xs, paddingHorizontal: spacing.md })
 const $card: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginHorizontal: spacing.md, marginBottom: spacing.md })
 const $networkRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", alignItems: "center", paddingVertical: spacing.sm })
