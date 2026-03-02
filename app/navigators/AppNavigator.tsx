@@ -15,6 +15,13 @@ import type { AppStackParamList, NavigationProps } from "./navigationTypes"
 import { MainTabNavigator } from "./MainTabNavigator"
 import { navigationRef, useBackButtonHandler } from "./navigationUtilities"
 
+// Import Phase 2 screens
+import { WifiScreen } from "@/screens/WifiScreen"
+import { BluetoothScreen } from "@/screens/BluetoothScreen"
+import { AudioScreen } from "@/screens/AudioScreen"
+import { CameraScreen } from "@/screens/CameraScreen"
+import { StorageScreen } from "@/screens/StorageScreen"
+
 /**
  * This is a list of all the route names that will exit the app if the back button
  * is pressed while in that screen. Only affects Android.
@@ -40,8 +47,13 @@ const AppStack = () => {
       }}
     >
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-      {/** 🔥 Your screens go here */}
-      {/* IGNITE_GENERATOR_ANCHOR_APP_STACK_SCREENS */}
+      
+      {/* Phase 2 Screens */}
+      <Stack.Screen name="Wifi" component={WifiScreen} />
+      <Stack.Screen name="Bluetooth" component={BluetoothScreen} />
+      <Stack.Screen name="Audio" component={AudioScreen} />
+      <Stack.Screen name="Camera" component={CameraScreen} />
+      <Stack.Screen name="Storage" component={StorageScreen} />
     </Stack.Navigator>
   )
 }
