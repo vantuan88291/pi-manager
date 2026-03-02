@@ -92,8 +92,8 @@ type BaseIconProps = (FontIconProps | ImageIconProps) & {
   containerStyle?: StyleProp<ViewStyle>
 }
 
+export type IconProps = Omit<ViewProps, "style"> & BaseIconProps
 type PressableIconProps = Omit<TouchableOpacityProps, "style"> & BaseIconProps
-type IconProps = Omit<ViewProps, "style"> & BaseIconProps
 
 type VectorIconProps = {
   name: string
