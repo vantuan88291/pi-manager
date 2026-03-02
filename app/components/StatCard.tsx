@@ -53,8 +53,8 @@ export const StatCard: FC<StatCardProps> = ({ label, value, unit, progress, prog
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, minHeight: 140 })
-const $iconBadge: ViewStyle = { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 }
+const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, minHeight: 150, flex: 1 })
+const $iconBadge: ViewStyle = { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 }
 const $label: ViewStyle = { marginBottom: 4 }
 const $valueRow: ViewStyle = { flexDirection: "row", alignItems: "baseline", marginBottom: 8 }
 const $value = { color: "#1E293B" as any, fontSize: 28 }

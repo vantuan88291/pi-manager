@@ -57,6 +57,6 @@ const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({ flex: 1, backgroun
 const $header: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border })
 const $headerTitle = { color: "#1E293B" as any }
 const $listContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({ padding: spacing.md })
-const $gridRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ gap: spacing.sm, marginBottom: spacing.sm })
+const $gridRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ gap: spacing.md, marginBottom: spacing.md })
 const $dangerSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({ paddingHorizontal: spacing.md, gap: spacing.sm })
 const $dangerCard: ThemedStyle<ViewStyle> = () => ({ height: 80 })

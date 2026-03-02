@@ -41,8 +41,8 @@ export const FeatureCard: FC<FeatureCardProps> = ({ title, subtitle, icon, accen
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, height: 120, overflow: "hidden" })
+const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, height: 130, overflow: "hidden" })
 const $accentBar: ViewStyle = { position: "absolute", left: 0, top: 0, bottom: 0, width: 4 }
-const $iconBadge: ViewStyle = { width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 }
+const $iconBadge: ViewStyle = { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 8 }
 const $title = { color: "#1E293B" as any }
 const $subtitle: ViewStyle = { marginTop: 2 }

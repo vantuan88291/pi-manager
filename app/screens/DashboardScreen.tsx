@@ -95,7 +95,7 @@ const $header: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ flexDirectio
 const $headerTitle = { color: "#1E293B" as any }
 const $scrollView: ViewStyle = { flex: 1 }
 const $scrollContent: ThemedStyle<ViewStyle> = ({ spacing }) => ({ padding: spacing.md })
-const $statsGrid: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", gap: spacing.sm, marginBottom: spacing.sm })
+const $statsGrid: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", gap: spacing.md, marginBottom: spacing.md })
 const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginTop: spacing.lg, marginBottom: spacing.xs })
 const $card: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md })
 const $networkRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", alignItems: "center", paddingVertical: spacing.xs })
