@@ -5,6 +5,7 @@ import { whitelist } from "../auth/whitelist.js"
 import { systemModule } from "./modules/system.js"
 import { wifiModule } from "./modules/wifi.js"
 import { bluetoothModule } from "./modules/bluetooth.js"
+import { audioModule } from "./modules/audio.js"
 
 import type { ServerSocketModule } from "./types.js"
 
@@ -30,6 +31,7 @@ const modules: ServerSocketModule[] = [
   systemModule,
   wifiModule,
   bluetoothModule,
+  audioModule,
 ]
 
 export function setupSocketServer(io: Server) {

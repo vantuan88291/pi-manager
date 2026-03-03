@@ -270,6 +270,23 @@ const vi: Translations = {
       connectionFailed: "Kết nối thất bại",
     },
   },
+  audio: {
+    title: "Âm thanh",
+    volume: "Âm lượng",
+    muted: "Đã tắt tiếng",
+    unmute: "Bật tiếng",
+    mute: "Tắt tiếng",
+    decrease: "-5",
+    increase: "+5",
+    outputDevice: "Thiết bị đầu ra",
+    selected: "Đã chọn",
+    select: "Chọn",
+    testSound: "Phát âm thanh kiểm tra",
+    testing: "Đang phát...",
+    testFailed: "Không thể phát âm thanh kiểm tra",
+    testHint: "Phát âm thanh beep trong 1 giây",
+    noDevices: "Không có thiết bị nào",
+  },
 }
 
 export default vi
