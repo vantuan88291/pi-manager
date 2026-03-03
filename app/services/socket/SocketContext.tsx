@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { socketManager, systemClientModule, wifiClientModule } from "./"
+import { socketManager, systemClientModule, wifiClientModule, bluetoothClientModule } from "./"
 import type { ConnectionState, TelegramUser } from "./types"
 
 interface SocketContextValue {
@@ -19,6 +19,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     // Register modules
     socketManager.registerModule(systemClientModule)
     socketManager.registerModule(wifiClientModule)
+    socketManager.registerModule(bluetoothClientModule)
 
     // Subscribe to state changes
     const unsubscribe = socketManager.subscribe(setState)

@@ -1,16 +1,39 @@
+// Bluetooth device from scan
 export interface BluetoothDevice {
-  name: string | null
   mac: string
-  rssi: number
+  name: string | null
+  type: string | null  // audio, input, display, unknown
+  rssi: number | null
   paired: boolean
   connected: boolean
-  type: "audio" | "input" | "display" | "unknown"
-  icon: string
 }
 
+// Bluetooth status
 export interface BluetoothStatus {
   powered: boolean
-  discoverable: boolean
   discovering: boolean
-  connectedDevices: BluetoothDevice[]
+  devices: BluetoothDevice[]
+}
+
+// Bluetooth pair request
+export interface BluetoothPairRequest {
+  mac: string
+  pin?: string
+}
+
+// Bluetooth pair response (for ack)
+export interface BluetoothPairResponse {
+  success: boolean
+  error?: string
+}
+
+// Bluetooth connect request
+export interface BluetoothConnectRequest {
+  mac: string
+}
+
+// Bluetooth connect response (for ack)
+export interface BluetoothConnectResponse {
+  success: boolean
+  error?: string
 }
