@@ -1,5 +1,6 @@
 import { FC, useState } from "react"
 import { View, ViewStyle, Pressable, Switch, TextStyle } from "react-native"
+import { useTranslation } from "react-i18next"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -36,6 +37,7 @@ const getIcon = (t: string) => t === "audio" ? "🎧" : t === "input" ? "⌨️"
 const getRssiColor = (r: number, theme: any) => r > -50 ? theme.colors.success : r > -70 ? theme.colors.warning : theme.colors.error
 
 export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation()
   const { themed, theme } = useAppTheme()
   const { accent: btAccent } = getFeatureColor("bluetooth", theme.isDark)
   const [enabled, setEnabled] = useState(true)
@@ -68,7 +70,7 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
       </View>
       <View style={$deviceRight}>
         {isPaired && <Text text="✓" size="sm" color="success" />}
-        {!isPaired && <Button text="Pair" preset="filled" onPress={() => doPair(d)} />}
+        {!isPaired && <Button tx="bluetooth:pair" preset="filled" onPress={() => doPair(d)} />}
       </View>
     </Pressable>
   )
@@ -76,11 +78,11 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
   if (!enabled) {
     return (
       <Screen preset="scroll">
-        <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+        <Header titleTx="bluetooth:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
         <View style={themed($disabled)}>
           <Text text="🔇" size="xxl" color="text" />
-          <Text text="Bluetooth is turned off" size="lg" weight="medium" color="text" style={$disabledTitle} />
-          <Text text="Turn on to scan for devices" size="sm" color="textDim" style={$disabledText} />
+          <Text tx="bluetooth:disabled" size="lg" weight="medium" color="text" style={$disabledTitle} />
+          <Text tx="bluetooth:enableToScan" size="sm" color="textDim" style={$disabledText} />
           <Switch 
             value={enabled} 
             onValueChange={togglePower} 
@@ -94,23 +96,23 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = ({ navigation }) => {
 
   return (
     <Screen preset="scroll">
-      <Header title="Bluetooth" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header titleTx="bluetooth:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
       
-      <SectionHeader title="Paired Devices" style={$section} />
+      <SectionHeader titleTx="bluetooth:connectedDevices" style={$section} />
       <View style={themed($deviceList)}>
         {paired.length ? paired.map(d => renderItem(d, true)) : (
-          <Text text="No paired devices" size="sm" color="textDim" style={$empty} />
+          <Text tx="common:notAvailable" size="sm" color="textDim" style={$empty} />
         )}
       </View>
       
       <SectionHeader 
-        title="Available Devices" 
-        rightAction={{ label: scanning ? "Scanning..." : "Scan", onPress: startScan }} 
+        titleTx="bluetooth:availableDevices"
+        rightAction={{ label: scanning ? t("bluetooth:scanning") : t("bluetooth:scan"), onPress: startScan }} 
         style={$section} 
       />
       <View style={themed($deviceList)}>
         {available.length ? available.map(d => renderItem(d, false)) : (
-          <Text text={scanning ? "Scanning..." : "No devices found"} size="sm" color="textDim" style={$empty} />
+          <Text text={scanning ? t("bluetooth:scanning") : t("common:notAvailable")} size="sm" color="textDim" style={$empty} />
         )}
       </View>
     </Screen>

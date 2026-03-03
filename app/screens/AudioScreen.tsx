@@ -1,5 +1,6 @@
 import { FC, useState } from "react"
 import { View, ViewStyle, Pressable, TextStyle } from "react-native"
+import { useTranslation } from "react-i18next"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -12,12 +13,13 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 type AudioScreenProps = AppStackScreenProps<"Audio">
 
 const MOCK_DEVICES = [
-  { id: "hdmi", name: "HDMI", icon: "📺" },
-  { id: "jack", name: "3.5mm Jack", icon: "🎧" },
-  { id: "bt", name: "JBL Flip 6", icon: "🔊" },
+  { id: "hdmi", nameKey: "audio:devices.hdmi", icon: "📺" },
+  { id: "jack", nameKey: "audio:devices.analog", icon: "🎧" },
+  { id: "bt", nameKey: "audio:devices.bluetooth", icon: "🔊" },
 ]
 
 export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigation }) {
+  const { t } = useTranslation()
   const { theme } = useAppTheme()
   const [volume, setVolume] = useState(72)
   const [isMuted, setIsMuted] = useState(false)
@@ -50,29 +52,29 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
   return (
     <Screen preset="fixed">
-      <Header title="Audio" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header titleTx="audio:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       <View style={$content}>
         <Card 
-          heading="Volume"
+          headingTx="audio:volume"
           ContentComponent={
             <>
               <VolumeSlider value={isMuted ? 0 : sliderValue} disabled={isMuted} />
-              <Text text={isMuted ? "Muted" : `${sliderValue}%`} size="xl" weight="bold" color="text" style={$volumeText} />
-              <Button text={isMuted ? "Unmute" : "Mute"} preset="default" onPress={handleMuteToggle} style={$muteButton} />
+              <Text text={isMuted ? t("audio:muted") : `${sliderValue}%`} size="xl" weight="bold" color="text" style={$volumeText} />
+              <Button tx={isMuted ? "audio:unmute" : "audio:mute"} preset="default" onPress={handleMuteToggle} style={$muteButton} />
             </>
           }
           style={$card}
         />
 
         <Card 
-          heading="Output Device"
+          headingTx="audio:outputDevice"
           ContentComponent={
             <View style={$deviceList}>
               {MOCK_DEVICES.map((device) => (
                 <Pressable key={device.id} style={[$deviceItem, selectedDevice === device.id && { borderColor: theme.colors.tint, backgroundColor: theme.colors.tint + "15" }]} onPress={() => handleDeviceSelect(device.id)}>
                   <Text text={device.icon} size="lg" />
-                  <Text text={device.name} size="md" weight="medium" color="text" style={$deviceName} />
+                  <Text tx={device.nameKey} size="md" weight="medium" color="text" style={$deviceName} />
                   <View style={[$radioIndicator, selectedDevice === device.id && { borderColor: theme.colors.tint }]}>
                     {selectedDevice === device.id && <View style={[$radioInner, { backgroundColor: theme.colors.tint }]} />}
                   </View>
@@ -83,7 +85,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
           style={$card}
         />
 
-        <Button text="Test Sound" preset="filled" onPress={() => {}} style={$testButton} />
+        <Button tx="audio:testSound" preset="filled" onPress={() => {}} style={$testButton} />
       </View>
     </Screen>
   )
