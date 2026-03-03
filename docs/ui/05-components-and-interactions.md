@@ -46,3 +46,69 @@ Width > 768px (desktop):
   - Dashboard uses 4-column grid
 ```
 
+
+---
+
+## Card Component Usage ⚠️
+
+**Important:** The Ignite `Card` component does **NOT** render children directly. You must use specific props:
+
+### ✅ Correct Usage
+
+```typescript
+import { Card } from "@/components/Card"
+
+// Option 1: Use ContentComponent prop (recommended for complex content)
+<Card 
+  heading="Section Title"
+  ContentComponent={
+    <View>
+      <Text>Content here</Text>
+      <View style={$row}>
+        <Icon />
+        <Text>More content</Text>
+      </View>
+    </View>
+  }
+/>
+
+// Option 2: Use simple content prop (for text only)
+<Card 
+  heading="Title"
+  content="Simple text content"
+/>
+
+// Option 3: Use custom components for heading/content/footer
+<Card
+  HeadingComponent={<CustomHeader />}
+  ContentComponent={<CustomContent />}
+  FooterComponent={<CustomFooter />}
+/>
+```
+
+### ❌ Wrong Usage (Won't Render)
+
+```typescript
+// DON'T do this - children are ignored!
+<Card heading="Title">
+  <View>
+    <Text>This won't show!</Text>
+  </View>
+</Card>
+```
+
+### Why?
+
+The Ignite Card component uses explicit props (`ContentComponent`, `HeadingComponent`, `FooterComponent`) 
+instead of children for better type safety and consistent rendering. This is different from most React 
+Native components.
+
+### Reference
+
+See: `app/components/Card.tsx` for full implementation and props interface.
+
+**Examples in codebase:**
+- `app/screens/SettingsScreen.tsx` - Uses ContentComponent with complex layouts
+- `app/screens/StorageScreen.tsx` - Uses Card with custom content
+
+---
