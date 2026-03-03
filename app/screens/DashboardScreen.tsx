@@ -10,12 +10,13 @@ import { StatCard } from "@/components/StatCard"
 import { Text } from "@/components/Text"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
+import { TxKeyPath } from "@/i18n"
 
 const mockStats = {
-  cpu: { value: 45, label: "CPU", caption: "Cortex-A72" },
-  temperature: { value: 52, label: "Temperature", caption: "System Thermal" },
-  memory: { value: 68, label: "Memory", caption: "4GB / 8GB" },
-  disk: { value: 34, label: "Disk", caption: "120GB / 500GB" },
+  cpu: { value: 45, labelTx: "dashboard:stats.cpu" as TxKeyPath, captionTx: "dashboard:stats.cpuCaption" as TxKeyPath },
+  temperature: { value: 52, labelTx: "dashboard:stats.temperature" as TxKeyPath, captionTx: "dashboard:stats.tempCaption" as TxKeyPath },
+  memory: { value: 68, labelTx: "dashboard:stats.memory" as TxKeyPath, caption: "4GB / 8GB" },
+  disk: { value: 34, labelTx: "dashboard:stats.disk" as TxKeyPath, caption: "120GB / 500GB" },
 }
 
 const mockNetwork = [
@@ -23,12 +24,12 @@ const mockNetwork = [
   { name: "eth0", ip: null, status: "down" },
 ]
 
-const mockDeviceInfo = {
-  hostname: "raspberrypi",
-  os: "Raspberry Pi OS",
-  kernel: "6.1.21-v8+",
-  uptime: "3d 14h 22m",
-}
+const mockDeviceInfo: { key: TxKeyPath; value: string }[] = [
+  { key: "dashboard:hostname", value: "raspberrypi" },
+  { key: "dashboard:os", value: "Raspberry Pi OS" },
+  { key: "dashboard:kernel", value: "6.1.21-v8+" },
+  { key: "dashboard:uptime", value: "3d 14h 22m" },
+]
 
 export const DashboardScreen: FC = function DashboardScreen() {
   const { themed, theme } = useAppTheme()
@@ -41,7 +42,7 @@ export const DashboardScreen: FC = function DashboardScreen() {
 
   return (
     <Screen preset="scroll" ScrollViewProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }}>
-      <Header title="Dashboard" titleMode="center" />
+      <Header titleTx="dashboard:title" titleMode="center" />
 
       <View style={themed($statusRow)}>
         <ConnectionBadge status="connected" />
@@ -49,16 +50,45 @@ export const DashboardScreen: FC = function DashboardScreen() {
       </View>
 
       <View style={themed($statsGrid)}>
-        <StatCard label={mockStats.cpu.label} value={`${mockStats.cpu.value}%`} progress={mockStats.cpu.value} progressColor={theme.colors.tint} caption={mockStats.cpu.caption} icon={{ font: "Ionicons", name: "hardware-chip", color: "#6366F1", badgeBg: "#EEF2FF" }} />
-        <StatCard label={mockStats.temperature.label} value={`${mockStats.temperature.value}`} unit="°C" progress={mockStats.temperature.value} progressColor={mockStats.temperature.value > 60 ? "#F59E0B" : "#10B981"} caption={mockStats.temperature.caption} icon={{ font: "Ionicons", name: "thermometer", color: "#F59E0B", badgeBg: "#FFFBEB" }} />
+        <StatCard 
+          labelTx={mockStats.cpu.labelTx} 
+          value={`${mockStats.cpu.value}%`} 
+          progress={mockStats.cpu.value} 
+          progressColor={theme.colors.tint} 
+          captionTx={mockStats.cpu.captionTx} 
+          icon={{ font: "Ionicons", name: "hardware-chip", color: "#6366F1", badgeBg: "#EEF2FF" }} 
+        />
+        <StatCard 
+          labelTx={mockStats.temperature.labelTx} 
+          value={`${mockStats.temperature.value}`} 
+          unit="°C" 
+          progress={mockStats.temperature.value} 
+          progressColor={mockStats.temperature.value > 60 ? "#F59E0B" : "#10B981"} 
+          captionTx={mockStats.temperature.captionTx} 
+          icon={{ font: "Ionicons", name: "thermometer", color: "#F59E0B", badgeBg: "#FFFBEB" }} 
+        />
       </View>
 
       <View style={themed($statsGrid)}>
-        <StatCard label={mockStats.memory.label} value={`${mockStats.memory.value}%`} progress={mockStats.memory.value} progressColor="#8B5CF6" caption={mockStats.memory.caption} icon={{ font: "Ionicons", name: "cube", color: "#8B5CF6", badgeBg: "#F5F3FF" }} />
-        <StatCard label={mockStats.disk.label} value={`${mockStats.disk.value}%`} progress={mockStats.disk.value} progressColor="#06B6D4" caption={mockStats.disk.caption} icon={{ font: "MaterialCommunityIcons", name: "harddisk", color: "#06B6D4", badgeBg: "#ECFEFF" }} />
+        <StatCard 
+          labelTx={mockStats.memory.labelTx} 
+          value={`${mockStats.memory.value}%`} 
+          progress={mockStats.memory.value} 
+          progressColor="#8B5CF6" 
+          caption={mockStats.memory.caption} 
+          icon={{ font: "Ionicons", name: "cube", color: "#8B5CF6", badgeBg: "#F5F3FF" }} 
+        />
+        <StatCard 
+          labelTx={mockStats.disk.labelTx} 
+          value={`${mockStats.disk.value}%`} 
+          progress={mockStats.disk.value} 
+          progressColor="#06B6D4" 
+          caption={mockStats.disk.caption} 
+          icon={{ font: "MaterialCommunityIcons", name: "harddisk", color: "#06B6D4", badgeBg: "#ECFEFF" }} 
+        />
       </View>
 
-      <SectionHeader title="Network" style={themed($section)} />
+      <SectionHeader titleTx="dashboard:network" style={themed($section)} />
       <View style={themed($card)}>
         {mockNetwork.map((net, index) => (
           <View key={net.name} style={themed([$networkRow, index > 0 && $networkDivider])}>
@@ -67,18 +97,18 @@ export const DashboardScreen: FC = function DashboardScreen() {
             </View>
             <View style={$networkInfo}>
               <Text text={net.name} weight="medium" color="text" />
-              <Text text={net.ip ?? "Not connected"} size="xs" color={net.ip ? "textDim" : "error"} />
+              <Text text={net.ip ?? "dashboard:notConnected"} size="xs" color={net.ip ? "textDim" : "error"} />
             </View>
             <View style={[$statusDot, { backgroundColor: net.status === "up" ? theme.colors.success : theme.colors.error }]} />
           </View>
         ))}
       </View>
 
-      <SectionHeader title="Device Info" style={themed($section)} />
+      <SectionHeader titleTx="dashboard:deviceInfo" style={themed($section)} />
       <View style={themed($card)}>
-        {Object.entries(mockDeviceInfo).map(([key, value], index) => (
+        {mockDeviceInfo.map(({ key, value }, index) => (
           <View key={key} style={themed([$deviceRow, index > 0 && $deviceDivider])}>
-            <Text text={key.charAt(0).toUpperCase() + key.slice(1)} color="textDim" size="sm" />
+            <Text tx={key} color="textDim" size="sm" />
             <Text text={value} weight="medium" size="sm" color="text" />
           </View>
         ))}

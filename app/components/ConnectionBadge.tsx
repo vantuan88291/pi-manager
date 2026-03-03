@@ -4,6 +4,7 @@ import { View, ViewStyle } from "react-native"
 import { Text } from "@/components/Text"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
+import { TxKeyPath } from "@/i18n"
 
 type ConnectionStatus = "connected" | "connecting" | "disconnected" | "error"
 
@@ -14,11 +15,11 @@ interface ConnectionBadgeProps {
   style?: ViewStyle
 }
 
-const statusConfig: Record<ConnectionStatus, { color: string; label: string }> = {
-  connected: { color: "#10B981", label: "Connected" },
-  connecting: { color: "#F59E0B", label: "Connecting..." },
-  disconnected: { color: "#EF4444", label: "Offline" },
-  error: { color: "#EF4444", label: "Error" },
+const statusConfig: Record<ConnectionStatus, { color: string; labelTx: TxKeyPath }> = {
+  connected: { color: "#10B981", labelTx: "common:connected" },
+  connecting: { color: "#F59E0B", labelTx: "common:connecting" },
+  disconnected: { color: "#EF4444", labelTx: "common:disconnected" },
+  error: { color: "#EF4444", labelTx: "common:error" },
 }
 
 export const ConnectionBadge: FC<ConnectionBadgeProps> = ({ status, style }) => {
@@ -28,7 +29,7 @@ export const ConnectionBadge: FC<ConnectionBadgeProps> = ({ status, style }) => 
   return (
     <View style={[themed($container), style]}>
       <View style={[$dot, { backgroundColor: config.color }]} />
-      <Text text={config.label} size="xs" color="textDim" />
+      <Text tx={config.labelTx} size="xs" color="textDim" />
     </View>
   )
 }

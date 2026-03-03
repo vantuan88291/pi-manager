@@ -1,5 +1,6 @@
 import { FC, useState } from "react"
 import { View, ViewStyle, FlatList, Pressable, ActivityIndicator, TextStyle } from "react-native"
+import { useTranslation } from "react-i18next"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -46,6 +47,7 @@ const MOCK_NETWORKS: WifiNetwork[] = [
 ]
 
 export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation }) {
+  const { t } = useTranslation()
   const { themed, theme } = useAppTheme()
   const { accent: wifiAccent } = getFeatureColor("wifi", theme.isDark)
   const [networks] = useState<WifiNetwork[]>(MOCK_NETWORKS)
@@ -74,7 +76,7 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
     setConnectError(null)
     setTimeout(() => {
       if (selectedNetwork.security === "Open" ? false : !password || password.length < 8) {
-        setConnectError(selectedNetwork.security !== "Open" && !password ? "Password required" : "Password must be at least 8 characters")
+        setConnectError(selectedNetwork.security !== "Open" && !password ? t("wifi:errors.invalidPassword") : t("wifi:errors.invalidPassword"))
         return
       }
       setShowConnectSheet(false)
@@ -120,13 +122,13 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
       <View style={$networkLeft}>{renderSignalBars(item.signal)}</View>
       <View style={$networkCenter}>
         <Text text={item.ssid} size="md" weight="medium" color="text" />
-        <Text text={`${item.signal}% • ${item.security}`} size="xs" color="textDim" />
+        <Text text={`${item.signal}% • ${t(`wifi:security.${item.security.toLowerCase()}`)}`} size="xs" color="textDim" />
       </View>
       <View style={$networkRight}>
         {item.security !== "Open" && <Text text="🔒" size="sm" />}
         {item.connected && (
           <View style={{ backgroundColor: theme.colors.success + "30", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
-            <Text text="Connected" size="xs" color="success" />
+            <Text tx="common:connected" size="xs" color="success" />
           </View>
         )}
       </View>
@@ -137,42 +139,38 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
     <>
       <Text text={currentConnection.ssid} size="lg" weight="semiBold" color="text" />
       <View style={$connectionRow}>
-        <Text text="IP Address" size="sm" color="textDim" style={$connectionKey} />
-        <Text text={currentConnection.ip} size="sm" color="text" />
-      </View>
-      <View style={$connectionRow}>
-        <Text text="Signal" size="sm" color="textDim" style={$connectionKey} />
+        <Text tx="wifi:signal" size="sm" color="textDim" style={$connectionKey} />
         <View style={$signalProgress}>
           <ProgressBar value={currentConnection.signal} style={$progressBar} />
           <Text text={`${currentConnection.signal}%`} size="xs" color="textDim" />
         </View>
       </View>
       <View style={$connectionRow}>
-        <Text text="Speed" size="sm" color="textDim" style={$connectionKey} />
+        <Text tx="wifi:speed" size="sm" color="textDim" style={$connectionKey} />
         <Text text={currentConnection.speed} size="sm" color="text" />
       </View>
-      <Button text="Disconnect" preset="default" onPress={handleDisconnect} style={$disconnectButton} />
+      <Button tx="wifi:disconnect" preset="default" onPress={handleDisconnect} style={$disconnectButton} />
     </>
   ) : null
 
   return (
     <Screen preset="scroll">
-      <Header title="Wi-Fi" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header titleTx="wifi:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       {currentConnection && (
-        <Card heading="Current Connection" ContentComponent={<>{currentConnectionContent}</>} style={$card} />
+        <Card headingTx="wifi:currentConnection" ContentComponent={<>{currentConnectionContent}</>} style={$card} />
       )}
 
       <SectionHeader 
-        title="Available Networks" 
-        rightAction={{ label: isScanning ? "Scanning..." : "Scan", onPress: handleScan }} 
+        titleTx="wifi:availableNetworks"
+        rightAction={{ label: isScanning ? t("wifi:scanning") : t("wifi:scan"), onPress: handleScan }} 
         style={$sectionHeader} 
       />
 
       {isScanning && (
         <View style={$scanningContainer}>
           <ActivityIndicator size="small" color={theme.colors.tint} />
-          <Text text="Scanning for networks..." size="sm" color="textDim" style={$scanningText} />
+          <Text tx="wifi:scanning" size="sm" color="textDim" style={$scanningText} />
         </View>
       )}
 
@@ -188,20 +186,20 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
       <ActionModal
         visible={showConnectSheet}
         onClose={() => setShowConnectSheet(false)}
-        title={selectedNetwork ? `Connect to "${selectedNetwork.ssid}"` : ""}
+        title={selectedNetwork ? t("wifi:enterPassword", { ssid: selectedNetwork.ssid }) : ""}
         bottomComponent={
           selectedNetwork?.security !== "Open" ? (
             <>
               {connectError && <Text text={connectError} size="sm" color="error" style={$errorText} />}
               <View style={$modalActions}>
                 <Button 
-                  text="Cancel" 
+                  tx="common:cancel"
                   preset="default" 
                   onPress={() => setShowConnectSheet(false)} 
                   style={$modalButton} 
                 />
                 <Button 
-                  text="Connect" 
+                  tx="wifi:connect"
                   preset="filled" 
                   onPress={handleConnect} 
                   style={$modalButton} 
@@ -211,13 +209,13 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
           ) : (
             <View style={$modalActions}>
               <Button 
-                text="Cancel" 
+                tx="common:cancel"
                 preset="default" 
                 onPress={() => setShowConnectSheet(false)} 
                 style={$modalButtonFull} 
               />
               <Button 
-                text="Connect" 
+                tx="wifi:connect"
                 preset="filled" 
                 onPress={handleConnect} 
                 style={$modalButtonFull} 
@@ -228,11 +226,11 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
       >
         {selectedNetwork?.security !== "Open" && (
           <TextField
-            label="Password"
+            labelTx="wifi:password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            placeholder="Enter password"
+            placeholderTx="wifi:enterPassword"
           />
         )}
       </ActionModal>

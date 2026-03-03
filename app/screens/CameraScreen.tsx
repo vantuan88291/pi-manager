@@ -1,5 +1,6 @@
 import { FC, useState } from "react"
 import { View, ViewStyle, Pressable, TextStyle } from "react-native"
+import { useTranslation } from "react-i18next"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -20,6 +21,7 @@ const RESOLUTIONS: { label: Resolution }[] = [
 ]
 
 export const CameraScreen: FC<CameraScreenProps> = function CameraScreen({ navigation }) {
+  const { t } = useTranslation()
   const { theme } = useAppTheme()
   const { accent: cameraAccent } = getFeatureColor("camera", theme.isDark)
   const [resolution, setResolution] = useState<Resolution>("720p")
@@ -48,7 +50,7 @@ export const CameraScreen: FC<CameraScreenProps> = function CameraScreen({ navig
 
   return (
     <Screen preset="fixed">
-      <Header title="Camera" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header titleTx="camera:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       {/* Resolution Selector */}
       <View style={$segmentedContainer}>
@@ -66,25 +68,25 @@ export const CameraScreen: FC<CameraScreenProps> = function CameraScreen({ navig
         {isStreaming ? (
           <View style={[$videoPlaceholder, { backgroundColor: videoBg }]}>
             <Text text="📹" size="xxl" color="text" />
-            <Text text="Live streaming..." size="md" color="textDim" style={$streamText} />
+            <Text tx="camera:streaming" size="md" color="textDim" style={$streamText} />
           </View>
         ) : isConnecting ? (
           <View style={[$videoPlaceholder, { backgroundColor: videoBg }]}>
             <Text text="⏳" size="xl" color="textDim" />
-            <Text text="Connecting..." size="md" color="textDim" />
+            <Text tx="camera:connecting" size="md" color="textDim" />
           </View>
         ) : (
           <View style={[$videoPlaceholder, { backgroundColor: videoBg }]}>
             <Text text="📷" size="xxl" color="textDim" />
-            <Text text="Camera is off" size="md" color="textDim" style={$offlineText} />
+            <Text tx="camera:offline" size="md" color="textDim" style={$offlineText} />
           </View>
         )}
       </View>
 
       {/* Action Buttons */}
       <View style={$actionButtons}>
-        <Button text="📸 Snapshot" preset="default" onPress={handleSnapshot} disabled={!isStreaming} style={$actionButton} />
-        <Button text={isStreaming ? "⏹ Stop" : "▶️ Start"} preset={isStreaming ? "reversed" : "filled"} onPress={isStreaming ? handleStop : handleStart} style={$actionButton} />
+        <Button tx="camera:snapshot" preset="default" onPress={handleSnapshot} disabled={!isStreaming} style={$actionButton} />
+        <Button tx={isStreaming ? "camera:stop" : "camera:start"} preset={isStreaming ? "reversed" : "filled"} onPress={isStreaming ? handleStop : handleStart} style={$actionButton} />
       </View>
 
       {/* Status Bar */}

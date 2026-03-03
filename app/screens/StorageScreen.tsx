@@ -1,5 +1,6 @@
 import { FC, useState } from "react"
 import { View, ViewStyle, Pressable, TextStyle } from "react-native"
+import { useTranslation } from "react-i18next"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -46,6 +47,7 @@ const getHealthColor = (s: string, theme: any) => s === "healthy" ? { bg: alpha(
 const formatNumber = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 
 export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ navigation }) {
+  const { t } = useTranslation()
   const { theme } = useAppTheme()
   const { accent: storageAccent } = getFeatureColor("storage", theme.isDark)
   const [showSmart, setShowSmart] = useState(false)
@@ -54,18 +56,18 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
 
   return (
     <Screen preset="scroll">
-      <Header title="Storage Health" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header titleTx="storage:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
       <View style={$container}>
         {/* Health Overview */}
         <Card 
-          heading={healthStatus === "healthy" ? "Healthy" : healthStatus === "warning" ? "Warning" : "Critical"}
+          headingTx={`storage:status.${healthStatus}`}
           ContentComponent={
             <>
               <View style={$healthBadgeRow}>
                 <View style={[$healthBadge, { backgroundColor: healthColor.bg }]}>
                   <Text text={healthStatus === "healthy" ? "✓" : "⚠️"} size="lg" color={healthColor.text} />
-                  <Text text={healthStatus === "healthy" ? "Healthy" : healthStatus === "warning" ? "Warning" : "Critical"} size="md" weight="bold" color={healthColor.text} />
+                  <Text tx={`storage:status.${healthStatus}`} size="md" weight="bold" color={healthColor.text} />
                 </View>
               </View>
               <Text text={MOCK_STORAGE.model} size="lg" weight="semiBold" color="text" style={$modelText} />
@@ -76,20 +78,20 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
         />
 
         {/* Key Metrics - 2x2 Grid */}
-        <SectionHeader title="Key Metrics" style={$sectionHeader} />
+        <SectionHeader titleTx="storage:keyMetrics" style={$sectionHeader} />
         <View style={$metricsGrid}>
-          <View style={$metricCard}><StatCard label="Lifespan" value={`${MOCK_STORAGE.lifespanUsed}%`} progress={MOCK_STORAGE.lifespanUsed} progressColor={storageAccent} caption="Lifetime left" icon={{ font: "MaterialCommunityIcons", name: "heart-pulse", color: storageAccent, badgeBg: theme.isDark ? "#164E63" : "#ECFEFF" }} /></View>
-          <View style={$metricCard}><StatCard label="Temp" value={`${MOCK_STORAGE.temperature}°C`} progress={MOCK_STORAGE.temperature} progressColor={theme.colors.success} caption="Drive thermal" icon={{ font: "MaterialCommunityIcons", name: "thermometer", color: theme.colors.warning, badgeBg: theme.isDark ? "#78350F" : "#FFFBEB" }} /></View>
-          <View style={$metricCard}><StatCard label="Written" value={MOCK_STORAGE.totalWritten} caption="Lifetime total" icon={{ font: "MaterialCommunityIcons", name: "arrow-down-circle", color: "#8B5CF6", badgeBg: theme.isDark ? "#4C1D95" : "#F5F3FF" }} /></View>
-          <View style={$metricCard}><StatCard label="Power On" value={formatNumber(MOCK_STORAGE.powerOnHours)} unit="hrs" caption="Total runtime" icon={{ font: "MaterialCommunityIcons", name: "clock", color: "#3B82F6", badgeBg: theme.isDark ? "#1E3A5F" : "#EFF6FF" }} /></View>
+          <View style={$metricCard}><StatCard labelTx="storage:metrics.lifespanUsed" value={`${MOCK_STORAGE.lifespanUsed}%`} progress={MOCK_STORAGE.lifespanUsed} progressColor={storageAccent} captionTx="storage:captions.lifespanRemaining" icon={{ font: "MaterialCommunityIcons", name: "heart-pulse", color: storageAccent, badgeBg: theme.isDark ? "#164E63" : "#ECFEFF" }} /></View>
+          <View style={$metricCard}><StatCard labelTx="storage:metrics.temperature" value={`${MOCK_STORAGE.temperature}°C`} progress={MOCK_STORAGE.temperature} progressColor={theme.colors.success} captionTx="storage:captions.driveThermal" icon={{ font: "MaterialCommunityIcons", name: "thermometer", color: theme.colors.warning, badgeBg: theme.isDark ? "#78350F" : "#FFFBEB" }} /></View>
+          <View style={$metricCard}><StatCard labelTx="storage:metrics.totalWritten" value={MOCK_STORAGE.totalWritten} captionTx="storage:captions.lifetimeWrites" icon={{ font: "MaterialCommunityIcons", name: "arrow-down-circle", color: "#8B5CF6", badgeBg: theme.isDark ? "#4C1D95" : "#F5F3FF" }} /></View>
+          <View style={$metricCard}><StatCard labelTx="storage:metrics.powerOn" value={formatNumber(MOCK_STORAGE.powerOnHours)} unit="hrs" captionTx="storage:captions.totalRuntime" icon={{ font: "MaterialCommunityIcons", name: "clock", color: "#3B82F6", badgeBg: theme.isDark ? "#1E3A5F" : "#EFF6FF" }} /></View>
         </View>
 
         {/* Drive Details */}
-        <Card heading="Drive Details" ContentComponent={<View style={$detailList}>{[
-          ["Device", MOCK_STORAGE.device],
-          ["Serial", MOCK_STORAGE.serial.slice(0,8)+"..."],
-          ["Firmware", MOCK_STORAGE.firmware],
-          ["Capacity", MOCK_STORAGE.capacity],
+        <Card headingTx="storage:driveDetails" ContentComponent={<View style={$detailList}>{[
+          [t("storage:fields.device"), MOCK_STORAGE.device],
+          [t("storage:fields.serial"), MOCK_STORAGE.serial.slice(0,8)+"..."],
+          [t("storage:fields.firmware"), MOCK_STORAGE.firmware],
+          [t("storage:fields.capacity"), MOCK_STORAGE.capacity],
         ].map(([k,v]) => <View key={k} style={$detailRow}><Text text={k} size="sm" color="textDim" style={$detailKey} /><Text text={v} size="sm" color="text" /></View>)}</View>} style={$card} />
 
         {/* S.M.A.R.T. Data */}
@@ -103,14 +105,14 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
                   <Text text={item.value} size="sm" color="text" style={$smartValue} />
                 </View>
               ))}
-              {!showSmart && <Text text="Tap to expand" size="sm" color="textDim" />}
+              {!showSmart && <Text tx="common:info" size="sm" color="textDim" />}
             </Pressable>
           }
           style={$card}
         />
 
         {/* Partitions */}
-        <Card heading="Partitions" ContentComponent={<View style={$partitionList}>{PARTITIONS.map((p) => (
+        <Card headingTx="storage:partitions" ContentComponent={<View style={$partitionList}>{PARTITIONS.map((p) => (
           <View key={p.mountPoint} style={$partitionRow}>
             <View style={$partitionIcon}><Text text="💾" size="lg" /></View>
             <View style={$partitionCenter}>

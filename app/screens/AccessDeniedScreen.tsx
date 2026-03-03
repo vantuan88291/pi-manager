@@ -18,29 +18,35 @@ export const AccessDeniedScreen: FC = function AccessDeniedScreen() {
 
   return (
     <Screen preset="fixed">
-      <Header title="Access Denied" titleMode="center" />
+      <Header titleTx="accessDenied:title" titleMode="center" />
 
       <View style={themed($container)}>
         <View style={themed($iconContainer)}>
           <Icon font="Ionicons" icon="lock-closed" color={theme.colors.error} size={80} />
         </View>
 
-        <Text text="Access Denied" size="xl" weight="bold" color="text" style={themed($title)} />
+        <Text tx="accessDenied:title" size="xl" weight="bold" color="text" style={themed($title)} />
 
         <Text
-          text="Your Telegram account is not authorized to use this app. Contact the device owner to request access."
+          tx="accessDenied:message"
           size="md"
           color="textDim"
           style={themed($body)}
         />
 
-        <Button text="Retry" preset="default" onPress={handleRetry} style={$button} />
+        <Button tx="common:retry" preset="default" onPress={handleRetry} style={$button} />
       </View>
     </Screen>
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: spacing.xl, paddingTop: spacing.xl })
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
+  flex: 1, 
+  justifyContent: "center", 
+  alignItems: "center", 
+  paddingHorizontal: spacing.xl, 
+  paddingTop: spacing.xl 
+})
 const $iconContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginBottom: spacing.xl })
 const $title: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginBottom: spacing.md, textAlign: "center" })
 const $body: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginBottom: spacing.xl, textAlign: "center", lineHeight: 24 })

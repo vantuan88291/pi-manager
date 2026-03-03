@@ -5,22 +5,36 @@ import { Icon, FontFamily } from "@/components/Icon"
 import { Text } from "@/components/Text"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
+import { TxKeyPath } from "@/i18n"
 
 import { ProgressBar } from "./ProgressBar"
 import { SkeletonLoader } from "./SkeletonLoader"
 
 interface StatCardProps {
-  label: string
+  label?: string
+  labelTx?: TxKeyPath
   value: string
   unit?: string
   progress?: number
   progressColor?: string
   caption?: string
+  captionTx?: TxKeyPath
   icon?: { font: FontFamily; name: string; color: string; badgeBg: string }
   loading?: boolean
 }
 
-export const StatCard: FC<StatCardProps> = ({ label, value, unit, progress, progressColor, caption, icon, loading }) => {
+export const StatCard: FC<StatCardProps> = ({ 
+  label, 
+  labelTx,
+  value, 
+  unit, 
+  progress, 
+  progressColor, 
+  caption, 
+  captionTx,
+  icon, 
+  loading 
+}) => {
   const { themed, theme } = useAppTheme()
 
   if (loading) {
@@ -42,18 +56,26 @@ export const StatCard: FC<StatCardProps> = ({ label, value, unit, progress, prog
           <Icon font={icon.font} icon={icon.name} color={icon.color} size={20} />
         </View>
       )}
-      <Text text={label} size="xs" color="textDim" style={$label} />
+      <Text text={label} tx={labelTx} size="xs" color="textDim" style={$label} />
       <View style={$valueRow}>
         <Text text={value} size="xl" weight="bold" style={themed($value)} />
         {unit && <Text text={unit} size="sm" color="textDim" style={$unit} />}
       </View>
       {progress !== undefined && <ProgressBar value={progress} color={progressColor} style={$progressBar} />}
-      {caption && <Text text={caption} size="xs" color="textDim" style={$caption} />}
+      {(caption || captionTx) && <Text text={caption} tx={captionTx} size="xs" color="textDim" style={$caption} />}
     </View>
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.surface, borderRadius: spacing.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, minHeight: 150, flex: 1 })
+const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ 
+  backgroundColor: colors.surface, 
+  borderRadius: spacing.md, 
+  borderWidth: 1, 
+  borderColor: colors.border, 
+  padding: spacing.md, 
+  minHeight: 150, 
+  flex: 1 
+})
 const $iconBadge: ViewStyle = { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 }
 const $label: ViewStyle = { marginBottom: 4 }
 const $valueRow: ViewStyle = { flexDirection: "row", alignItems: "baseline", marginBottom: 8 }
