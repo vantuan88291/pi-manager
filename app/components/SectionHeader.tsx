@@ -4,13 +4,17 @@ import { View, ViewStyle, TextStyle, Pressable } from "react-native"
 import { Text } from "@/components/Text"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
+import { TxKeyPath } from "@/i18n"
 
 interface SectionHeaderProps {
   /** Section title */
-  title: string
+  title?: string
+  /** Section title translation key */
+  titleTx?: TxKeyPath
   /** Optional right action button */
   rightAction?: {
-    label: string
+    label?: string
+    labelTx?: TxKeyPath
     onPress: () => void
   }
   /** Style overrides */
@@ -19,6 +23,7 @@ interface SectionHeaderProps {
 
 export const SectionHeader: FC<SectionHeaderProps> = ({
   title,
+  titleTx,
   rightAction,
   style,
 }) => {
@@ -26,10 +31,10 @@ export const SectionHeader: FC<SectionHeaderProps> = ({
 
   return (
     <View style={[themed($container), style]}>
-      <Text text={title} size="md" weight="semiBold" style={themed($title)} />
+      <Text text={title} tx={titleTx} size="md" weight="semiBold" style={themed($title)} />
       {rightAction && (
         <Pressable onPress={rightAction.onPress} style={$action}>
-          <Text text={rightAction.label} size="sm" color="tint" />
+          <Text text={rightAction.label} tx={rightAction.labelTx} size="sm" color="tint" />
         </Pressable>
       )}
     </View>

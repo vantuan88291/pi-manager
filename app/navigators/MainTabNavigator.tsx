@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 
 import { Icon } from "@/components/Icon"
 import { useAppTheme } from "@/theme/context"
+import { TxKeyPath } from "@/i18n"
 
 import { ControlMenuScreen } from "@/screens/ControlMenuScreen"
 import { DashboardScreen } from "@/screens/DashboardScreen"
@@ -10,6 +11,19 @@ import { SettingsScreen } from "@/screens/SettingsScreen"
 import type { MainTabParamList } from "./navigationTypes"
 
 const Tab = createBottomTabNavigator<MainTabParamList>()
+
+interface TabConfig {
+  name: keyof MainTabParamList
+  component: React.ComponentType<any>
+  icon: string
+  labelTx: TxKeyPath
+}
+
+const TABS: TabConfig[] = [
+  { name: "Dashboard", component: DashboardScreen, icon: "speedometer", labelTx: "tabs:dashboard" },
+  { name: "Control", component: ControlMenuScreen, icon: "game-controller", labelTx: "tabs:control" },
+  { name: "Settings", component: SettingsScreen, icon: "settings", labelTx: "tabs:settings" },
+]
 
 export const MainTabNavigator: FC = function MainTabNavigator() {
   const { theme } = useAppTheme()
@@ -36,33 +50,19 @@ export const MainTabNavigator: FC = function MainTabNavigator() {
         },
       }}
     >
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Icon font="Ionicons" icon="speedometer" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Control"
-        component={ControlMenuScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Icon font="Ionicons" icon="game-controller" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Icon font="Ionicons" icon="settings" color={color} size={size} />
-          ),
-        }}
-      />
+      {TABS.map((tab) => (
+        <Tab.Screen
+          key={tab.name}
+          name={tab.name}
+          component={tab.component}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <Icon font="Ionicons" icon={tab.icon} color={color} size={size} />
+            ),
+            tabBarLabel: tab.labelTx,
+          }}
+        />
+      ))}
     </Tab.Navigator>
   )
 }

@@ -4,7 +4,9 @@ import i18n from "i18next"
 import { initReactI18next } from "react-i18next"
 import "intl-pluralrules"
 
-// if English isn't your default language, move Translations to the appropriate language file.
+import { storage } from "@/utils/storage"
+
+// Import all translations
 import ar from "./ar"
 import en, { Translations } from "./en"
 import es from "./es"
@@ -12,31 +14,92 @@ import fr from "./fr"
 import hi from "./hi"
 import ja from "./ja"
 import ko from "./ko"
+import vi from "./vi"
 
-const fallbackLocale = "en-US"
+const fallbackLocale = "en"
 
-const systemLocales = Localization.getLocales()
+// All supported languages
+export const resources = { 
+  ar, 
+  en, 
+  es, 
+  fr, 
+  hi, 
+  ja, 
+  ko, 
+  vi 
+} as const
 
-const resources = { ar, en, ko, es, fr, ja, hi }
+export type LanguageCode = keyof typeof resources
+
+export const LANGUAGE_OPTIONS: { label: string; value: LanguageCode }[] = [
+  { label: "English", value: "en" },
+  { label: "Tiếng Việt", value: "vi" },
+  { label: "한국어", value: "ko" },
+  { label: "日本語", value: "ja" },
+  { label: "Español", value: "es" },
+  { label: "Français", value: "fr" },
+  { label: "العربية", value: "ar" },
+  { label: "हिन्दी", value: "hi" },
+]
+
 const supportedTags = Object.keys(resources)
 
-// Checks to see if the device locale matches any of the supported locales
-// Device locale may be more specific and still match (e.g., en-US matches en)
-const systemTagMatchesSupportedTags = (deviceTag: string) => {
-  const primaryTag = deviceTag.split("-")[0]
-  return supportedTags.includes(primaryTag)
+// Storage key for language preference
+const LANGUAGE_STORAGE_KEY = "pimanager.language"
+
+/**
+ * Get saved language from storage or use system default
+ */
+export function getSavedLanguage(): LanguageCode | null {
+  try {
+    const saved = storage.getString(LANGUAGE_STORAGE_KEY)
+    if (saved && saved in resources) {
+      return saved as LanguageCode
+    }
+  } catch {
+    // ignore
+  }
+  return null
 }
 
-const pickSupportedLocale: () => Localization.Locale | undefined = () => {
-  return systemLocales.find((locale) => systemTagMatchesSupportedTags(locale.languageTag))
+/**
+ * Save language preference to storage
+ */
+export function saveLanguage(language: LanguageCode): void {
+  try {
+    storage.set(LANGUAGE_STORAGE_KEY, language)
+  } catch {
+    // ignore
+  }
 }
 
-const locale = pickSupportedLocale()
+/**
+ * Get initial language based on saved preference or system locale
+ */
+function getInitialLanguage(): LanguageCode {
+  // First check saved preference
+  const saved = getSavedLanguage()
+  if (saved) return saved
+
+  // Then check system locale
+  const systemLocales = Localization.getLocales()
+  for (const locale of systemLocales) {
+    const primaryTag = locale.languageTag.split("-")[0]
+    if (primaryTag in resources) {
+      return primaryTag as LanguageCode
+    }
+  }
+
+  return fallbackLocale
+}
+
+const initialLanguage = getInitialLanguage()
 
 export let isRTL = false
 
-// Need to set RTL ASAP to ensure the app is rendered correctly. Waiting for i18n to init is too late.
-if (locale?.languageTag && locale?.textDirection === "rtl") {
+// Need to set RTL ASAP to ensure the app is rendered correctly
+if (initialLanguage === "ar") {
   I18nManager.allowRTL(true)
   isRTL = true
 } else {
@@ -48,7 +111,7 @@ export const initI18n = async () => {
 
   await i18n.init({
     resources,
-    lng: locale?.languageTag ?? fallbackLocale,
+    lng: initialLanguage,
     fallbackLng: fallbackLocale,
     interpolation: {
       escapeValue: false,
@@ -59,9 +122,16 @@ export const initI18n = async () => {
 }
 
 /**
+ * Change language at runtime
+ */
+export async function changeLanguage(language: LanguageCode): Promise<void> {
+  saveLanguage(language)
+  await i18n.changeLanguage(language)
+}
+
+/**
  * Builds up valid keypaths for translations.
  */
-
 export type TxKeyPath = RecursiveKeyOf<Translations>
 
 // via: https://stackoverflow.com/a/65333050
