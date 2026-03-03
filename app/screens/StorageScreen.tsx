@@ -1,156 +1,370 @@
-import { FC, useState } from "react"
-import { View, ViewStyle, Pressable, TextStyle } from "react-native"
+import { FC, useState, useEffect, useMemo } from "react"
+import { View, ViewStyle, RefreshControl } from "react-native"
 import { useTranslation } from "react-i18next"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { Card } from "@/components/Card"
-import { StatCard } from "@/components/StatCard"
 import { ProgressBar } from "@/components/ProgressBar"
-import { SectionHeader } from "@/components/SectionHeader"
+import { Icon } from "@/components/Icon"
+import { Badge } from "@/components/Badge"
 import { useAppTheme } from "@/theme/context"
 import { getFeatureColor } from "@/theme/featureColors"
+import { useSocket } from "@/services/socket/SocketContext"
+import { storageClientModule } from "@/services/socket/modules/storage"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
+import type { StorageStatus, Partition } from "../../../shared/types/storage"
 
-type StorageScreenProps = AppStackScreenProps<"Storage">
+type StorageScreenProps = Omit<AppStackScreenProps<"Storage">, "navigation">
 
-const MOCK_STORAGE = {
-  model: "Samsung 970 EVO Plus 250GB",
-  type: "NVMe SSD",
-  device: "/dev/nvme0n1",
-  serial: "S4EWNX0M123456",
-  firmware: "2B2QEXM7",
-  capacity: "232.9 GB",
-  percentageUsed: 38,
-  temperature: 38,
-  lifespanUsed: 12,
-  totalWritten: "2.4 TB",
-  powerOnHours: 1247,
-}
-
-const PARTITIONS = [
-  { mountPoint: "/", filesystem: "ext4", used: "42.1 GB", total: "116.5 GB", percentage: 36 },
-  { mountPoint: "/boot", filesystem: "vfat", used: "256 MB", total: "512 MB", percentage: 50 },
-]
-
-const S_MART_DATA = [
-  { name: "Available Spare", value: "100%", status: "ok" },
-  { name: "Media Errors", value: "0", status: "ok" },
-  { name: "Unsafe Shutdowns", value: "3", status: "warning" },
-  { name: "Critical Warning", value: "0", status: "ok" },
-]
-
-const getHealthStatus = (p: number) => p < 80 ? "healthy" : p < 95 ? "warning" : "critical"
-const alpha = (color: string, opacity: number) => color + Math.round(opacity * 255).toString(16).padStart(2, "0").toUpperCase()
-const getHealthColor = (s: string, theme: any) => s === "healthy" ? { bg: alpha(theme.colors.success, 0.12), text: theme.colors.success } : s === "warning" ? { bg: alpha(theme.colors.warning, 0.12), text: theme.colors.warning } : { bg: alpha(theme.colors.error, 0.12), text: theme.colors.error }
-const formatNumber = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-
-export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ navigation }) {
+export const StorageScreen: FC<StorageScreenProps> = function StorageScreen() {
   const { t } = useTranslation()
-  const { theme } = useAppTheme()
+  const { themed, theme } = useAppTheme()
   const { accent: storageAccent } = getFeatureColor("storage", theme.isDark)
-  const [showSmart, setShowSmart] = useState(false)
-  const healthStatus = getHealthStatus(MOCK_STORAGE.percentageUsed)
-  const healthColor = getHealthColor(healthStatus, theme)
+  const { subscribeToModule, unsubscribeFromModule } = useSocket()
+  
+  const [storageStatus, setStorageStatus] = useState<StorageStatus | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Filter out tmpfs and sort by usage
+  const filteredPartitions = useMemo(() => {
+    if (!storageStatus?.partitions) return []
+    return storageStatus.partitions
+      .filter(p => !p.filesystem.includes('tmpfs') && p.size > 0)
+      .sort((a, b) => b.percent - a.percent)
+  }, [storageStatus?.partitions])
+
+  // Subscribe to Storage module
+  useEffect(() => {
+    subscribeToModule("storage")
+    
+    const unsubStatus = storageClientModule.onStatus((status) => {
+      setStorageStatus(status)
+    })
+    
+    return () => {
+      unsubStatus()
+      unsubscribeFromModule("storage")
+    }
+  }, [subscribeToModule, unsubscribeFromModule])
+
+  const handleRefresh = async () => {
+    try {
+    setRefreshing(true)
+    await storageClientModule.refresh()
+    setTimeout(() => setRefreshing(false), 1000)
+    } catch (error) {
+      console.error("[StorageScreen] refresh error:", error)
+    }
+  }
+
+  const getHealthStatus = (percentageUsed: number) => {
+    if (percentageUsed < 80) return { label: t("storage:health.good"), color: theme.colors.success, icon: "checkmark-circle" }
+    if (percentageUsed < 95) return { label: t("storage:health.warning"), color: theme.colors.warning, icon: "alert-circle" }
+    return { label: t("storage:health.critical"), color: theme.colors.error, icon: "close-circle" }
+  }
+
+  const getWarningLevel = (health: StorageStatus['health']) => {
+    if (!health) return { level: 'none', count: 0 }
+    
+    let count = 0
+    if (health.criticalWarning > 0) count++
+    if (health.mediaErrors > 0) count++
+    if (health.unsafeShutdowns > 10) count++
+    if (health.availableSpare < health.availableSpareThreshold) count++
+    
+    if (count === 0) return { level: 'none', count: 0 }
+    if (count <= 2) return { level: 'warning', count }
+    return { level: 'critical', count }
+  }
+
+  const formatBytes = (bytes: number) => {
+    const gb = bytes / (1024 * 1024 * 1024)
+    return `${gb.toFixed(1)} GB`
+  }
+
+  // Fix: Convert Kelvin to Celsius (NVMe returns temperature in Kelvin)
+  const formatTemperature = (temp: number) => {
+    // NVMe returns temperature in Kelvin (0-65535)
+    // Convert to Celsius: C = K - 273.15
+    const celsius = temp > 200 ? temp - 273.15 : temp
+    return `${Math.round(celsius)}°C`
+  }
+
+  const health = storageStatus?.health
+  const healthStatus = health ? getHealthStatus(health.percentageUsed) : null
+  const warningLevel = getWarningLevel(health)
 
   return (
-    <Screen preset="scroll">
+    <Screen preset="scroll" ScrollViewProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} /> }}>
       <Header titleTx="storage:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
-      <View style={$container}>
-        {/* Health Overview */}
-        <Card 
-          headingTx={`storage:status.${healthStatus}`}
+      {/* Health Overview Card */}
+      {health && (
+        <Card
+          headingTx="storage:healthOverview"
+          style={themed($card)}
           ContentComponent={
-            <>
-              <View style={$healthBadgeRow}>
-                <View style={[$healthBadge, { backgroundColor: healthColor.bg }]}>
-                  <Text text={healthStatus === "healthy" ? "✓" : "⚠️"} size="lg" color={healthColor.text} />
-                  <Text tx={`storage:status.${healthStatus}`} size="md" weight="bold" color={healthColor.text} />
+            <View>
+              <View style={[$healthHeader, { backgroundColor: healthStatus?.color + "15" }]}>
+                <View style={[$healthIconBadge, { backgroundColor: healthStatus?.color + "20" }]}>
+                  <Icon 
+                    font="Ionicons" 
+                    icon={healthStatus?.icon || "checkmark-circle"} 
+                    color={healthStatus?.color || theme.colors.text} 
+                    size={24} 
+                  />
                 </View>
+                <View style={$healthInfo}>
+                  <Text tx="storage:healthStatus" size="sm" color="textDim" weight="medium" />
+                  <Text text={healthStatus?.label || "Unknown"} size="lg" weight="semiBold" color={healthStatus?.color || theme.colors.text} />
+                </View>
+                {warningLevel.count > 0 && (
+                  <Badge 
+                    text={`${warningLevel.count} ${t("storage:warnings")}`} 
+                    color={warningLevel.level === 'critical' ? theme.colors.error : theme.colors.warning}
+                  />
+                )}
               </View>
-              <Text text={MOCK_STORAGE.model} size="lg" weight="semiBold" color="text" style={$modelText} />
-              <Text text={MOCK_STORAGE.type} size="sm" color="textDim" />
-            </>
-          }
-          style={$card}
-        />
-
-        {/* Key Metrics - 2x2 Grid */}
-        <SectionHeader titleTx="storage:keyMetrics" style={$sectionHeader} />
-        <View style={$metricsGrid}>
-          <View style={$metricCard}><StatCard labelTx="storage:metrics.lifespanUsed" value={`${MOCK_STORAGE.lifespanUsed}%`} progress={MOCK_STORAGE.lifespanUsed} progressColor={storageAccent} captionTx="storage:captions.lifespanRemaining" icon={{ font: "MaterialCommunityIcons", name: "heart-pulse", color: storageAccent, badgeBg: theme.isDark ? "#164E63" : "#ECFEFF" }} /></View>
-          <View style={$metricCard}><StatCard labelTx="storage:metrics.temperature" value={`${MOCK_STORAGE.temperature}°C`} progress={MOCK_STORAGE.temperature} progressColor={theme.colors.success} captionTx="storage:captions.driveThermal" icon={{ font: "MaterialCommunityIcons", name: "thermometer", color: theme.colors.warning, badgeBg: theme.isDark ? "#78350F" : "#FFFBEB" }} /></View>
-          <View style={$metricCard}><StatCard labelTx="storage:metrics.totalWritten" value={MOCK_STORAGE.totalWritten} captionTx="storage:captions.lifetimeWrites" icon={{ font: "MaterialCommunityIcons", name: "arrow-down-circle", color: "#8B5CF6", badgeBg: theme.isDark ? "#4C1D95" : "#F5F3FF" }} /></View>
-          <View style={$metricCard}><StatCard labelTx="storage:metrics.powerOn" value={formatNumber(MOCK_STORAGE.powerOnHours)} unit="hrs" captionTx="storage:captions.totalRuntime" icon={{ font: "MaterialCommunityIcons", name: "clock", color: "#3B82F6", badgeBg: theme.isDark ? "#1E3A5F" : "#EFF6FF" }} /></View>
-        </View>
-
-        {/* Drive Details */}
-        <Card headingTx="storage:driveDetails" ContentComponent={<View style={$detailList}>{[
-          [t("storage:fields.device"), MOCK_STORAGE.device],
-          [t("storage:fields.serial"), MOCK_STORAGE.serial.slice(0,8)+"..."],
-          [t("storage:fields.firmware"), MOCK_STORAGE.firmware],
-          [t("storage:fields.capacity"), MOCK_STORAGE.capacity],
-        ].map(([k,v]) => <View key={k} style={$detailRow}><Text text={k} size="sm" color="textDim" style={$detailKey} /><Text text={v} size="sm" color="text" /></View>)}</View>} style={$card} />
-
-        {/* S.M.A.R.T. Data */}
-        <Card 
-          heading="S.M.A.R.T. Data"
-          ContentComponent={
-            <Pressable onPress={() => setShowSmart(!showSmart)}>
-              {showSmart && S_MART_DATA.map((item) => (
-                <View key={item.name} style={[$smartRow, item.status === "warning" && { borderLeftWidth: 3, borderLeftColor: theme.colors.warning, paddingLeft: 8 }]}>
-                  <Text text={item.name} size="sm" color="text" />
-                  <Text text={item.value} size="sm" color="text" style={$smartValue} />
+              
+              <Text text={storageStatus?.model || "NVMe SSD"} size="md" weight="semiBold" color="text" style={{ marginTop: 16 }} />
+              <Text text={`${storageStatus?.interface || "NVMe"} • ${storageStatus?.serial ? storageStatus.serial.slice(0, 8) + "..." : ""}`} size="sm" color="textDim" />
+              
+              <View style={$statsGrid}>
+                <StatItem 
+                  icon="💾" 
+                  value={formatBytes(storageStatus?.capacity || 0)} 
+                  labelTx="storage:capacity"
+                  badgeColor="#EFF6FF"
+                />
+                <StatItem 
+                  icon="🌡️" 
+                  value={formatTemperature(health.temperature)} 
+                  labelTx="storage:temperature"
+                  badgeColor={health.temperature > 32315 ? "#FEF2F2" : "#FFFBEB"}
+                  valueColor={health.temperature > 32315 ? theme.colors.error : theme.colors.text}
+                />
+                <StatItem 
+                  icon="⏱️" 
+                  value={`${Math.round(health.powerOnHours / 24)}d`} 
+                  labelTx="storage:powerOn"
+                  badgeColor="#F5F3FF"
+                />
+              </View>
+              
+              <View style={{ marginTop: 16 }}>
+                <View style={$progressLabel}>
+                  <Text tx="storage:lifespanUsed" size="sm" color="textDim" weight="medium" />
+                  <Text text={`${health.percentageUsed}%`} size="sm" weight="semiBold" color="text" />
                 </View>
-              ))}
-              {!showSmart && <Text tx="common:info" size="sm" color="textDim" />}
-            </Pressable>
+                <ProgressBar 
+                  progress={health.percentageUsed / 100} 
+                  color={healthStatus?.color || storageAccent} 
+                  style={{ marginTop: 8 }} 
+                />
+                <Text tx="storage:lifespanRemaining" size="xs" color="textDim" style={{ marginTop: 6 }} />
+              </View>
+            </View>
           }
-          style={$card}
         />
+      )}
 
-        {/* Partitions */}
-        <Card headingTx="storage:partitions" ContentComponent={<View style={$partitionList}>{PARTITIONS.map((p) => (
-          <View key={p.mountPoint} style={$partitionRow}>
-            <View style={$partitionIcon}><Text text="💾" size="lg" /></View>
-            <View style={$partitionCenter}>
-              <Text text={p.mountPoint} size="sm" weight="medium" color="text" />
-              <Text text={p.filesystem} size="xs" color="textDim" />
+      {/* S.M.A.R.T. Details Card */}
+      {health && (
+        <Card
+          headingTx="storage:smartData"
+          style={themed([$card, $section])}
+          ContentComponent={
+            <View>
+              <SmartDetailRow 
+                labelTx="storage:criticalWarning" 
+                value={health.criticalWarning.toString()} 
+                icon={health.criticalWarning > 0 ? "alert-circle" : "checkmark-circle"}
+                warning={health.criticalWarning > 0}
+                iconColor={health.criticalWarning > 0 ? theme.colors.error : theme.colors.success}
+              />
+              <SmartDetailRow 
+                labelTx="storage:mediaErrors" 
+                value={health.mediaErrors.toString()} 
+                icon={health.mediaErrors > 0 ? "warning" : "checkmark-circle"}
+                warning={health.mediaErrors > 0}
+                iconColor={health.mediaErrors > 0 ? theme.colors.error : theme.colors.success}
+              />
+              <SmartDetailRow 
+                labelTx="storage:unsafeShutdowns" 
+                value={health.unsafeShutdowns.toString()} 
+                icon={health.unsafeShutdowns > 10 ? "flash-off" : "flash"}
+                warning={health.unsafeShutdowns > 10}
+                iconColor={health.unsafeShutdowns > 10 ? theme.colors.warning : theme.colors.success}
+              />
+              <SmartDetailRow 
+                labelTx="storage:availableSpare" 
+                value={`${health.availableSpare}%`} 
+                icon={health.availableSpare < health.availableSpareThreshold ? "battery-charging" : "battery-full"}
+                warning={health.availableSpare < health.availableSpareThreshold}
+                iconColor={health.availableSpare < health.availableSpareThreshold ? theme.colors.error : theme.colors.success}
+              />
+              <SmartDetailRow 
+                labelTx="storage:errorLogEntries" 
+                value={health.errorLogEntries.toString()} 
+                icon="document-text"
+                warning={health.errorLogEntries > 100}
+                iconColor={health.errorLogEntries > 100 ? theme.colors.warning : theme.colors.textDim}
+              />
+              <SmartDetailRow 
+                labelTx="storage:dataWritten" 
+                value={formatBytes(health.dataUnitsWritten * 512000)} 
+                icon="arrow-down-circle"
+                iconColor={theme.colors.textDim}
+              />
             </View>
-            <View style={$partitionRight}>
-              <ProgressBar value={p.percentage} style={$partitionProgress} />
-              <Text text={`${p.used}/${p.total}`} size="xs" color="textDim" />
-            </View>
+          }
+        />
+      )}
+
+      {/* Partitions Card */}
+      <Card
+        headingTx="storage:partitions"
+        style={themed([$card, $section])}
+        ContentComponent={
+          <View>
+            {filteredPartitions.length > 0 ? (
+              filteredPartitions.map((partition, index) => (
+                <PartitionRow 
+                  key={partition.mount} 
+                  partition={partition} 
+                  isLast={index === filteredPartitions.length - 1}
+                />
+              ))
+            ) : (
+              <View style={$emptyState}>
+                <Text text="💾" size="xl" />
+                <Text tx="storage:noPartitions" size="sm" color="textDim" style={{ marginTop: 8 }} />
+              </View>
+            )}
           </View>
-        ))}</View>} style={$card} />
-      </View>
+        }
+      />
     </Screen>
   )
 }
 
-const $container: ViewStyle = { paddingHorizontal: 16 }
-const $card: ViewStyle = { marginBottom: 16 }
-const $sectionHeader: ViewStyle = { marginTop: 8, marginBottom: 12 }
+function StatItem({ icon, value, labelTx, badgeColor, valueColor }: { 
+  icon: string, 
+  value: string, 
+  labelTx: string,
+  badgeColor: string,
+  valueColor?: string
+}) {
+  const { theme } = useAppTheme()
+  
+  return (
+    <View style={$statItem}>
+      <View style={[$statIconBadge, { backgroundColor: badgeColor }]}>
+        <Text text={icon} size="lg" />
+      </View>
+      <Text text={value} size="sm" weight="semiBold" color={valueColor || theme.colors.text} style={{ marginTop: 8 }} />
+      <Text tx={labelTx} size="xs" color="textDim" />
+    </View>
+  )
+}
 
-const $healthBadgeRow: ViewStyle = { alignItems: "center", marginBottom: 12 }
-const $healthBadge: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }
-const $modelText: TextStyle = { marginBottom: 4 }
+function SmartDetailRow({ labelTx, value, icon, warning = false, iconColor }: { 
+  labelTx: string, 
+  value: string, 
+  icon: string,
+  warning?: boolean,
+  iconColor?: string
+}) {
+  const { themed, theme } = useAppTheme()
+  
+  return (
+    <View style={themed([$detailRow, $borderTop])}>
+      <View style={$detailLeft}>
+        <Icon font="Ionicons" icon={icon} color={iconColor || (warning ? theme.colors.error : theme.colors.success)} size={18} />
+        <Text tx={labelTx} size="sm" color="textDim" style={{ marginLeft: 8 }} />
+      </View>
+      <Text text={value} size="sm" weight="semiBold" color={warning ? theme.colors.error : theme.colors.text} />
+    </View>
+  )
+}
 
-const $metricsGrid: ViewStyle = { flexDirection: "row", flexWrap: "wrap", marginHorizontal: -6 }
-const $metricCard: ViewStyle = { width: "50%", paddingHorizontal: 6, marginBottom: 12 }
+function PartitionRow({ partition, isLast }: { partition: Partition, isLast: boolean }) {
+  const { themed, theme } = useAppTheme()
+  const { t } = useTranslation()
+  
+  const getProgressColor = (percent: number) => {
+    if (percent < 70) return theme.colors.success
+    if (percent < 90) return theme.colors.warning
+    return theme.colors.error
+  }
+  
+  // Truncate long mount paths
+  const truncateMount = (mount: string) => {
+    if (mount.length <= 20) return mount
+    const parts = mount.split('/')
+    if (parts.length <= 3) return mount
+    return '/' + parts.slice(1, -1).map(p => p.slice(0, 3)).join('/') + '/' + parts[parts.length - 1]
+  }
+  
+  return (
+    <View style={!isLast && themed($borderTop)}>
+      <View style={[$partitionRow, { paddingVertical: 12 }]}>
+        <View style={$partitionLeft}>
+          <View style={[$partitionIcon, { backgroundColor: theme.colors.palette.neutral200 }]}>
+            <Icon font="Ionicons" icon="folder" color={theme.colors.textDim} size={16} />
+          </View>
+          <View style={$partitionInfo}>
+            <Text 
+              text={truncateMount(partition.mount)} 
+              weight="semiBold" 
+              color="text" 
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            />
+            <Text 
+              text={`${partition.filesystem} • ${formatBytes(partition.used)} / ${formatBytes(partition.size)}`} 
+              size="xs" 
+              color="textDim"
+              numberOfLines={1}
+            />
+          </View>
+        </View>
+        <View style={$partitionRight}>
+          <Text text={`${partition.percent}%`} size="sm" weight="bold" color={getProgressColor(partition.percent)} />
+        </View>
+      </View>
+      
+      <ProgressBar 
+        progress={partition.percent / 100} 
+        color={getProgressColor(partition.percent)} 
+        style={{ marginTop: 8 }} 
+      />
+    </View>
+  )
+}
 
-const $detailList: ViewStyle = { gap: 4 }
-const $detailRow: ViewStyle = { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#E2E8F0" }
-const $detailKey: TextStyle = { width: 80 }
+function formatBytes(bytes: number): string {
+  const gb = bytes / (1024 * 1024 * 1024)
+  return `${gb.toFixed(1)} GB`
+}
 
-const $smartRow: ViewStyle = { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8 }
-const $smartValue: TextStyle = { fontFamily: "monospace" }
-
-const $partitionList: ViewStyle = { gap: 12 }
-const $partitionRow: ViewStyle = { flexDirection: "row", alignItems: "center" }
-const $partitionIcon: ViewStyle = { width: 40 }
-const $partitionCenter: ViewStyle = { flex: 1 }
-const $partitionRight: ViewStyle = { alignItems: "flex-end", gap: 4 }
-const $partitionProgress: ViewStyle = { width: 80, height: 4 }
+const $card: ViewStyle = { marginHorizontal: 16, marginVertical: 8 }
+const $section: ViewStyle = { marginTop: 8 }
+const $healthHeader: ViewStyle = { flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 12, gap: 12 }
+const $healthIconBadge: ViewStyle = { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" }
+const $healthInfo: ViewStyle = { flex: 1 }
+const $statsGrid: ViewStyle = { flexDirection: "row", justifyContent: "space-around", marginTop: 20, paddingVertical: 12 }
+const $statItem: ViewStyle = { alignItems: "center" }
+const $statIconBadge: ViewStyle = { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" }
+const $progressLabel: ViewStyle = { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }
+const $detailRow: ViewStyle = { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12 }
+const $detailLeft: ViewStyle = { flexDirection: "row", alignItems: "center", flex: 1 }
+const $borderTop: ViewStyle = { borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)", paddingTop: 12 }
+const $partitionRow: ViewStyle = { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12 }
+const $partitionLeft: ViewStyle = { flexDirection: "row", alignItems: "center", flex: 1 }
+const $partitionIcon: ViewStyle = { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 }
+const $partitionInfo: ViewStyle = { flex: 1 }
+const $partitionRight: ViewStyle = { alignItems: "flex-end" }
+const $emptyState: ViewStyle = { alignItems: "center", paddingVertical: 32 }
