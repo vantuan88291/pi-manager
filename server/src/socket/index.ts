@@ -3,6 +3,7 @@ import { Server, Socket } from "socket.io"
 import { validateTelegramInitData } from "../auth/telegram.js"
 import { whitelist } from "../auth/whitelist.js"
 import { systemModule } from "./modules/system.js"
+import { wifiModule } from "./modules/wifi.js"
 
 import type { ServerSocketModule } from "./types.js"
 
@@ -26,7 +27,8 @@ setInterval(() => {
 
 const modules: ServerSocketModule[] = [
   systemModule,
-  // wifiModule, bluetoothModule, audioModule, cameraModule - Phase 2+
+  wifiModule,
+  // wifiModule, bluetoothModule, audioModule, storageModule, cameraModule - Phase 2+
 ]
 
 export function setupSocketServer(io: Server) {
