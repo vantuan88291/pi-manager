@@ -6,27 +6,15 @@ import "intl-pluralrules"
 
 import { storage } from "@/utils/storage"
 
-// Import all translations
-import ar from "./ar"
+// Import only EN and VI translations
 import en, { Translations } from "./en"
-import es from "./es"
-import fr from "./fr"
-import hi from "./hi"
-import ja from "./ja"
-import ko from "./ko"
 import vi from "./vi"
 
 const fallbackLocale = "en"
 
-// All supported languages
+// Supported languages: English and Vietnamese only
 export const resources = { 
-  ar, 
   en, 
-  es, 
-  fr, 
-  hi, 
-  ja, 
-  ko, 
   vi 
 } as const
 
@@ -35,12 +23,6 @@ export type LanguageCode = keyof typeof resources
 export const LANGUAGE_OPTIONS: { label: string; value: LanguageCode }[] = [
   { label: "English", value: "en" },
   { label: "Tiếng Việt", value: "vi" },
-  { label: "한국어", value: "ko" },
-  { label: "日本語", value: "ja" },
-  { label: "Español", value: "es" },
-  { label: "Français", value: "fr" },
-  { label: "العربية", value: "ar" },
-  { label: "हिन्दी", value: "hi" },
 ]
 
 const supportedTags = Object.keys(resources)
@@ -82,12 +64,14 @@ function getInitialLanguage(): LanguageCode {
   const saved = getSavedLanguage()
   if (saved) return saved
 
-  // Then check system locale
+  // Then check system locale - only support en or vi
   const systemLocales = Localization.getLocales()
   for (const locale of systemLocales) {
     const primaryTag = locale.languageTag.split("-")[0]
-    if (primaryTag in resources) {
-      return primaryTag as LanguageCode
+    if (primaryTag === "vi") {
+      return "vi"
+    } else if (primaryTag === "en") {
+      return "en"
     }
   }
 
@@ -98,13 +82,8 @@ const initialLanguage = getInitialLanguage()
 
 export let isRTL = false
 
-// Need to set RTL ASAP to ensure the app is rendered correctly
-if (initialLanguage === "ar") {
-  I18nManager.allowRTL(true)
-  isRTL = true
-} else {
-  I18nManager.allowRTL(false)
-}
+// Disable RTL for both EN and VI
+I18nManager.allowRTL(false)
 
 export const initI18n = async () => {
   i18n.use(initReactI18next)
