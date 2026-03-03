@@ -1,6 +1,7 @@
 import { FC, useState, useEffect } from "react"
 import { View, ViewStyle, Pressable, ScrollView } from "react-native"
 
+import { useTranslation } from "react-i18next"
 import { Header } from "@/components/Header"
 import { Icon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
@@ -22,6 +23,7 @@ const THEME_OPTIONS: { labelTx: string; value: "light" | "dark" | undefined }[] 
 ]
 
 export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen() {
+  const { t } = useTranslation()
   const { themed, theme, themeContext, setThemeContextOverride } = useAppTheme()
   const [selectedTheme, setSelectedTheme] = useState<"light" | "dark" | undefined>(themeContext)
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>("en")
