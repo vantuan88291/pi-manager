@@ -1,32 +1,33 @@
 export interface SystemStats {
   cpu: {
-    usage: number // 0–100
-    temperature: number // °C
+    usage: number
+    temperature: number
     model: string
     cores: number
-    frequency: number // MHz
+    frequency: number
   }
   memory: {
-    total: number // bytes
+    total: number
     used: number
+    available: number
     free: number
-    percent: number // 0–100
+    percent: number
   }
   disk: Array<{
     filesystem: string
-    size: number // bytes
+    size: number
     used: number
     mount: string
     percent: number
   }>
   network: Array<{
-    iface: string // "wlan0", "eth0"
+    iface: string
     ip4: string
     mac: string
-    speed: number | null // Mbps
+    speed: number | null
     isUp: boolean
   }>
-  uptime: number // seconds
+  uptime: number
 }
 
 export interface SystemInfo {

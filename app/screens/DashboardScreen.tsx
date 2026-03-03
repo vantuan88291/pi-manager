@@ -54,14 +54,15 @@ export const DashboardScreen: FC = function DashboardScreen() {
     const mainDisk = stats.disk.find(d => d.mount === "/") || stats.disk[0]
     const memoryUsedGB = (stats.memory.used / (1024 * 1024 * 1024)).toFixed(1)
     const memoryTotalGB = (stats.memory.total / (1024 * 1024 * 1024)).toFixed(1)
+    const memoryPercent = Math.round((stats.memory.used / stats.memory.total) * 100)
 
     return {
       cpu: { value: stats.cpu.usage, caption: `${stats.cpu.cores} cores` },
       temperature: { value: stats.cpu.temperature, caption: stats.cpu.model.slice(0, 20) },
-      memory: { value: stats.memory.percent, caption: `${memoryUsedGB}GB / ${memoryTotalGB}GB` },
+      memory: { value: memoryPercent, caption: `${memoryUsedGB}GB / ${memoryTotalGB}GB` },
       disk: { value: mainDisk?.percent ?? 0, caption: mainDisk ? `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.size)}` : "--" },
     }
-  }, [stats?.cpu.usage, stats?.cpu.temperature, stats?.cpu.model, stats?.cpu.cores, stats?.memory.used, stats?.memory.total, stats?.memory.percent, stats?.disk])
+  }, [stats?.cpu.usage, stats?.cpu.temperature, stats?.cpu.model, stats?.cpu.cores, stats?.memory.used, stats?.memory.total, stats?.disk])
 
   const deviceInfo = useMemo(() => {
     if (!info) return []

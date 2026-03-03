@@ -17,6 +17,10 @@ async function getSystemStats(): Promise<SystemStats> {
     si.cpuTemperature(),
   ])
 
+  // Calculate actual used memory (excluding buffers/cache)
+  // systeminformation.mem.used includes buffers/cache, so we use total - available instead
+  const actualUsed = mem.total - mem.available
+
   return {
     cpu: {
       usage: Math.round(cpu.currentLoad),
@@ -27,9 +31,10 @@ async function getSystemStats(): Promise<SystemStats> {
     },
     memory: {
       total: mem.total,
-      used: mem.used,
+      used: actualUsed,
+      available: mem.available,
       free: mem.free,
-      percent: Math.round((mem.used / mem.total) * 100),
+      percent: Math.round((actualUsed / mem.total) * 100),
     },
     disk: disk.map((d) => ({
       filesystem: d.fs,
