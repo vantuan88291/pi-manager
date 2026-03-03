@@ -1,4 +1,4 @@
-import { FC, useState } from "react"
+import { FC, useState, useMemo, useCallback } from "react"
 import { View, ViewStyle, RefreshControl } from "react-native"
 
 import { ConnectionBadge } from "@/components/ConnectionBadge"
@@ -11,102 +11,167 @@ import { Text } from "@/components/Text"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 import { TxKeyPath } from "@/i18n"
+import { useSystemStats } from "@/hooks/useSystemStats"
+import { useConnectionState } from "@/services/socket/SocketContext"
 
-const mockStats = {
-  cpu: { value: 45, labelTx: "dashboard:stats.cpu" as TxKeyPath, captionTx: "dashboard:stats.cpuCaption" as TxKeyPath },
-  temperature: { value: 52, labelTx: "dashboard:stats.temperature" as TxKeyPath, captionTx: "dashboard:stats.tempCaption" as TxKeyPath },
-  memory: { value: 68, labelTx: "dashboard:stats.memory" as TxKeyPath, caption: "4GB / 8GB" },
-  disk: { value: 34, labelTx: "dashboard:stats.disk" as TxKeyPath, caption: "120GB / 500GB" },
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  if (days > 0) return `${days}d ${hours}h ${mins}m`
+  if (hours > 0) return `${hours}h ${mins}m`
+  return `${mins}m`
 }
 
-const mockNetwork = [
-  { name: "wlan0", ip: "192.168.1.100", status: "up" },
-  { name: "eth0", ip: null, status: "down" },
-]
-
-const mockDeviceInfo: { key: TxKeyPath; value: string }[] = [
-  { key: "dashboard:hostname", value: "raspberrypi" },
-  { key: "dashboard:os", value: "Raspberry Pi OS" },
-  { key: "dashboard:kernel", value: "6.1.21-v8+" },
-  { key: "dashboard:uptime", value: "3d 14h 22m" },
-]
+function formatBytes(bytes: number): string {
+  const gb = bytes / (1024 * 1024 * 1024)
+  return `${gb.toFixed(1)}GB`
+}
 
 export const DashboardScreen: FC = function DashboardScreen() {
   const { themed, theme } = useAppTheme()
   const [refreshing, setRefreshing] = useState(false)
+  const { stats, info, isConnected, error, retry } = useSystemStats()
+  const connectionState = useConnectionState()
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true)
+    retry()
     setTimeout(() => setRefreshing(false), 1000)
-  }
+  }, [retry])
+
+  // Derive display values from socket data - memoized to avoid recalculation
+  const displayStats = useMemo(() => {
+    if (!stats) {
+      return {
+        cpu: { value: 0, caption: "--" },
+        temperature: { value: 0, caption: "--" },
+        memory: { value: 0, caption: "-- / --" },
+        disk: { value: 0, caption: "-- / --" },
+      }
+    }
+
+    const mainDisk = stats.disk.find(d => d.mount === "/") || stats.disk[0]
+    const memoryUsedGB = (stats.memory.used / (1024 * 1024 * 1024)).toFixed(1)
+    const memoryTotalGB = (stats.memory.total / (1024 * 1024 * 1024)).toFixed(1)
+    const memoryPercent = Math.round((stats.memory.used / stats.memory.total) * 100)
+
+    return {
+      cpu: { value: stats.cpu.usage, caption: `${stats.cpu.cores} cores` },
+      temperature: { value: stats.cpu.temperature, caption: stats.cpu.model.slice(0, 20) },
+      memory: { value: memoryPercent, caption: `${memoryUsedGB}GB / ${memoryTotalGB}GB` },
+      disk: { value: mainDisk?.percent ?? 0, caption: mainDisk ? `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.size)}` : "--" },
+    }
+  }, [stats?.cpu.usage, stats?.cpu.temperature, stats?.cpu.model, stats?.cpu.cores, stats?.memory.used, stats?.memory.total, stats?.disk])
+
+  const deviceInfo = useMemo(() => {
+    if (!info) return []
+    return [
+      { key: "dashboard:hostname" as TxKeyPath, value: info.hostname },
+      { key: "dashboard:os" as TxKeyPath, value: info.os.distro },
+      { key: "dashboard:kernel" as TxKeyPath, value: info.os.kernel },
+      { key: "dashboard:uptime" as TxKeyPath, value: formatUptime(stats?.uptime ?? 0) },
+    ]
+  }, [info?.hostname, info?.os.distro, info?.os.kernel, stats?.uptime])
+
+  const networkInterfaces = useMemo(() => {
+    if (!stats?.network) return []
+    return stats.network.map(net => ({
+      name: net.iface,
+      ip: net.ip4 || null,
+      status: net.isUp ? "up" as const : "down" as const,
+    }))
+  }, [stats?.network])
+
+  // Connection status - memoized
+  const connectionStatus = useMemo(() => {
+    return connectionState.status === "connected" && connectionState.isAuthenticated
+      ? "connected" as const
+      : connectionState.status === "connecting"
+        ? "connecting" as const
+        : "disconnected" as const
+  }, [connectionState.status, connectionState.isAuthenticated])
 
   return (
     <Screen preset="scroll" ScrollViewProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }}>
       <Header titleTx="dashboard:title" titleMode="center" />
 
       <View style={themed($statusRow)}>
-        <ConnectionBadge status="connected" />
-        <Text text="raspberrypi" size="sm" color="textDim" />
+        <ConnectionBadge status={connectionStatus} />
+        <Text text={info?.hostname ?? "connecting..."} size="sm" color="textDim" />
       </View>
+
+      {/* Error state */}
+      {error && (
+        <View style={themed($errorCard)}>
+          <Icon font="Ionicons" icon="alert-circle" color={theme.colors.error} size={24} />
+          <Text text={error.message} color="error" size="sm" style={$errorText} />
+          <Text text="Tap to retry" color="textDim" size="xs" onPress={onRefresh} style={{ textDecorationLine: "underline" }} />
+        </View>
+      )}
 
       <View style={themed($statsGrid)}>
         <StatCard 
-          labelTx={mockStats.cpu.labelTx} 
-          value={`${mockStats.cpu.value}%`} 
-          progress={mockStats.cpu.value} 
+          labelTx="dashboard:stats.cpu" 
+          value={`${displayStats.cpu.value}%`} 
+          progress={displayStats.cpu.value} 
           progressColor={theme.colors.tint} 
-          captionTx={mockStats.cpu.captionTx} 
+          caption={displayStats.cpu.caption} 
           icon={{ font: "Ionicons", name: "hardware-chip", color: "#6366F1", badgeBg: "#EEF2FF" }} 
         />
         <StatCard 
-          labelTx={mockStats.temperature.labelTx} 
-          value={`${mockStats.temperature.value}`} 
+          labelTx="dashboard:stats.temperature" 
+          value={`${displayStats.temperature.value}`} 
           unit="°C" 
-          progress={mockStats.temperature.value} 
-          progressColor={mockStats.temperature.value > 60 ? "#F59E0B" : "#10B981"} 
-          captionTx={mockStats.temperature.captionTx} 
+          progress={displayStats.temperature.value} 
+          progressColor={displayStats.temperature.value > 60 ? "#F59E0B" : "#10B981"} 
+          caption={displayStats.temperature.caption} 
           icon={{ font: "Ionicons", name: "thermometer", color: "#F59E0B", badgeBg: "#FFFBEB" }} 
         />
       </View>
 
       <View style={themed($statsGrid)}>
         <StatCard 
-          labelTx={mockStats.memory.labelTx} 
-          value={`${mockStats.memory.value}%`} 
-          progress={mockStats.memory.value} 
+          labelTx="dashboard:stats.memory" 
+          value={`${displayStats.memory.value}%`} 
+          progress={displayStats.memory.value} 
           progressColor="#8B5CF6" 
-          caption={mockStats.memory.caption} 
+          caption={displayStats.memory.caption} 
           icon={{ font: "Ionicons", name: "cube", color: "#8B5CF6", badgeBg: "#F5F3FF" }} 
         />
         <StatCard 
-          labelTx={mockStats.disk.labelTx} 
-          value={`${mockStats.disk.value}%`} 
-          progress={mockStats.disk.value} 
+          labelTx="dashboard:stats.disk" 
+          value={`${displayStats.disk.value}%`} 
+          progress={displayStats.disk.value} 
           progressColor="#06B6D4" 
-          caption={mockStats.disk.caption} 
+          caption={displayStats.disk.caption} 
           icon={{ font: "MaterialCommunityIcons", name: "harddisk", color: "#06B6D4", badgeBg: "#ECFEFF" }} 
         />
       </View>
 
       <SectionHeader titleTx="dashboard:network" style={themed($section)} />
       <View style={themed($card)}>
-        {mockNetwork.map((net, index) => (
-          <View key={net.name} style={themed([$networkRow, index > 0 && $networkDivider])}>
-            <View style={[$networkIconBadge, { backgroundColor: net.status === "up" ? "#EFF6FF" : theme.colors.palette.neutral300 }]}>
-              <Icon font="Ionicons" icon={net.status === "up" ? "wifi" : "wifi-outline"} color={net.status === "up" ? "#3B82F6" : theme.colors.textDim} size={18} />
+        {networkInterfaces.length === 0 ? (
+          <Text text="No network interfaces" color="textDim" size="sm" style={{ textAlign: "center", paddingVertical: 12 }} />
+        ) : (
+          networkInterfaces.map((net, index) => (
+            <View key={net.name} style={themed([$networkRow, index > 0 && $networkDivider])}>
+              <View style={[$networkIconBadge, { backgroundColor: net.status === "up" ? "#EFF6FF" : theme.colors.palette.neutral300 }]}>
+                <Icon font="Ionicons" icon={net.status === "up" ? "wifi" : "wifi-outline"} color={net.status === "up" ? "#3B82F6" : theme.colors.textDim} size={18} />
+              </View>
+              <View style={$networkInfo}>
+                <Text text={net.name} weight="medium" color="text" />
+                <Text text={net.ip ?? "Not connected"} size="xs" color={net.ip ? "textDim" : "error"} />
+              </View>
+              <View style={[$statusDot, { backgroundColor: net.status === "up" ? theme.colors.success : theme.colors.error }]} />
             </View>
-            <View style={$networkInfo}>
-              <Text text={net.name} weight="medium" color="text" />
-              <Text text={net.ip ?? "dashboard:notConnected"} size="xs" color={net.ip ? "textDim" : "error"} />
-            </View>
-            <View style={[$statusDot, { backgroundColor: net.status === "up" ? theme.colors.success : theme.colors.error }]} />
-          </View>
-        ))}
+          ))
+        )}
       </View>
 
       <SectionHeader titleTx="dashboard:deviceInfo" style={themed($section)} />
       <View style={themed($card)}>
-        {mockDeviceInfo.map(({ key, value }, index) => (
+        {deviceInfo.map(({ key, value }, index) => (
           <View key={key} style={themed([$deviceRow, index > 0 && $deviceDivider])}>
             <Text tx={key} color="textDim" size="sm" />
             <Text text={value} weight="medium" size="sm" color="text" />
@@ -126,5 +191,7 @@ const $networkDivider: ThemedStyle<ViewStyle> = ({ colors }) => ({ borderTopWidt
 const $networkIconBadge: ViewStyle = { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", marginRight: 12 }
 const $networkInfo: ViewStyle = { flex: 1 }
 const $statusDot: ViewStyle = { width: 8, height: 8, borderRadius: 4 }
-const $deviceRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.sm })
-const $deviceDivider: ThemedStyle<ViewStyle> = ({ colors }) => ({ borderTopWidth: 1, borderTopColor: colors.border })
+const $deviceRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", justifyContent: "space-between", paddingVertical: spacing.xs })
+const $deviceDivider: ThemedStyle<ViewStyle> = ({ colors }) => ({ borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 8 })
+const $errorCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.error + "15", borderRadius: spacing.md, padding: spacing.md, marginHorizontal: spacing.md, marginBottom: spacing.md, flexDirection: "row", alignItems: "center", gap: spacing.sm })
+const $errorText: ViewStyle = { flex: 1 }
