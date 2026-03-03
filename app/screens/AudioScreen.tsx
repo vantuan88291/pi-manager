@@ -13,9 +13,9 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 type AudioScreenProps = AppStackScreenProps<"Audio">
 
 const MOCK_DEVICES = [
-  { id: "hdmi", nameKey: "audio:devices.hdmi", icon: "📺" },
-  { id: "jack", nameKey: "audio:devices.analog", icon: "🎧" },
-  { id: "bt", nameKey: "audio:devices.bluetooth", icon: "🔊" },
+  { id: "hdmi", nameKey: "audio:devices.hdmi" as const, icon: "📺" },
+  { id: "jack", nameKey: "audio:devices.analog" as const, icon: "🎧" },
+  { id: "bt", nameKey: "audio:devices.bluetooth" as const, icon: "🔊" },
 ]
 
 export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigation }) {
@@ -74,7 +74,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
               {MOCK_DEVICES.map((device) => (
                 <Pressable key={device.id} style={[$deviceItem, selectedDevice === device.id && { borderColor: theme.colors.tint, backgroundColor: theme.colors.tint + "15" }]} onPress={() => handleDeviceSelect(device.id)}>
                   <Text text={device.icon} size="lg" />
-                  <Text tx={device.nameKey} size="md" weight="medium" color="text" style={$deviceName} />
+                  <Text text={t(device.nameKey)} size="md" weight="medium" color="text" style={$deviceName} />
                   <View style={[$radioIndicator, selectedDevice === device.id && { borderColor: theme.colors.tint }]}>
                     {selectedDevice === device.id && <View style={[$radioInner, { backgroundColor: theme.colors.tint }]} />}
                   </View>

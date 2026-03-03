@@ -76,7 +76,7 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
                   const nextIndex = (currentIndex + 1) % THEME_OPTIONS.length
                   handleThemeChange(THEME_OPTIONS[nextIndex].value)
                 }}>
-                  <Text tx={getCurrentThemeLabel()} color="textDim" size="sm" />
+                  <Text text={t(getCurrentThemeLabel())} color="textDim" size="sm" />
                   <Icon font="Ionicons" icon="chevron-forward" color={theme.colors.textDim} size={20} />
                 </Pressable>
               </View>
