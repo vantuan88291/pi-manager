@@ -1,4 +1,4 @@
-import { FC, useState, useMemo } from "react"
+import { FC, useState, useMemo, useCallback } from "react"
 import { View, ViewStyle, RefreshControl } from "react-native"
 
 import { ConnectionBadge } from "@/components/ConnectionBadge"
@@ -31,15 +31,16 @@ function formatBytes(bytes: number): string {
 export const DashboardScreen: FC = function DashboardScreen() {
   const { themed, theme } = useAppTheme()
   const [refreshing, setRefreshing] = useState(false)
-  const { stats, info, isConnected } = useSystemStats()
+  const { stats, info, isConnected, error, retry } = useSystemStats()
   const connectionState = useConnectionState()
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true)
+    retry()
     setTimeout(() => setRefreshing(false), 1000)
-  }
+  }, [retry])
 
-  // Derive display values from socket data
+  // Derive display values from socket data - memoized to avoid recalculation
   const displayStats = useMemo(() => {
     if (!stats) {
       return {
@@ -60,7 +61,7 @@ export const DashboardScreen: FC = function DashboardScreen() {
       memory: { value: stats.memory.percent, caption: `${memoryUsedGB}GB / ${memoryTotalGB}GB` },
       disk: { value: mainDisk?.percent ?? 0, caption: mainDisk ? `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.size)}` : "--" },
     }
-  }, [stats])
+  }, [stats?.cpu.usage, stats?.cpu.temperature, stats?.cpu.model, stats?.cpu.cores, stats?.memory.used, stats?.memory.total, stats?.memory.percent, stats?.disk])
 
   const deviceInfo = useMemo(() => {
     if (!info) return []
@@ -70,7 +71,7 @@ export const DashboardScreen: FC = function DashboardScreen() {
       { key: "dashboard:kernel" as TxKeyPath, value: info.os.kernel },
       { key: "dashboard:uptime" as TxKeyPath, value: formatUptime(stats?.uptime ?? 0) },
     ]
-  }, [info, stats?.uptime])
+  }, [info?.hostname, info?.os.distro, info?.os.kernel, stats?.uptime])
 
   const networkInterfaces = useMemo(() => {
     if (!stats?.network) return []
@@ -81,12 +82,14 @@ export const DashboardScreen: FC = function DashboardScreen() {
     }))
   }, [stats?.network])
 
-  // Connection status
-  const connectionStatus = connectionState.status === "connected" && connectionState.isAuthenticated
-    ? "connected" as const
-    : connectionState.status === "connecting"
-      ? "connecting" as const
-      : "disconnected" as const
+  // Connection status - memoized
+  const connectionStatus = useMemo(() => {
+    return connectionState.status === "connected" && connectionState.isAuthenticated
+      ? "connected" as const
+      : connectionState.status === "connecting"
+        ? "connecting" as const
+        : "disconnected" as const
+  }, [connectionState.status, connectionState.isAuthenticated])
 
   return (
     <Screen preset="scroll" ScrollViewProps={{ refreshControl: <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }}>
@@ -96,6 +99,15 @@ export const DashboardScreen: FC = function DashboardScreen() {
         <ConnectionBadge status={connectionStatus} />
         <Text text={info?.hostname ?? "connecting..."} size="sm" color="textDim" />
       </View>
+
+      {/* Error state */}
+      {error && (
+        <View style={themed($errorCard)}>
+          <Icon font="Ionicons" icon="alert-circle" color={theme.colors.error} size={24} />
+          <Text text={error.message} color="error" size="sm" style={$errorText} />
+          <Text text="Tap to retry" color="textDim" size="xs" onPress={onRefresh} style={{ textDecorationLine: "underline" }} />
+        </View>
+      )}
 
       <View style={themed($statsGrid)}>
         <StatCard 
@@ -180,3 +192,5 @@ const $networkInfo: ViewStyle = { flex: 1 }
 const $statusDot: ViewStyle = { width: 8, height: 8, borderRadius: 4 }
 const $deviceRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", justifyContent: "space-between", paddingVertical: spacing.xs })
 const $deviceDivider: ThemedStyle<ViewStyle> = ({ colors }) => ({ borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 8 })
+const $errorCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ backgroundColor: colors.error + "15", borderRadius: spacing.md, padding: spacing.md, marginHorizontal: spacing.md, marginBottom: spacing.md, flexDirection: "row", alignItems: "center", gap: spacing.sm })
+const $errorText: ViewStyle = { flex: 1 }
