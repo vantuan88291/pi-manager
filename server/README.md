@@ -177,3 +177,33 @@ socket.on("system:stats", (stats) => console.log("Stats:", stats))
 ## License
 
 MIT
+
+## NVMe Storage Module Setup
+
+### Sudo Configuration (Required)
+
+The storage module requires `sudo` to access NVMe S.M.A.R.T. data. Configure passwordless sudo:
+
+1. **Edit sudoers file:**
+   ```bash
+   sudo visudo
+   ```
+
+2. **Add this line** (replace `pi` with your username):
+   ```
+   pi ALL=(ALL) NOPASSWD: /usr/sbin/nvme smart-log /dev/nvme0n1 -o json
+   pi ALL=(ALL) NOPASSWD: /usr/sbin/nvme list -o json
+   ```
+
+3. **Or add to a group** (recommended):
+   ```
+   %openclaw ALL=(ALL) NOPASSWD: /usr/sbin/nvme smart-log /dev/nvme0n1 -o json
+   %openclaw ALL=(ALL) NOPASSWD: /usr/sbin/nvme list -o json
+   ```
+
+### Test
+```bash
+sudo /usr/sbin/nvme smart-log /dev/nvme0n1 -o json
+```
+
+Should return JSON without password prompt.

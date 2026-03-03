@@ -16,9 +16,9 @@ import { storageClientModule } from "@/services/socket/modules/storage"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import type { StorageStatus, Partition } from "../../../shared/types/storage"
 
-type StorageScreenProps = AppStackScreenProps<"Storage">
+type StorageScreenProps = Omit<AppStackScreenProps<"Storage">, "navigation">
 
-export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ navigation }) {
+export const StorageScreen: FC<StorageScreenProps> = function StorageScreen() {
   const { t } = useTranslation()
   const { themed, theme } = useAppTheme()
   const { accent: storageAccent } = getFeatureColor("storage", theme.isDark)
@@ -50,9 +50,13 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen({ na
   }, [subscribeToModule, unsubscribeFromModule])
 
   const handleRefresh = async () => {
+    try {
     setRefreshing(true)
     await storageClientModule.refresh()
     setTimeout(() => setRefreshing(false), 1000)
+    } catch (error) {
+      console.error("[StorageScreen] refresh error:", error)
+    }
   }
 
   const getHealthStatus = (percentageUsed: number) => {
