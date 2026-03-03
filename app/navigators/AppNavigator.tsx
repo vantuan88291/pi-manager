@@ -21,6 +21,8 @@ import { BluetoothScreen } from "@/screens/BluetoothScreen"
 import { AudioScreen } from "@/screens/AudioScreen"
 import { CameraScreen } from "@/screens/CameraScreen"
 import { StorageScreen } from "@/screens/StorageScreen"
+import { SettingsScreen } from "@/screens/SettingsScreen"
+import { AccessDeniedScreen } from "@/screens/AccessDeniedScreen"
 
 /**
  * This is a list of all the route names that will exit the app if the back button
@@ -54,6 +56,8 @@ const AppStack = () => {
       <Stack.Screen name="Audio" component={AudioScreen} />
       <Stack.Screen name="Camera" component={CameraScreen} />
       <Stack.Screen name="Storage" component={StorageScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="AccessDenied" component={AccessDeniedScreen} />
     </Stack.Navigator>
   )
 }
