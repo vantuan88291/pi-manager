@@ -1,5 +1,6 @@
 import { FC } from "react"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
+import { useTranslation } from "react-i18next"
 
 import { Icon } from "@/components/Icon"
 import { useAppTheme } from "@/theme/context"
@@ -27,6 +28,7 @@ const TABS: TabConfig[] = [
 
 export const MainTabNavigator: FC = function MainTabNavigator() {
   const { theme } = useAppTheme()
+  const { t } = useTranslation()
 
   return (
     <Tab.Navigator
@@ -59,7 +61,7 @@ export const MainTabNavigator: FC = function MainTabNavigator() {
             tabBarIcon: ({ color, size }) => (
               <Icon font="Ionicons" icon={tab.icon} color={color} size={size} />
             ),
-            tabBarLabel: tab.labelTx,
+            tabBarLabel: t(tab.labelTx),
           }}
         />
       ))}
