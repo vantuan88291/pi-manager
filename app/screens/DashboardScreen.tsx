@@ -12,6 +12,7 @@ import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 import { TxKeyPath } from "@/i18n"
 import { useSystemStats } from "@/hooks/useSystemStats"
+import { useWiFiStats } from "@/hooks/useWiFiStats"
 import { useConnectionState } from "@/services/socket/SocketContext"
 
 function formatUptime(seconds: number): string {
@@ -28,10 +29,26 @@ function formatBytes(bytes: number): string {
   return `${gb.toFixed(1)}GB`
 }
 
+function getSignalIcon(signal: number | null): string {
+  if (!signal) return "wifi-outline"
+  if (signal >= 70) return "wifi"
+  if (signal >= 40) return "wifi-outline"
+  return "wifi-outline"
+}
+
+function getSignalLabel(signal: number | null): string {
+  if (!signal) return ""
+  if (signal >= 80) return "Excellent"
+  if (signal >= 60) return "Good"
+  if (signal >= 40) return "Fair"
+  return "Weak"
+}
+
 export const DashboardScreen: FC = function DashboardScreen() {
   const { themed, theme } = useAppTheme()
   const [refreshing, setRefreshing] = useState(false)
   const { stats, info, isConnected, error, retry } = useSystemStats()
+  const { currentSSID, signalStrength, isConnected: isWifiConnected } = useWiFiStats()
   const connectionState = useConnectionState()
 
   const onRefresh = useCallback(() => {
@@ -54,12 +71,11 @@ export const DashboardScreen: FC = function DashboardScreen() {
     const mainDisk = stats.disk.find(d => d.mount === "/") || stats.disk[0]
     const memoryUsedGB = (stats.memory.used / (1024 * 1024 * 1024)).toFixed(1)
     const memoryTotalGB = (stats.memory.total / (1024 * 1024 * 1024)).toFixed(1)
-    const memoryPercent = Math.round((stats.memory.used / stats.memory.total) * 100)
 
     return {
       cpu: { value: stats.cpu.usage, caption: `${stats.cpu.cores} cores` },
       temperature: { value: stats.cpu.temperature, caption: stats.cpu.model.slice(0, 20) },
-      memory: { value: memoryPercent, caption: `${memoryUsedGB}GB / ${memoryTotalGB}GB` },
+      memory: { value: Math.round((stats.memory.used / stats.memory.total) * 100), caption: `${memoryUsedGB}GB / ${memoryTotalGB}GB` },
       disk: { value: mainDisk?.percent ?? 0, caption: mainDisk ? `${formatBytes(mainDisk.used)} / ${formatBytes(mainDisk.size)}` : "--" },
     }
   }, [stats?.cpu.usage, stats?.cpu.temperature, stats?.cpu.model, stats?.cpu.cores, stats?.memory.used, stats?.memory.total, stats?.disk])
@@ -76,11 +92,15 @@ export const DashboardScreen: FC = function DashboardScreen() {
 
   const networkInterfaces = useMemo(() => {
     if (!stats?.network) return []
-    return stats.network.map(net => ({
-      name: net.iface,
-      ip: net.ip4 || null,
-      status: net.isUp ? "up" as const : "down" as const,
-    }))
+    return stats.network
+      .filter(net => net.iface !== "lo")  // Filter out loopback
+      .map(net => ({
+        name: net.iface,
+        displayName: net.iface === "wlan0" ? "WiFi" : net.iface,
+        ip: net.ip4 || null,
+        status: net.isUp ? "up" as const : "down" as const,
+        isWifi: net.iface === "wlan0",
+      }))
   }, [stats?.network])
 
   // Connection status - memoized
@@ -157,11 +177,22 @@ export const DashboardScreen: FC = function DashboardScreen() {
           networkInterfaces.map((net, index) => (
             <View key={net.name} style={themed([$networkRow, index > 0 && $networkDivider])}>
               <View style={[$networkIconBadge, { backgroundColor: net.status === "up" ? "#EFF6FF" : theme.colors.palette.neutral300 }]}>
-                <Icon font="Ionicons" icon={net.status === "up" ? "wifi" : "wifi-outline"} color={net.status === "up" ? "#3B82F6" : theme.colors.textDim} size={18} />
+                <Icon 
+                  font="Ionicons" 
+                  icon={net.isWifi ? getSignalIcon(signalStrength) : "ethernet"} 
+                  color={net.status === "up" ? "#3B82F6" : theme.colors.textDim} 
+                  size={18} 
+                />
               </View>
               <View style={$networkInfo}>
-                <Text text={net.name} weight="medium" color="text" />
+                <Text text={net.displayName} weight="medium" color="text" />
                 <Text text={net.ip ?? "Not connected"} size="xs" color={net.ip ? "textDim" : "error"} />
+                {net.isWifi && currentSSID && (
+                  <Text text={currentSSID} size="xs" color="textDim" style={{ marginTop: 2 }} />
+                )}
+                {net.isWifi && signalStrength && (
+                  <Text text={`${signalStrength}% • ${getSignalLabel(signalStrength)}`} size="xs" color="textDim" />
+                )}
               </View>
               <View style={[$statusDot, { backgroundColor: net.status === "up" ? theme.colors.success : theme.colors.error }]} />
             </View>

@@ -1,5 +1,5 @@
-import { FC, useState } from "react"
-import { View, ViewStyle, FlatList, Pressable, ActivityIndicator, TextStyle } from "react-native"
+import { FC, useState, useEffect } from "react"
+import { View, ViewStyle, FlatList, ActivityIndicator } from "react-native"
 import { useTranslation } from "react-i18next"
 
 import { Header } from "@/components/Header"
@@ -9,256 +9,290 @@ import { Card } from "@/components/Card"
 import { Button } from "@/components/Button"
 import { TextField } from "@/components/TextField"
 import { SectionHeader } from "@/components/SectionHeader"
-import { ProgressBar } from "@/components/ProgressBar"
 import { ActionModal } from "@/components/ActionModal"
 import { useAppTheme } from "@/theme/context"
 import { getFeatureColor } from "@/theme/featureColors"
+import { useSocket } from "@/services/socket/SocketContext"
+import { wifiClientModule } from "@/services/socket/modules/wifi"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
+import type { WiFiNetwork, WiFiStatus } from "../../../shared/types/wifi"
 
 type WifiScreenProps = AppStackScreenProps<"Wifi">
-
-interface WifiNetwork {
-  ssid: string
-  bssid: string
-  signal: number
-  security: "Open" | "WPA2" | "WPA3" | "WEP"
-  connected?: boolean
-}
 
 interface CurrentConnection {
   ssid: string
   ip: string
   signal: number
-  speed: string
 }
-
-const MOCK_CURRENT: CurrentConnection = {
-  ssid: "HomeNetwork",
-  ip: "192.168.1.100",
-  signal: 78,
-  speed: "72 Mbps",
-}
-
-const MOCK_NETWORKS: WifiNetwork[] = [
-  { ssid: "HomeNetwork", bssid: "AA:BB:CC:DD:EE:FF", signal: 78, security: "WPA2", connected: true },
-  { ssid: "Neighbor_5G", bssid: "11:22:33:44:55:66", signal: 65, security: "WPA3" },
-  { ssid: "CoffeeShop", bssid: "77:88:99:AA:BB:CC", signal: 52, security: "Open" },
-  { ssid: "Neighbor_2G", bssid: "DD:EE:FF:00:11:22", signal: 35, security: "WPA2" },
-]
 
 export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation }) {
   const { t } = useTranslation()
   const { themed, theme } = useAppTheme()
   const { accent: wifiAccent } = getFeatureColor("wifi", theme.isDark)
-  const [networks] = useState<WifiNetwork[]>(MOCK_NETWORKS)
-  const [currentConnection, setCurrentConnection] = useState<CurrentConnection | null>(MOCK_CURRENT)
+  const { subscribeToModule, unsubscribeFromModule } = useSocket()
+  
+  const [wifiStatus, setWifiStatus] = useState<WiFiStatus | null>(null)
+  const [currentConnection, setCurrentConnection] = useState<CurrentConnection | null>(null)
+  const [networks, setNetworks] = useState<WiFiNetwork[]>([])
   const [isScanning, setIsScanning] = useState(false)
   const [showConnectSheet, setShowConnectSheet] = useState(false)
-  const [selectedNetwork, setSelectedNetwork] = useState<WifiNetwork | null>(null)
+  const [selectedNetwork, setSelectedNetwork] = useState<WiFiNetwork | null>(null)
   const [password, setPassword] = useState("")
   const [connectError, setConnectError] = useState<string | null>(null)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [hasScanned, setHasScanned] = useState(false)
+
+  // Subscribe to WiFi module
+  useEffect(() => {
+    subscribeToModule("wifi")
+    
+    const unsubStatus = wifiClientModule.onStatus((status) => {
+      setWifiStatus(status)
+      
+      // Only update networks if we have new data or haven't scanned yet
+      if (status.networks && status.networks.length > 0) {
+        setNetworks(status.networks)
+        setHasScanned(true)
+      }
+      
+      if (status.connected && status.ssid) {
+        setCurrentConnection({
+          ssid: status.ssid,
+          ip: status.ip || "N/A",
+          signal: status.signal || 0,
+        })
+      } else if (!status.connected) {
+        setCurrentConnection(null)
+      }
+    })
+    
+    return () => {
+      unsubStatus()
+      unsubscribeFromModule("wifi")
+    }
+  }, [subscribeToModule, unsubscribeFromModule])
 
   const handleScan = () => {
     setIsScanning(true)
-    setTimeout(() => setIsScanning(false), 2000)
+    setNetworks([])  // Clear while scanning
+    
+    wifiClientModule.scan()
+    
+    const unsubScan = wifiClientModule.onScan((scanNetworks, error) => {
+      setIsScanning(false)
+      if (!error && scanNetworks.length > 0) {
+        setNetworks(scanNetworks)
+        setHasScanned(true)
+      } else if (error) {
+        console.log('Scan error:', error)
+      }
+      unsubScan()
+    })
+    
+    setTimeout(() => {
+      setIsScanning(false)
+      unsubScan()
+    }, 10000)
   }
 
-  const handleNetworkPress = (network: WifiNetwork) => {
-    if (network.connected) return
+  const handleNetworkPress = (network: WiFiNetwork) => {
+    if (network.ssid === wifiStatus?.ssid) return
     setSelectedNetwork(network)
     setShowConnectSheet(true)
     setConnectError(null)
     setPassword("")
   }
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (!selectedNetwork) return
     setConnectError(null)
-    setTimeout(() => {
-      if (selectedNetwork.security === "Open" ? false : !password || password.length < 8) {
-        setConnectError(selectedNetwork.security !== "Open" && !password ? t("wifi:errors.invalidPassword") : t("wifi:errors.invalidPassword"))
-        return
-      }
+    setIsConnecting(true)
+    
+    const result = await wifiClientModule.connect(
+      selectedNetwork.ssid,
+      selectedNetwork.security === "Open" ? undefined : password
+    )
+    
+    setIsConnecting(false)
+    
+    if (result.success) {
       setShowConnectSheet(false)
-      setCurrentConnection({
-        ssid: selectedNetwork.ssid,
-        ip: "192.168.1.101",
-        signal: selectedNetwork.signal,
-        speed: "72 Mbps",
-      })
-    }, 1000)
+      setPassword("")
+    } else {
+      setConnectError(result.error || t("wifi:errors.connectionFailed"))
+    }
   }
 
-  const handleDisconnect = () => setCurrentConnection(null)
+  const getSecurityIcon = (security: string[]) => {
+    const sec = security[0] || "Open"
+    return sec === "Open" ? "🔓" : "🔒"
+  }
 
-  const renderSignalBars = (signal: number) => {
-    const bars = Math.ceil(signal / 25)
+  const getSecurityLabel = (security: string[]) => {
+    return security[0] || t("wifi:security.open")
+  }
+
+  const renderNetworkItem = ({ item }: { item: WiFiNetwork }) => {
+    const isConnected = item.ssid === wifiStatus?.ssid
+    const signalBars = item.signal >= 80 ? 4 : item.signal >= 60 ? 3 : item.signal >= 40 ? 2 : 1
+    
     return (
-      <View style={$signalContainer}>
-        {[1, 2, 3, 4].map((bar) => (
-          <View 
-            key={bar} 
-            style={[
-              $signalBar, 
-              { height: 4 + bar * 3 }, 
-              bar <= bars 
-                ? { backgroundColor: theme.colors.success } 
-                : { backgroundColor: theme.colors.border }
-            ]} 
+      <View style={themed($networkItem)}>
+        <View style={$signalBars}>
+          {[1, 2, 3, 4].map((bar) => (
+            <View
+              key={bar}
+              style={[
+                $signalBar,
+                { 
+                  backgroundColor: bar <= signalBars ? wifiAccent : theme.colors.border,
+                  height: 4 + bar * 3,
+                },
+              ]}
+            />
+          ))}
+        </View>
+        
+        <View style={$networkInfo}>
+          <Text text={item.ssid} weight="medium" color="text" />
+          <Text 
+            text={`${item.signal}% • ${getSecurityLabel(item.security)}`} 
+            size="xs" 
+            color="textDim" 
           />
-        ))}
+        </View>
+        
+        <View style={$networkRight}>
+          <Text text={getSecurityIcon(item.security)} size="sm" />
+          {isConnected && (
+            <View style={themed($connectedBadge)}>
+              <Text tx="wifi:connected" size="xs" color="success" weight="medium" />
+            </View>
+          )}
+        </View>
       </View>
     )
   }
-
-  const renderNetworkItem = ({ item }: { item: WifiNetwork }) => (
-    <Pressable 
-      style={[
-        themed($networkItem), 
-        item.connected && { backgroundColor: theme.colors.success + "20" }
-      ]} 
-      onPress={() => handleNetworkPress(item)}
-    >
-      <View style={$networkLeft}>{renderSignalBars(item.signal)}</View>
-      <View style={$networkCenter}>
-        <Text text={item.ssid} size="md" weight="medium" color="text" />
-        <Text text={`${item.signal}% • ${t(`wifi:security.${item.security.toLowerCase()}`)}`} size="xs" color="textDim" />
-      </View>
-      <View style={$networkRight}>
-        {item.security !== "Open" && <Text text="🔒" size="sm" />}
-        {item.connected && (
-          <View style={{ backgroundColor: theme.colors.success + "30", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
-            <Text tx="common:connected" size="xs" color="success" />
-          </View>
-        )}
-      </View>
-    </Pressable>
-  )
-
-  const currentConnectionContent = currentConnection ? (
-    <>
-      <Text text={currentConnection.ssid} size="lg" weight="semiBold" color="text" />
-      <View style={$connectionRow}>
-        <Text tx="wifi:signal" size="sm" color="textDim" style={$connectionKey} />
-        <View style={$signalProgress}>
-          <ProgressBar value={currentConnection.signal} style={$progressBar} />
-          <Text text={`${currentConnection.signal}%`} size="xs" color="textDim" />
-        </View>
-      </View>
-      <View style={$connectionRow}>
-        <Text tx="wifi:speed" size="sm" color="textDim" style={$connectionKey} />
-        <Text text={currentConnection.speed} size="sm" color="text" />
-      </View>
-      <Button tx="wifi:disconnect" preset="default" onPress={handleDisconnect} style={$disconnectButton} />
-    </>
-  ) : null
 
   return (
     <Screen preset="scroll">
       <Header titleTx="wifi:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
+      {/* Current Connection */}
       {currentConnection && (
-        <Card headingTx="wifi:currentConnection" ContentComponent={<>{currentConnectionContent}</>} style={$card} />
-      )}
-
-      <SectionHeader 
-        titleTx="wifi:availableNetworks"
-        rightAction={{ label: isScanning ? t("wifi:scanning") : t("wifi:scan"), onPress: handleScan }} 
-        style={$sectionHeader} 
-      />
-
-      {isScanning && (
-        <View style={$scanningContainer}>
-          <ActivityIndicator size="small" color={theme.colors.tint} />
-          <Text tx="wifi:scanning" size="sm" color="textDim" style={$scanningText} />
+        <View style={themed($card)}>
+          <View style={$connectionHeader}>
+            <Text tx="wifi:currentConnection" size="sm" color="textDim" weight="medium" />
+            <View style={themed($connectedBadge)}>
+              <Text tx="wifi:connected" size="xs" color="success" weight="medium" />
+            </View>
+          </View>
+          
+          <Text text={currentConnection.ssid} size="xl" weight="semiBold" color="text" style={{ marginTop: 8 }} />
+          
+          <View style={$connectionDetails}>
+            <View style={$detailRow}>
+              <Text text="📶" size="sm" />
+              <Text tx="wifi:signal" size="sm" color="textDim" style={{ marginLeft: 6 }} />
+              <Text text={`${currentConnection.signal}%`} size="sm" color="text" weight="medium" style={{ marginLeft: 4 }} />
+            </View>
+            
+            <View style={$detailRow}>
+              <Text text="🌐" size="sm" />
+              <Text tx="wifi:ipAddress" size="sm" color="textDim" style={{ marginLeft: 6 }} />
+              <Text text={currentConnection.ip} size="sm" color="text" weight="medium" style={{ marginLeft: 4 }} />
+            </View>
+          </View>
         </View>
       )}
 
-      <FlatList 
-        data={networks} 
-        keyExtractor={(item) => item.bssid} 
-        renderItem={renderNetworkItem} 
-        scrollEnabled={false} 
-        style={$networkList} 
+      {/* Available Networks */}
+      <SectionHeader 
+        titleTx="wifi:availableNetworks" 
+        rightActionTx="wifi:scan" 
+        onRightAction={handleScan}
+        style={themed($sectionHeader)} 
       />
-
-      {/* Reusable Modal */}
-      <ActionModal
-        visible={showConnectSheet}
-        onClose={() => setShowConnectSheet(false)}
-        title={selectedNetwork ? t("wifi:enterPassword", { ssid: selectedNetwork.ssid }) : ""}
-        bottomComponent={
-          selectedNetwork?.security !== "Open" ? (
-            <>
-              {connectError && <Text text={connectError} size="sm" color="error" style={$errorText} />}
-              <View style={$modalActions}>
-                <Button 
-                  tx="common:cancel"
-                  preset="default" 
-                  onPress={() => setShowConnectSheet(false)} 
-                  style={$modalButton} 
-                />
-                <Button 
-                  tx="wifi:connect"
-                  preset="filled" 
-                  onPress={handleConnect} 
-                  style={$modalButton} 
-                />
-              </View>
-            </>
-          ) : (
-            <View style={$modalActions}>
-              <Button 
-                tx="common:cancel"
-                preset="default" 
-                onPress={() => setShowConnectSheet(false)} 
-                style={$modalButtonFull} 
-              />
-              <Button 
-                tx="wifi:connect"
-                preset="filled" 
-                onPress={handleConnect} 
-                style={$modalButtonFull} 
-              />
-            </View>
-          )
-        }
-      >
-        {selectedNetwork?.security !== "Open" && (
-          <TextField
-            labelTx="wifi:password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholderTx="wifi:enterPassword"
+      
+      {isScanning && (
+        <View style={$scanning}>
+          <ActivityIndicator size="small" color={wifiAccent} />
+          <Text tx="wifi:scanning" size="sm" color="textDim" style={{ marginLeft: 8 }} />
+        </View>
+      )}
+      
+      <View style={themed($card)}>
+        {!hasScanned && !isScanning ? (
+          <View style={$emptyState}>
+            <Text text="📡" size="xl" />
+            <Text tx="wifi:tapToScan" size="sm" color="textDim" style={{ marginTop: 8 }} />
+            <Button tx="wifi:scan" preset="default" onPress={handleScan} style={{ marginTop: 16 }} />
+          </View>
+        ) : networks.length === 0 && !isScanning ? (
+          <View style={$emptyState}>
+            <Text text="📡" size="xl" />
+            <Text tx="wifi:noNetworks" size="sm" color="textDim" style={{ marginTop: 8 }} />
+            <Button tx="wifi:scan" preset="default" onPress={handleScan} style={{ marginTop: 16 }} />
+          </View>
+        ) : (
+          <FlatList
+            data={networks}
+            keyExtractor={(item) => item.bssid || item.ssid}
+            renderItem={renderNetworkItem}
+            scrollEnabled={false}
           />
         )}
+      </View>
+
+      {/* Connect Modal */}
+      <ActionModal
+        visible={showConnectSheet}
+        onClose={() => {
+          setShowConnectSheet(false)
+          setConnectError(null)
+          setPassword("")
+        }}
+        title={selectedNetwork?.ssid || ""}
+      >
+        <View style={{ gap: 16 }}>
+          {selectedNetwork?.security !== "Open" && (
+            <>
+              <TextField
+                labelTx="wifi:password"
+                value={password}
+                onChangeText={setPassword}
+                placeholderTx="wifi:passwordPlaceholder"
+                secureTextEntry
+                autoFocus
+              />
+              {connectError && (
+                <Text text={connectError} size="sm" color="error" />
+              )}
+            </>
+          )}
+          
+          <Button
+            tx={isConnecting ? "wifi:connecting" : "wifi:connect"}
+            preset="filled"
+            onPress={handleConnect}
+            disabled={isConnecting || (selectedNetwork?.security !== "Open" && !password)}
+          />
+        </View>
       </ActionModal>
     </Screen>
   )
 }
 
-const $card: ViewStyle = { marginHorizontal: 16, marginBottom: 16 }
-const $sectionHeader: ViewStyle = { marginHorizontal: 16, marginTop: 16, marginBottom: 8 }
-const $networkList: ViewStyle = { marginHorizontal: 16 }
-
-const $connectionRow: ViewStyle = { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }
-const $connectionKey: TextStyle = { width: 80 }
-const $signalProgress: ViewStyle = { flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }
-const $progressBar: ViewStyle = { flex: 1 }
-const $disconnectButton: ViewStyle = { marginTop: 12, alignSelf: "flex-end" }
-
-const $networkItem: ViewStyle = { flexDirection: "row", alignItems: "center", paddingVertical: 16, paddingHorizontal: 4 }
-const $networkLeft: ViewStyle = { width: 44 }
-const $networkCenter: ViewStyle = { flex: 1 }
-const $networkRight: ViewStyle = { alignItems: "flex-end", gap: 4 }
-const $signalContainer: ViewStyle = { flexDirection: "row", alignItems: "flex-end", gap: 3, height: 22 }
-const $signalBar: ViewStyle = { width: 5, borderRadius: 2 }
-
-const $scanningContainer: ViewStyle = { flexDirection: "row", alignItems: "center", justifyContent: "center", padding: 16, gap: 8 }
-const $scanningText: TextStyle = { marginLeft: 8 }
-
-const $errorText: TextStyle = { textAlign: "center" }
-const $modalActions: ViewStyle = { flexDirection: "row", gap: 12, marginTop: 8 }
-const $modalButton: ViewStyle = { flex: 1 }
-const $modalButtonFull: ViewStyle = { flex: 1, marginTop: 8 }
+const $card: ViewStyle = { backgroundColor: "transparent", paddingHorizontal: 16, marginBottom: 16 }
+const $connectionHeader: ViewStyle = { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }
+const $connectionDetails: ViewStyle = { marginTop: 12, gap: 8 }
+const $detailRow: ViewStyle = { flexDirection: "row", alignItems: "center" }
+const $sectionHeader: ViewStyle = { paddingHorizontal: 16, marginTop: 8 }
+const $scanning: ViewStyle = { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 8 }
+const $emptyState: ViewStyle = { alignItems: "center", paddingVertical: 32 }
+const $networkItem: ViewStyle = { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)" }
+const $signalBars: ViewStyle = { flexDirection: "row", alignItems: "flex-end", gap: 2, marginRight: 12, width: 16 }
+const $signalBar: ViewStyle = { width: 3, borderRadius: 1 }
+const $networkInfo: ViewStyle = { flex: 1 }
+const $networkRight: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 8 }
+const $connectedBadge: ViewStyle = { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, backgroundColor: "rgba(16, 185, 129, 0.1)" }
