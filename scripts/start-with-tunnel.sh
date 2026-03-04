@@ -1,5 +1,5 @@
 #!/bin/bash
-# Complete startup script: tunnel first → update env → build → inject URL → start server
+# Complete startup script: tunnel → update env → build → inject URL → start server
 
 set -e
 
@@ -21,14 +21,13 @@ sleep 2
 echo "✅ Processes stopped"
 echo ""
 
-# Step 2: Start Cloudflare tunnel FIRST to get URL
+# Step 2: Start Cloudflare tunnel
 echo "🌐 Step 2/7: Starting Cloudflare Quick Tunnel..."
 rm -f /tmp/tunnel.log
 cloudflared tunnel --url http://localhost:3001 >> /tmp/tunnel.log 2>&1 &
 TUNNEL_PID=$!
 echo "   Tunnel PID: $TUNNEL_PID"
 
-# Wait for tunnel URL (max 30 seconds)
 echo "   Waiting for tunnel URL..."
 TUNNEL_URL=""
 for i in {1..30}; do
@@ -53,7 +52,6 @@ echo ""
 # Step 3: Update environment files
 echo "⚙️  Step 3/7: Updating environment files..."
 
-# Update frontend .env
 if [ -f "$ENV_FILE" ]; then
   sed -i "s|EXPO_PUBLIC_SOCKET_URL=.*|EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL|" "$ENV_FILE"
 else
@@ -61,7 +59,6 @@ else
 fi
 echo "✅ Updated $ENV_FILE"
 
-# Update backend .env
 if [ -f "$SERVER_ENV_FILE" ]; then
   if grep -q "ALLOWED_ORIGINS=" "$SERVER_ENV_FILE"; then
     sed -i "s|ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=$TUNNEL_URL,http://localhost:8081,http://localhost:3001|" "$SERVER_ENV_FILE"
@@ -87,25 +84,22 @@ npx expo export --platform web
 echo "✅ Build complete"
 echo ""
 
-# Step 5: Add Telegram SDK and INJECT correct URL
+# Step 5: Add SDK and inject URL
 echo "💉 Step 5/7: Injecting tunnel URL into build..."
 
-# Add Telegram SDK to index.html
 sed -i 's|<title>Pi Manager</title>|<title>Pi Manager</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
 
-# Copy to server/public
 rm -rf server/public/*
 cp -r dist/* server/public/
 
-# CRITICAL: Replace ANY old tunnel URL with new one in JS bundle
-find server/public/_expo/static/js/web/ -name "*.js" -type f -exec sed -i "s|https://[^\"']*trycloudflare\.com|$TUNNEL_URL|g" {} \;
+# Inject URL into JS bundle
+find server/public/_expo/static/js/web/ -name "*.js" -type f -exec sed -i "s|https://[a-zA-Z0-9._-]*trycloudflare\.com|$TUNNEL_URL|g" {} \;
 
-# Verify
-BUILT_URL=$(grep -o "https://[^\"']*trycloudflare\.com" server/public/_expo/static/js/web/*.js 2>/dev/null | head -1 | cut -d: -f2-)
+BUILT_URL=$(grep -o "https://[a-zA-Z0-9._-]*trycloudflare\.com" server/public/_expo/static/js/web/*.js 2>/dev/null | head -1)
 if [ "$BUILT_URL" = "$TUNNEL_URL" ]; then
-  echo "✅ URL injected successfully: $BUILT_URL"
+  echo "✅ URL injected: $BUILT_URL"
 else
-  echo "❌ Failed to inject URL. Expected: $TUNNEL_URL, Got: $BUILT_URL"
+  echo "❌ URL mismatch. Expected: $TUNNEL_URL, Got: $BUILT_URL"
   exit 1
 fi
 echo ""
@@ -121,7 +115,7 @@ sleep 3
 if ps -p $SERVER_PID > /dev/null; then
   echo "✅ Server started"
 else
-  echo "❌ Server failed to start. Check /tmp/server.log"
+  echo "❌ Server failed to start"
   exit 1
 fi
 echo ""
@@ -130,7 +124,7 @@ echo ""
 echo "🔍 Step 7/7: Verifying setup..."
 sleep 2
 if curl -s "$TUNNEL_URL/api/health" > /dev/null 2>&1; then
-  echo "✅ Backend accessible via tunnel"
+  echo "✅ Backend accessible"
 else
   echo "⚠️  Backend not yet accessible"
 fi
@@ -153,9 +147,8 @@ echo "   - Tunnel log: /tmp/tunnel.log"
 echo ""
 echo "🛑 To stop:"
 echo "   kill $SERVER_PID $TUNNEL_PID"
-echo "   or: pkill -f 'npm run dev' && pkill -f 'cloudflared tunnel'"
 echo ""
-echo "📝 Note: Update Telegram Bot menu button with new URL:"
+echo "📝 Update Telegram Bot:"
 echo "   @BotFather → /setmenubutton → $TUNNEL_URL"
 echo "======================================="
 
