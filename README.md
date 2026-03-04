@@ -1,78 +1,214 @@
-# Welcome to your new ignited app!
+# Pi Manager
 
-> The latest and greatest boilerplate for Infinite Red opinions
+Remote management dashboard for Raspberry Pi via Telegram Mini App.
 
-This is the boilerplate that [Infinite Red](https://infinite.red) uses as a way to test bleeding-edge changes to our React Native stack.
+## 🚀 Quick Start
 
-- [Quick start documentation](https://github.com/infinitered/ignite/blob/master/docs/boilerplate/Boilerplate.md)
-- [Full documentation](https://github.com/infinitered/ignite/blob/master/docs/README.md)
-
-## Getting Started
+### One-Command Deployment
 
 ```bash
+# Build + start tunnel + start server
+yarn start:full
+```
+
+This will:
+1. Build web frontend
+2. Start Cloudflare Quick Tunnel
+3. Auto-update environment files with tunnel URL
+4. Start backend server
+5. Output tunnel URL for Telegram bot configuration
+
+### Manual Steps
+
+```bash
+# 1. Build web frontend
+yarn build:web
+
+# 2. Start tunnel (auto-updates .env files)
+yarn start:tunnel
+
+# 3. Start backend server
+cd server && npm run dev
+```
+
+## 📱 Telegram Bot Setup
+
+### 1. Create Bot
+
+1. Open Telegram → `@BotFather`
+2. Send `/newbot`
+3. Set bot name and username (must end with `bot`)
+4. Save the BOT_TOKEN
+
+### 2. Get Your Telegram ID
+
+1. Open Telegram → `@userinfobot`
+2. Send `/start`
+3. Save your Telegram ID
+
+### 3. Configure Bot
+
+1. Get tunnel URL from `yarn start:full` output
+2. In `@BotFather`, send `/setmenubutton`
+3. Select your bot
+4. Send tunnel URL
+5. Set button text: `Open Pi Manager`
+
+### 4. Update Configuration
+
+**`server/.env`:**
+```env
+PORT=3001
+TELEGRAM_BOT_TOKEN=<your-bot-token>
+ALLOWED_ORIGINS=<tunnel-url>,http://localhost:8081
+ADMIN_TELEGRAM_ID=<your-telegram-id>
+```
+
+**`server/src/config/whitelist.json`:**
+```json
+[<your-telegram-id>]
+```
+
+## 🛠️ Development
+
+### Prerequisites
+
+- Node.js 20+
+- Yarn
+- Cloudflared CLI
+
+### Install Dependencies
+
+```bash
+# Root
 yarn install
-yarn start
+
+# Server
+cd server && npm install
 ```
 
-To make things work on your local simulator, or on your phone, you need first to [run `eas build`](https://github.com/infinitered/ignite/blob/master/docs/expo/EAS.md). We have many shortcuts on `package.json` to make it easier:
+### Available Scripts
 
 ```bash
-yarn build:ios:sim # build for ios simulator
-yarn build:ios:device # build for ios device
-yarn build:ios:prod # build for ios device
+# Development
+yarn start              # Expo dev client
+yarn web                # Expo web dev
+
+# Build & Deploy
+yarn build:web          # Build web + inject Telegram SDK
+yarn start:tunnel       # Start tunnel + update env
+yarn start:full         # Complete deployment
+
+# Server
+cd server && npm run dev    # Development
+cd server && npm start      # Production
 ```
 
-### `./assets`
+## 📁 Project Structure
 
-This directory is designed to organize and store various assets, making it easy for you to manage and use them in your application. The assets are further categorized into subdirectories, including `icons` and `images`:
-
-```tree
-assets
-├── icons
-└── images
+```
+pi-manager/
+├── app/                      # React Native frontend
+│   ├── screens/              # Screen components
+│   ├── services/             # Socket + Telegram services
+│   └── navigators/           # Navigation
+├── server/                   # Node.js backend
+│   ├── src/
+│   │   ├── socket/           # Socket.IO modules
+│   │   └── auth/             # Telegram auth
+│   └── public/               # Built frontend
+├── shared/                   # Shared types
+├── scripts/                  # Automation scripts
+│   ├── start-with-tunnel.sh  # Full deployment
+│   ├── start-tunnel.sh       # Tunnel only
+│   └── add-telegram-sdk.sh   # SDK injection
+└── docs/                     # Documentation
 ```
 
-**icons**
-This is where your icon assets will live. These icons can be used for buttons, navigation elements, or any other UI components. The recommended format for icons is PNG, but other formats can be used as well.
+## 🔧 Scripts Reference
 
-Ignite comes with a built-in `Icon` component. You can find detailed usage instructions in the [docs](https://github.com/infinitered/ignite/blob/master/docs/boilerplate/app/components/Icon.md).
+### `yarn start:full`
 
-**images**
-This is where your images will live, such as background images, logos, or any other graphics. You can use various formats such as PNG, JPEG, or GIF for your images.
+Complete deployment automation:
+- Builds web frontend
+- Starts Cloudflare tunnel
+- Updates `.env` files with tunnel URL
+- Starts backend server
+- Outputs tunnel URL and PIDs
 
-Another valuable built-in component within Ignite is the `AutoImage` component. You can find detailed usage instructions in the [docs](https://github.com/infinitered/ignite/blob/master/docs/Components-AutoImage.md).
+### `yarn start:tunnel`
 
-How to use your `icon` or `image` assets:
+Tunnel-only startup:
+- Kills existing tunnels
+- Starts new Cloudflare tunnel
+- Updates `.env` files
+- Does NOT rebuild or restart servers
 
-```typescript
-import { Image } from 'react-native';
+### `yarn build:web`
 
-const MyComponent = () => {
-  return (
-    <Image source={require('assets/images/my_image.png')} />
-  );
-};
+Build frontend:
+- Exports web build to `dist/`
+- Auto-injects Telegram WebApp SDK
+- Copies to `server/public/`
+
+## 🌐 Tunnel Management
+
+### Quick Tunnel (Development)
+
+```bash
+cloudflared tunnel --url http://localhost:3001
 ```
 
-## Running Maestro end-to-end tests
+URL changes on each restart. Update Telegram bot menu button.
 
-Follow our [Maestro Setup](https://ignitecookbook.com/docs/recipes/MaestroSetup) recipe.
+### Named Tunnel (Production)
 
-## Next Steps
+See [`docs/backend/appendix-d-cloudflare-tunnel.md`](./docs/backend/appendix-d-cloudflare-tunnel.md)
 
-### Ignite Cookbook
+## 🔐 Security
 
-[Ignite Cookbook](https://ignitecookbook.com/) is an easy way for developers to browse and share code snippets (or “recipes”) that actually work.
+### Environment Variables
 
-### Upgrade Ignite boilerplate
+- `.env` and `server/.env` are gitignored
+- Never commit bot tokens or secrets
+- Use environment variables in production
 
-Read our [Upgrade Guide](https://ignitecookbook.com/docs/recipes/UpdatingIgnite) to learn how to upgrade your Ignite project.
+### Whitelist
 
-## Community
+Only Telegram user IDs in `server/src/config/whitelist.json` can access the app.
 
-⭐️ Help us out by [starring on GitHub](https://github.com/infinitered/ignite), filing bug reports in [issues](https://github.com/infinitered/ignite/issues) or [ask questions](https://github.com/infinitered/ignite/discussions).
+## 📚 Documentation
 
-💬 Join us on [Slack](https://join.slack.com/t/infiniteredcommunity/shared_invite/zt-1f137np4h-zPTq_CbaRFUOR_glUFs2UA) to discuss.
+- [Backend docs](./docs/backend/README.md)
+- [UI specs](./docs/ui/README.md)
+- [Telegram setup](./TELEGRAM_SETUP.md)
+- [Cloudflare tunnel](./docs/backend/appendix-d-cloudflare-tunnel.md)
 
-📰 Make our Editor-in-chief happy by [reading the React Native Newsletter](https://reactnativenewsletter.com/).
+## 🐛 Troubleshooting
 
+### Tunnel fails to start
+```bash
+# Check if port 3001 is in use
+lsof -ti:3001 | xargs kill -9
+
+# Restart tunnel
+yarn start:tunnel
+```
+
+### 502 Bad Gateway
+```bash
+# Check server status
+cat /tmp/server.log
+
+# Restart server
+cd server && npm run dev
+```
+
+### Telegram auth fails
+- Verify BOT_TOKEN in `server/.env`
+- Check whitelist includes your Telegram ID
+- Ensure tunnel URL matches bot menu button URL
+
+## 📄 License
+
+MIT
