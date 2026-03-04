@@ -27,24 +27,23 @@ const en = {
   },
   welcomeScreen: {
     postscript:
-      "psst  — This probably isn't what your app looks like. (Unless your designer handed you these screens, and in that case, ship it!)",
-    readyForLaunch: "Your app, almost ready for launch!",
-    exciting: "(ohh, this is exciting!)",
+      "This is the welcome screen. You can customize it as you like.",
+    readyForLaunch: "Your app is ready for launch!",
+    exciting: "(How exciting!)",
   },
   errorScreen: {
     title: "Something went wrong!",
     friendlySubtitle:
-      "This is the screen that your users will see in production when an error is thrown. You'll want to customize this message (located in `app/i18n/en.ts`) and probably the layout as well (`app/screens/ErrorScreen`). If you want to remove this entirely, check `app/app.tsx` for the <ErrorBoundary> component.",
-    reset: "RESET APP",
+      "This is the screen that appears when an error occurs. You can customize this message.",
+    reset: "RESTART",
   },
   emptyStateComponent: {
     generic: {
-      heading: "So empty... so sad",
-      content: "No data found yet. Try clicking the button to refresh or reload the app.",
-      button: "Let's try this again",
+      heading: "Nothing here... so sad",
+      content: "No data available. Try refreshing or restarting the app.",
+      button: "Retry",
     },
   },
-  // Pi Manager specific translations
   tabs: {
     dashboard: "Dashboard",
     control: "Control",
@@ -53,7 +52,7 @@ const en = {
   dashboard: {
     title: "Dashboard",
     hostname: "Hostname",
-    os: "OS",
+    os: "Operating System",
     kernel: "Kernel",
     uptime: "Uptime",
     network: "Network",
@@ -65,7 +64,7 @@ const en = {
       memory: "Memory",
       disk: "Disk",
       cpuCaption: "Cortex-A72",
-      tempCaption: "System Thermal",
+      tempCaption: "System temperature",
     },
   },
   controlMenu: {
@@ -80,9 +79,10 @@ const en = {
       wifiDisconnected: "Disconnected",
       wifiConnected: "Connected",
       bluetoothOff: "Off",
+      bluetoothOn: "On (no devices)",
       bluetoothConnected: "{{count}} connected",
       audioMuted: "Muted",
-      audioVolume: "Vol: {{volume}}%",
+      audioVolume: "Volume: {{volume}}%",
       cameraOffline: "Offline",
       cameraStreaming: "Streaming",
       storageWear: "Wear: {{percent}}%",
@@ -108,11 +108,11 @@ const en = {
     },
     noNetworks: "No networks found. Try scanning again.",
     enterPassword: "Enter password for {{ssid}}",
-    confirmDisconnect: "You may lose access if this is the only network. Continue?",
+    confirmDisconnect: "You may lose connection if this is the only network. Continue?",
     confirmForget: "Forget network {{ssid}}?",
     errors: {
       authFailed: "Authentication failed",
-      timeout: "Connection timed out",
+      timeout: "Connection timeout",
       invalidPassword: "Invalid password",
     },
   },
@@ -129,11 +129,11 @@ const en = {
     connect: "Connect",
     disconnect: "Disconnect",
     enterPin: "Enter PIN for {{name}}",
-    disabled: "Bluetooth is turned off",
+    disabled: "Bluetooth is off",
     enableToScan: "Enable Bluetooth to scan for devices",
     deviceTypes: {
       audio: "Audio",
-      input: "Input",
+      input: "Input Device",
       display: "Display",
       unknown: "Unknown",
     },
@@ -161,7 +161,7 @@ const en = {
     stop: "Stop",
     snapshot: "Snapshot",
     offline: "Camera is off",
-    streaming: "Live streaming...",
+    streaming: "Streaming...",
     connecting: "Connecting...",
     status: "{{resolution}} @ {{fps}}fps | {{bitrate}}",
     errors: {
@@ -172,79 +172,7 @@ const en = {
     },
   },
   storage: {
-    title: "Storage Health",
-    healthOverview: "Health Overview",
-    keyMetrics: "Key Metrics",
-    driveDetails: "Drive Details",
-    smartData: "S.M.A.R.T. Data",
-    partitions: "Partitions",
-    refresh: "Refresh",
-    status: {
-      healthy: "Healthy",
-      warning: "Warning",
-      critical: "Critical",
-    },
-    metrics: {
-      lifespanUsed: "Lifespan Used",
-      temperature: "Temperature",
-      totalWritten: "Total Written",
-      powerOn: "Power On",
-    },
-    captions: {
-      lifespanRemaining: "Estimated lifespan remaining",
-      driveThermal: "Drive thermal",
-      lifetimeWrites: "Lifetime writes",
-      totalRuntime: "Total runtime",
-    },
-    fields: {
-      device: "Device",
-      serial: "Serial",
-      firmware: "Firmware",
-      interface: "Interface",
-      capacity: "Capacity",
-      usedSpace: "Used Space",
-    },
-  },
-  settings: {
-    title: "Settings",
-    appearance: "Appearance",
-    connection: "Connection",
-    about: "About",
-    theme: {
-      label: "Theme",
-      system: "System",
-      light: "Light",
-      dark: "Dark",
-    },
-    language: {
-      label: "Language",
-    },
-    serverUrl: "Server URL",
-    status: "Status",
-    latency: "Latency",
-    appVersion: "App Version",
-    serverVersion: "Server Version",
-    telegramId: "Telegram ID",
-  },
-  accessDenied: {
-    title: "Access Denied",
-    message: "Your Telegram account is not authorized to use this app. Contact the device owner to request access.",
-    yourId: "Your ID: {{id}}",
-  },
-  reboot: {
-    title: "Reboot Device",
-    message: "The device will restart and disconnect. Continue?",
-    confirm: "Reboot",
-  },
-}
-
-export default en
-export type Translations = typeof en
-
-// Additional storage keys for flat structure
-export const additionalStorageKeys = {
-  storage: {
-    title: "Storage Health",
+    title: "Storage",
     healthOverview: "Health Overview",
     warnings: "warnings",
     healthStatus: "Health Status",
@@ -268,19 +196,8 @@ export const additionalStorageKeys = {
     partitions: "Partitions",
     noPartitions: "No partitions found",
   },
-  controlMenu: {
-    subtitles: {
-      wifiDisconnected: "Disconnected",
-      wifiConnected: "Connected",
-      bluetoothOff: "Off",
-      bluetoothOn: "On (no devices)",
-      bluetoothConnected: "{{count}} connected",
-      audioMuted: "Muted",
-      audioVolume: "Volume: {{volume}}%",
-      cameraOffline: "Offline",
-      cameraStreaming: "Streaming",
-      storageWear: "Wear: {{percent}}%",
-    },
-  },
 }
 
+export default en
+
+export type Translations = typeof en
