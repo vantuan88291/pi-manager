@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client"
 import type { SocketModule, ConnectionState, TelegramUser } from "./types"
 
+// Get socket URL from environment variable or fallback to localhost
 const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "http://localhost:3001"
 
 class SocketManager {

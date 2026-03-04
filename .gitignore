@@ -94,3 +94,19 @@ app-dependency-graph.png
 .yarn/install-state.gz
 .yarn/cache/
 .yarn/unplugged/
+
+# Environment files (secrets)
+.env
+.env.local
+.env.*.local
+server/.env
+
+# Build outputs
+dist/
+server/public/*
+!server/public/.gitkeep
+
+# Temporary files
+*.log
+tmp/
+temp/

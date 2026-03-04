@@ -218,6 +218,20 @@ const en = {
     partitions: "Partitions",
     noPartitions: "No partitions found",
   },
+  auth: {
+    connecting: "Connecting...",
+    waiting: "Authenticating with Telegram...",
+    error: "Authentication Error",
+    error_not_in_telegram: "Open the app in Telegram to continue",
+    error_auth_invalid: "Telegram authentication failed",
+    error_access_denied: "You don't have access",
+    error_session_expired: "Session expired, please reconnect",
+    error_unknown: "Unknown error",
+  },
+  accessDenied: {
+    title: "Access Denied",
+    message: "Your Telegram ID is not in the whitelist. Contact admin for access.",
+  },
 }
 
 export default en

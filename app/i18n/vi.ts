@@ -194,7 +194,6 @@ const vi: Translations = {
     serverVersion: "Phiên bản máy chủ",
     telegramId: "Telegram ID",
   },
-
   storage: {
     title: "Lưu trữ",
     healthOverview: "Tổng quan sức khỏe",
@@ -219,6 +218,20 @@ const vi: Translations = {
     dataWritten: "Dữ liệu đã ghi",
     partitions: "Phân vùng",
     noPartitions: "Không có phân vùng nào",
+  },
+  auth: {
+    connecting: "Đang kết nối...",
+    waiting: "Đang xác thực với Telegram...",
+    error: "Lỗi xác thực",
+    error_not_in_telegram: "Mở ứng dụng trong Telegram để tiếp tục",
+    error_auth_invalid: "Xác thực Telegram thất bại",
+    error_access_denied: "Bạn không có quyền truy cập",
+    error_session_expired: "Phiên hết hạn, vui lòng kết nối lại",
+    error_unknown: "Lỗi không xác định",
+  },
+  accessDenied: {
+    title: "Không có quyền truy cập",
+    message: "Telegram ID của bạn chưa được thêm vào danh sách whitelist. Liên hệ admin để được cấp quyền.",
   },
 }
 

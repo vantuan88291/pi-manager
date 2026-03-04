@@ -52,15 +52,27 @@ export function setupSocketServer(io: Server) {
       return next(new Error("SESSION_EXPIRED"))
     }
 
-    // Path B: first connect with Telegram initData (or dev mode)
-    const user = validateTelegramInitData(initData ?? "", BOT_TOKEN)
-    if (!user) return next(new Error("AUTH_INVALID"))
+    // Path B: first connect with Telegram initData
+    if (initData) {
+      const user = validateTelegramInitData(initData, BOT_TOKEN)
+      if (!user) return next(new Error("AUTH_INVALID"))
 
-    if (!whitelist.isAllowed(user.id)) return next(new Error("ACCESS_DENIED"))
+      if (!whitelist.isAllowed(user.id)) return next(new Error("ACCESS_DENIED"))
 
+      const token = crypto.randomUUID()
+      sessions.set(token, { user, createdAt: Date.now() })
+      socket.data.user = user
+      socket.data.sessionToken = token
+      return next()
+    }
+
+    // Path C: No initData and no sessionToken = Dev mode (browser testing)
+    // Allow connection without auth for development
+    console.log("[socket] dev mode connection (no auth)")
+    const devUser = { id: 0, firstName: "Developer", username: "dev" }
     const token = crypto.randomUUID()
-    sessions.set(token, { user, createdAt: Date.now() })
-    socket.data.user = user
+    sessions.set(token, { user: devUser, createdAt: Date.now() })
+    socket.data.user = devUser
     socket.data.sessionToken = token
     next()
   })

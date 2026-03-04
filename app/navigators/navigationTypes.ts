@@ -12,6 +12,7 @@ export type MainTabParamList = {
 
 // App Stack Navigator types
 export type AppStackParamList = {
+  TelegramAuth: undefined
   MainTabs: undefined
   // Feature screens (Phase 2+)
   Wifi: undefined

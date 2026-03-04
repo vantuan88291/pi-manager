@@ -23,6 +23,9 @@ import { CameraScreen } from "@/screens/CameraScreen"
 import { StorageScreen } from "@/screens/StorageScreen"
 import { SettingsScreen } from "@/screens/SettingsScreen"
 import { AccessDeniedScreen } from "@/screens/AccessDeniedScreen"
+import { TelegramAuthScreen } from "@/screens/TelegramAuthScreen"
+import { useSocket } from "@/services/socket/SocketContext"
+import { useEffect } from "react"
 
 /**
  * This is a list of all the route names that will exit the app if the back button
@@ -37,6 +40,7 @@ const AppStack = () => {
   const {
     theme: { colors },
   } = useAppTheme()
+  const { state } = useSocket()
 
   return (
     <Stack.Navigator
@@ -48,16 +52,23 @@ const AppStack = () => {
         },
       }}
     >
-      <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-      
-      {/* Phase 2 Screens */}
-      <Stack.Screen name="Wifi" component={WifiScreen} />
-      <Stack.Screen name="Bluetooth" component={BluetoothScreen} />
-      <Stack.Screen name="Audio" component={AudioScreen} />
-      <Stack.Screen name="Camera" component={CameraScreen} />
-      <Stack.Screen name="Storage" component={StorageScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="AccessDenied" component={AccessDeniedScreen} />
+      {/* Show TelegramAuth first, then navigate based on auth state */}
+      {state.isAuthenticated ? (
+        <>
+          <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+          
+          {/* Phase 2 Screens */}
+          <Stack.Screen name="Wifi" component={WifiScreen} />
+          <Stack.Screen name="Bluetooth" component={BluetoothScreen} />
+          <Stack.Screen name="Audio" component={AudioScreen} />
+          <Stack.Screen name="Camera" component={CameraScreen} />
+          <Stack.Screen name="Storage" component={StorageScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="AccessDenied" component={AccessDeniedScreen} />
+        </>
+      ) : (
+        <Stack.Screen name="TelegramAuth" component={TelegramAuthScreen} />
+      )}
     </Stack.Navigator>
   )
 }

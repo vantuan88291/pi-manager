@@ -159,7 +159,13 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
                   <Icon font="Ionicons" icon="person" color={theme.colors.textDim} size={20} />
                   <Text tx="settings:telegramId" weight="medium" color="text" style={$settingLabel} />
                 </View>
-                <Text text="Developer (Dev Mode)" color="textDim" size="sm" />
+                <Text 
+                  text={connectionState.user 
+                    ? `${connectionState.user.firstName} (${connectionState.user.id})` 
+                    : "Not connected"} 
+                  color={connectionState.user ? "text" : "textDim"} 
+                  size="sm" 
+                />
               </View>
             </View>
           } 
