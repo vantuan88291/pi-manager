@@ -28,21 +28,23 @@ echo ""
 
 # Step 3: Start new Cloudflare tunnel
 echo "🌐 Step 3/5: Starting Cloudflare Quick Tunnel..."
-cloudflared tunnel --url http://localhost:3001 > /tmp/tunnel.log 2>&1 &
+rm -f /tmp/tunnel.log
+cloudflared tunnel --url http://localhost:3001 >> /tmp/tunnel.log 2>&1 &
 TUNNEL_PID=$!
 echo "   Tunnel PID: $TUNNEL_PID"
 
-# Wait for tunnel to be ready (max 15 seconds)
+# Wait for tunnel to be ready (max 30 seconds)
 echo "   Waiting for tunnel URL..."
-for i in {1..15}; do
-  if grep -q "trycloudflare.com" /tmp/tunnel.log; then
-    break
+TUNNEL_URL=""
+for i in {1..30}; do
+  if [ -f /tmp/tunnel.log ] && grep -q "trycloudflare.com" /tmp/tunnel.log; then
+    TUNNEL_URL=$(grep -o 'https://[^[:space:]"<>]*\.trycloudflare\.com' /tmp/tunnel.log | head -1 | tr -d '[:space:]')
+    if [ -n "$TUNNEL_URL" ]; then
+      break
+    fi
   fi
   sleep 1
 done
-
-# Extract tunnel URL (handle both formats)
-TUNNEL_URL=$(grep -o 'https://[^[:space:]"<>]*\.trycloudflare\.com' /tmp/tunnel.log | head -1 | tr -d '[:space:]')
 
 if [ -z "$TUNNEL_URL" ]; then
   echo "❌ Failed to get tunnel URL. Check /tmp/tunnel.log"
