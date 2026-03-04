@@ -79,10 +79,31 @@ fi
 echo "✅ Updated $SERVER_ENV_FILE"
 echo ""
 
-# Step 4: Build web frontend WITH correct env
+# Step 4: Build web frontend WITH correct env (clear cache first!)
 echo "📦 Step 4/6: Building web frontend (with tunnel URL)..."
 cd "$PROJECT_ROOT"
-yarn build:web
+
+# CRITICAL: Clear Expo cache to ensure env is reloaded
+rm -rf .expo dist node_modules/.cache
+
+# Build with clean environment
+env -i PATH="$PATH" HOME="$HOME" USER="$USER" EXPO_PUBLIC_SOCKET_URL="$TUNNEL_URL" npx expo export --platform web
+
+# Add Telegram SDK
+./scripts/add-telegram-sdk.sh
+
+# Copy to server/public
+rm -rf server/public/*
+cp -r dist/* server/public/
+
+# Verify built URL
+BUILT_URL=$(grep -o "https://[^\"']*trycloudflare\.com" dist/_expo/static/js/web/*.js 2>/dev/null | head -1 | cut -d: -f2-)
+if [ "$BUILT_URL" != "$TUNNEL_URL" ]; then
+  echo "⚠️  Warning: Built URL ($BUILT_URL) may differ from tunnel URL"
+else
+  echo "✅ Build verified: Socket URL matches tunnel URL"
+fi
+
 echo "✅ Build complete"
 echo ""
 
