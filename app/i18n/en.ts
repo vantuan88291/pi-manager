@@ -240,3 +240,48 @@ const en = {
 
 export default en
 export type Translations = typeof en
+
+// Additional storage keys for flat structure
+export const additionalStorageKeys = {
+  storage: {
+    title: "Storage Health",
+    healthOverview: "Health Overview",
+    warnings: "warnings",
+    healthStatus: "Health Status",
+    health: {
+      good: "Good",
+      warning: "Warning",
+      critical: "Critical",
+    },
+    capacity: "Capacity",
+    temperature: "Temperature",
+    powerOn: "Power On Hours",
+    lifespanUsed: "Lifespan Used",
+    lifespanRemaining: "Lifespan Remaining",
+    smartData: "S.M.A.R.T. Data",
+    criticalWarning: "Critical Warning",
+    errorLogEntries: "Error Log Entries",
+    mediaErrors: "Media Errors",
+    unsafeShutdowns: "Unsafe Shutdowns",
+    availableSpare: "Available Spare",
+    dataWritten: "Data Written",
+    partitions: "Partitions",
+    noPartitions: "No partitions found",
+  },
+  controlMenu: {
+    subtitles: {
+      wifiDisconnected: "Disconnected",
+      wifiConnected: "Connected",
+      bluetoothOff: "Off",
+      bluetoothOn: "On (no devices)",
+      bluetoothConnected: "{{count}} connected",
+      audioMuted: "Muted",
+      audioVolume: "Volume: {{volume}}%",
+      cameraOffline: "Offline",
+      cameraStreaming: "Streaming",
+      storageWear: "Wear: {{percent}}%",
+    },
+  },
+}
+
+export default en

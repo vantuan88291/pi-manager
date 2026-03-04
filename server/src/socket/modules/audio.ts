@@ -67,36 +67,42 @@ async function getAvailableDevices(): Promise<AudioDevice[]> {
   devices.push({ id: "speaker", name: "3.5mm Jack", type: "speaker" })
   devices.push({ id: "hdmi", name: "HDMI", type: "hdmi" })
   
-  // Try to get Bluetooth devices
+  // Try to get Bluetooth devices (optional, may fail)
   try {
     const btProc = spawn('pactl', ['list', 'sinks'])
     let output = ''
     
     btProc.stdout.on('data', (data) => { output += data.toString() })
     
-    btProc.on('close', () => {
-      const lines = output.split('\n')
-      let currentName = ''
-      let currentDesc = ''
-      
-      for (const line of lines) {
-        if (line.includes('Name:')) {
-          currentName = line.split(':')[1]?.trim() || ''
-        }
-        if (line.includes('Description:')) {
-          currentDesc = line.split(':')[1]?.trim() || ''
-          if (currentName.includes('bluez')) {
-            devices.push({
-              id: currentName,
-              name: currentDesc || 'Bluetooth Device',
-              type: "bluetooth",
-            })
+    await new Promise((resolve) => {
+      btProc.on('close', () => {
+        const lines = output.split('\n')
+        let currentName = ''
+        let currentDesc = ''
+        
+        for (const line of lines) {
+          if (line.includes('Name:')) {
+            currentName = line.split(':')[1]?.trim() || ''
+          }
+          if (line.includes('Description:')) {
+            currentDesc = line.split(':')[1]?.trim() || ''
+            if (currentName.includes('bluez')) {
+              devices.push({
+                id: currentName,
+                name: currentDesc || 'Bluetooth Device',
+                type: "bluetooth",
+              })
+            }
           }
         }
-      }
+        resolve(null)
+      })
+      
+      btProc.on('error', () => resolve(null))
     })
   } catch (e) {
-    // pactl not available, skip
+    // pactl not available, skip Bluetooth devices
+    console.log('[audio] pactl not available, skipping Bluetooth devices')
   }
   
   return devices
@@ -110,23 +116,25 @@ async function getOutputDevice(): Promise<AudioDevice | null> {
     
     proc.stdout.on('data', (data) => { output += data.toString() })
     
-    proc.on('close', () => {
-      const sinkName = output.trim()
-      if (sinkName.includes('bluez')) {
-        return { id: sinkName, name: "Bluetooth Device", type: "bluetooth" }
-      } else if (sinkName.includes('hdmi')) {
-        return { id: "hdmi", name: "HDMI", type: "hdmi" }
-      } else {
-        return { id: "speaker", name: "3.5mm Jack", type: "speaker" }
-      }
+    await new Promise((resolve) => {
+      proc.on('close', () => {
+        const sinkName = output.trim()
+        if (sinkName.includes('bluez')) {
+          resolve({ id: sinkName, name: "Bluetooth Device", type: "bluetooth" })
+        } else if (sinkName.includes('hdmi')) {
+          resolve({ id: "hdmi", name: "HDMI", type: "hdmi" })
+        } else {
+          resolve({ id: "speaker", name: "3.5mm Jack", type: "speaker" })
+        }
+      })
+      
+      proc.on('error', () => resolve({ id: "speaker", name: "3.5mm Jack", type: "speaker" }))
     })
     
-    proc.on('error', () => null)
+    return null
   } catch (e) {
     return { id: "speaker", name: "3.5mm Jack", type: "speaker" }
   }
-  
-  return null
 }
 
 // Get full audio status
