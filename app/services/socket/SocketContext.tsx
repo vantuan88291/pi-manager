@@ -27,6 +27,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = socketManager.subscribe(setState)
 
     // Auto-connect in dev mode (no initData)
+    // Telegram auth is handled by TelegramAuthScreen
     if (!process.env.EXPO_PUBLIC_TELEGRAM_BOT_TOKEN) {
       socketManager.connect()
     }
