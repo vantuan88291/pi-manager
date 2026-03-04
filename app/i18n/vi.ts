@@ -173,6 +173,28 @@ const vi: Translations = {
       connectionFailed: "Kết nối thất bại. Kiểm tra mạng.",
     },
   },
+  settings: {
+    title: "Cài đặt",
+    appearance: "Giao diện",
+    connection: "Kết nối",
+    about: "Giới thiệu",
+    theme: {
+      label: "Chủ đề",
+      system: "Hệ thống",
+      light: "Sáng",
+      dark: "Tối",
+    },
+    language: {
+      label: "Ngôn ngữ",
+    },
+    serverUrl: "URL máy chủ",
+    status: "Trạng thái",
+    latency: "Độ trễ",
+    appVersion: "Phiên bản ứng dụng",
+    serverVersion: "Phiên bản máy chủ",
+    telegramId: "Telegram ID",
+  },
+
   storage: {
     title: "Lưu trữ",
     healthOverview: "Tổng quan sức khỏe",

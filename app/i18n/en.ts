@@ -171,6 +171,28 @@ const en = {
       connectionFailed: "Connection failed. Check network.",
     },
   },
+  settings: {
+    title: "Settings",
+    appearance: "Appearance",
+    connection: "Connection",
+    about: "About",
+    theme: {
+      label: "Theme",
+      system: "System",
+      light: "Light",
+      dark: "Dark",
+    },
+    language: {
+      label: "Language",
+    },
+    serverUrl: "Server URL",
+    status: "Status",
+    latency: "Latency",
+    appVersion: "App Version",
+    serverVersion: "Server Version",
+    telegramId: "Telegram ID",
+  },
+
   storage: {
     title: "Storage",
     healthOverview: "Health Overview",
