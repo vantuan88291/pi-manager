@@ -1,8 +1,8 @@
 import { io, Socket } from "socket.io-client"
 import type { SocketModule, ConnectionState, TelegramUser } from "./types"
 
-// Get socket URL from environment variable or fallback to localhost
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "http://localhost:3001"
+// Use placeholder - will be replaced at build time by script
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "__TUNNEL_URL__"
 
 class SocketManager {
   private socket: Socket | null = null
@@ -77,7 +77,6 @@ class SocketManager {
       this.state = { ...this.state, status: "disconnected", isAuthenticated: false }
       this.notify()
       this.modules.forEach((mod) => mod.cleanup())
-      // Prefer sessionToken on reconnect
       if (this.socket && this.sessionToken) {
         this.socket.auth = { sessionToken: this.sessionToken }
       }
@@ -85,7 +84,6 @@ class SocketManager {
 
     this.socket.on("connect_error", (err: Error) => {
       if (err.message === "SESSION_EXPIRED" && this.initData) {
-        // Fall back to initData
         this.sessionToken = null
         this.socket!.auth = { initData: this.initData }
         return
