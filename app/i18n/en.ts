@@ -284,4 +284,3 @@ export const additionalStorageKeys = {
   },
 }
 
-export default en

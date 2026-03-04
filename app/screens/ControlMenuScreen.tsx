@@ -1,6 +1,7 @@
 import { FC, useState, useEffect } from "react"
 import { View, ViewStyle, Alert } from "react-native"
 import { useTranslation } from "react-i18next"
+import { useNavigation } from "@react-navigation/native"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -9,7 +10,6 @@ import { useAppTheme } from "@/theme/context"
 import { featureColors } from "@/theme/featureColors"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import type { ThemedStyle } from "@/theme/types"
-import { TxKeyPath } from "@/i18n"
 import { useSocket } from "@/services/socket/SocketContext"
 import { wifiClientModule } from "@/services/socket/modules/wifi"
 import { bluetoothClientModule } from "@/services/socket/modules/bluetooth"
@@ -20,8 +20,8 @@ type ControlMenuScreenProps = MainTabScreenProps<"Control">
 
 interface MenuItem {
   id: string
-  titleTx: TxKeyPath
-  subtitleTx?: TxKeyPath
+  titleTx: string
+  subtitleTx?: string
   subtitleParams?: Record<string, string | number>
   icon: { font: "Ionicons" | "MaterialCommunityIcons"; name: string; color: string; badgeBg: string }
   accentColor: string
@@ -108,26 +108,26 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     }
   }
 
-  const getWifiSubtitle = (): TxKeyPath => {
-    if (!wifiStatus.connected) return "controlMenu:subtitles.wifiDisconnected"
-    return "controlMenu:subtitles.wifiConnected"
+  const getWifiSubtitle = (): string => {
+    if (!wifiStatus.connected) return t("controlMenu:subtitles.wifiDisconnected")
+    return t("controlMenu:subtitles.wifiConnected")
   }
 
-  const getBtSubtitle = (): TxKeyPath => {
-    if (!btStatus.powered) return "controlMenu:subtitles.bluetoothOff"
+  const getBtSubtitle = (): string => {
+    if (!btStatus.powered) return t("controlMenu:subtitles.bluetoothOff")
     if (btStatus.connectedCount > 0) {
-      return t("controlMenu:subtitles.bluetoothConnected", { count: btStatus.connectedCount }) as TxKeyPath
+      return t("controlMenu:subtitles.bluetoothConnected", { count: btStatus.connectedCount })
     }
-    return "controlMenu:subtitles.bluetoothOn" as TxKeyPath
+    return t("controlMenu:subtitles.bluetoothOn")
   }
 
-  const getAudioSubtitle = (): TxKeyPath => {
-    if (audioStatus.muted) return "controlMenu:subtitles.audioMuted"
-    return t("controlMenu:subtitles.audioVolume", { volume: audioStatus.volume }) as TxKeyPath
+  const getAudioSubtitle = (): string => {
+    if (audioStatus.muted) return t("controlMenu:subtitles.audioMuted")
+    return t("controlMenu:subtitles.audioVolume", { volume: audioStatus.volume })
   }
 
-  const getStorageSubtitle = (): TxKeyPath => {
-    return t("controlMenu:subtitles.storageWear", { percent: storageStatus.healthPercent }) as TxKeyPath
+  const getStorageSubtitle = (): string => {
+    return t("controlMenu:subtitles.storageWear", { percent: storageStatus.healthPercent })
   }
 
   const handleReboot = () => {
@@ -186,7 +186,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     { 
       id: "camera", 
       titleTx: "controlMenu:camera", 
-      subtitleTx: "controlMenu:subtitles.cameraOffline",
+      subtitleTx: t("controlMenu:subtitles.cameraOffline"),
       icon: { font: "Ionicons", name: "camera", color: cameraColors.accent, badgeBg: cameraColors.badgeBg }, 
       accentColor: cameraColors.accent, 
       screen: "Camera" 
@@ -202,7 +202,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     { 
       id: "reboot", 
       titleTx: "controlMenu:reboot", 
-      subtitleTx: "common:ok",
+      subtitleTx: t("common:ok"),
       icon: { font: "Ionicons", name: "refresh", color: theme.colors.error, badgeBg: theme.isDark ? "#7F1D1D" : "#FEF2F2" }, 
       accentColor: theme.colors.error, 
       danger: true, 

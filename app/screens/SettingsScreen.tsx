@@ -29,7 +29,6 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
   const [selectedTheme, setSelectedTheme] = useState<"light" | "dark" | undefined>(themeContext)
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>("vi")
   const [isLangModalVisible, setIsLangModalVisible] = useState(false)
-  const [latency, setLatency] = useState<number>(0)
 
   // Load saved language on mount
   useEffect(() => {
@@ -40,12 +39,6 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
     loadLang()
   }, [])
 
-  // Calculate latency from socket connection
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Simple latency calculation (in real app, use socket ping)
-      setLatency(Math.floor(Math.random() * 50) + 20) // Mock for now
-    }, 5000)
     return () => clearInterval(interval)
   }, [])
 
@@ -144,11 +137,6 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
               <View style={themed($settingRow)}>
                 <View style={$settingLeft}>
                   <Icon font="Ionicons" icon="pulse" color={theme.colors.textDim} size={20} />
-                  <Text tx="settings:latency" weight="medium" color="text" style={$settingLabel} />
-                </View>
-                <Text text={`${latency} ms`} color="textDim" size="sm" />
-              </View>
-            </View>
           } 
         />
 
