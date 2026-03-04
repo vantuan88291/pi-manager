@@ -1,5 +1,5 @@
 #!/bin/bash
-# Complete startup script: tunnel first → update env → build → start server
+# Complete startup script: tunnel first → update env → build → inject URL → start server
 
 set -e
 
@@ -13,7 +13,7 @@ echo "======================================="
 echo ""
 
 # Step 1: Kill existing processes
-echo "🛑 Step 1/6: Stopping existing processes..."
+echo "🛑 Step 1/7: Stopping existing processes..."
 pkill -f "cloudflared tunnel" 2>/dev/null || true
 pkill -f "tsx watch" 2>/dev/null || true
 pkill -f "npm run dev" 2>/dev/null || true
@@ -22,7 +22,7 @@ echo "✅ Processes stopped"
 echo ""
 
 # Step 2: Start Cloudflare tunnel FIRST to get URL
-echo "🌐 Step 2/6: Starting Cloudflare Quick Tunnel..."
+echo "🌐 Step 2/7: Starting Cloudflare Quick Tunnel..."
 rm -f /tmp/tunnel.log
 cloudflared tunnel --url http://localhost:3001 >> /tmp/tunnel.log 2>&1 &
 TUNNEL_PID=$!
@@ -50,10 +50,10 @@ fi
 echo "✅ Tunnel started: $TUNNEL_URL"
 echo ""
 
-# Step 3: Update environment files BEFORE build
-echo "⚙️  Step 3/6: Updating environment files..."
+# Step 3: Update environment files
+echo "⚙️  Step 3/7: Updating environment files..."
 
-# Update frontend .env FIRST
+# Update frontend .env
 if [ -f "$ENV_FILE" ]; then
   sed -i "s|EXPO_PUBLIC_SOCKET_URL=.*|EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL|" "$ENV_FILE"
 else
@@ -79,43 +79,45 @@ fi
 echo "✅ Updated $SERVER_ENV_FILE"
 echo ""
 
-# Step 4: Build web frontend WITH correct env (clear cache first!)
-echo "📦 Step 4/6: Building web frontend (with tunnel URL)..."
+# Step 4: Build web frontend
+echo "📦 Step 4/7: Building web frontend..."
 cd "$PROJECT_ROOT"
+rm -rf .expo dist
+npx expo export --platform web
+echo "✅ Build complete"
+echo ""
 
-# CRITICAL: Clear Expo cache to ensure env is reloaded
-rm -rf .expo dist node_modules/.cache
+# Step 5: Add Telegram SDK and INJECT correct URL
+echo "💉 Step 5/7: Injecting tunnel URL into build..."
 
-# Build with clean environment
-env -i PATH="$PATH" HOME="$HOME" USER="$USER" EXPO_PUBLIC_SOCKET_URL="$TUNNEL_URL" npx expo export --platform web
-
-# Add Telegram SDK
-./scripts/add-telegram-sdk.sh
+# Add Telegram SDK to index.html
+sed -i 's|<title>Pi Manager</title>|<title>Pi Manager</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
 
 # Copy to server/public
 rm -rf server/public/*
 cp -r dist/* server/public/
 
-# Verify built URL
-BUILT_URL=$(grep -o "https://[^\"']*trycloudflare\.com" dist/_expo/static/js/web/*.js 2>/dev/null | head -1 | cut -d: -f2-)
-if [ "$BUILT_URL" != "$TUNNEL_URL" ]; then
-  echo "⚠️  Warning: Built URL ($BUILT_URL) may differ from tunnel URL"
-else
-  echo "✅ Build verified: Socket URL matches tunnel URL"
-fi
+# CRITICAL: Replace ANY old tunnel URL with new one in JS bundle
+find server/public/_expo/static/js/web/ -name "*.js" -type f -exec sed -i "s|https://[^\"']*trycloudflare\.com|$TUNNEL_URL|g" {} \;
 
-echo "✅ Build complete"
+# Verify
+BUILT_URL=$(grep -o "https://[^\"']*trycloudflare\.com" server/public/_expo/static/js/web/*.js 2>/dev/null | head -1 | cut -d: -f2-)
+if [ "$BUILT_URL" = "$TUNNEL_URL" ]; then
+  echo "✅ URL injected successfully: $BUILT_URL"
+else
+  echo "❌ Failed to inject URL. Expected: $TUNNEL_URL, Got: $BUILT_URL"
+  exit 1
+fi
 echo ""
 
-# Step 5: Start backend server
-echo "🖥️  Step 5/6: Starting backend server..."
+# Step 6: Start backend server
+echo "🖥️  Step 6/7: Starting backend server..."
 cd "$PROJECT_ROOT/server"
 npm run dev > /tmp/server.log 2>&1 &
 SERVER_PID=$!
 echo "   Server PID: $SERVER_PID"
 sleep 3
 
-# Check if server is running
 if ps -p $SERVER_PID > /dev/null; then
   echo "✅ Server started"
 else
@@ -124,13 +126,13 @@ else
 fi
 echo ""
 
-# Step 6: Verify everything
-echo "🔍 Step 6/6: Verifying setup..."
+# Step 7: Verify
+echo "🔍 Step 7/7: Verifying setup..."
 sleep 2
 if curl -s "$TUNNEL_URL/api/health" > /dev/null 2>&1; then
   echo "✅ Backend accessible via tunnel"
 else
-  echo "⚠️  Backend not yet accessible (may take a few seconds)"
+  echo "⚠️  Backend not yet accessible"
 fi
 echo ""
 
@@ -157,5 +159,4 @@ echo "📝 Note: Update Telegram Bot menu button with new URL:"
 echo "   @BotFather → /setmenubutton → $TUNNEL_URL"
 echo "======================================="
 
-# Keep script running to maintain tunnel
 wait $SERVER_PID
