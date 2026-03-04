@@ -1,5 +1,5 @@
 #!/bin/bash
-# Complete startup script: build → tunnel → update env → start servers
+# Complete startup script: tunnel first → update env → build → start server
 
 set -e
 
@@ -12,28 +12,23 @@ echo "🚀 Pi Manager - Complete Startup Script"
 echo "======================================="
 echo ""
 
-# Step 1: Build web frontend
-echo "📦 Step 1/5: Building web frontend..."
-cd "$PROJECT_ROOT"
-yarn build:web
-echo "✅ Build complete"
-echo ""
-
-# Step 2: Kill existing tunnel (if any)
-echo "🛑 Step 2/5: Stopping existing tunnels..."
+# Step 1: Kill existing processes
+echo "🛑 Step 1/6: Stopping existing processes..."
 pkill -f "cloudflared tunnel" 2>/dev/null || true
+pkill -f "tsx watch" 2>/dev/null || true
+pkill -f "npm run dev" 2>/dev/null || true
 sleep 2
-echo "✅ Tunnels stopped"
+echo "✅ Processes stopped"
 echo ""
 
-# Step 3: Start new Cloudflare tunnel
-echo "🌐 Step 3/5: Starting Cloudflare Quick Tunnel..."
+# Step 2: Start Cloudflare tunnel FIRST to get URL
+echo "🌐 Step 2/6: Starting Cloudflare Quick Tunnel..."
 rm -f /tmp/tunnel.log
 cloudflared tunnel --url http://localhost:3001 >> /tmp/tunnel.log 2>&1 &
 TUNNEL_PID=$!
 echo "   Tunnel PID: $TUNNEL_PID"
 
-# Wait for tunnel to be ready (max 30 seconds)
+# Wait for tunnel URL (max 30 seconds)
 echo "   Waiting for tunnel URL..."
 TUNNEL_URL=""
 for i in {1..30}; do
@@ -55,27 +50,24 @@ fi
 echo "✅ Tunnel started: $TUNNEL_URL"
 echo ""
 
-# Step 4: Update environment files
-echo "⚙️  Step 4/5: Updating environment files..."
+# Step 3: Update environment files BEFORE build
+echo "⚙️  Step 3/6: Updating environment files..."
 
-# Update frontend .env
+# Update frontend .env FIRST
 if [ -f "$ENV_FILE" ]; then
   sed -i "s|EXPO_PUBLIC_SOCKET_URL=.*|EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL|" "$ENV_FILE"
-  echo "✅ Updated $ENV_FILE"
 else
   echo "EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL" > "$ENV_FILE"
-  echo "✅ Created $ENV_FILE"
 fi
+echo "✅ Updated $ENV_FILE"
 
-# Update backend .env (ALLOWED_ORIGINS)
+# Update backend .env
 if [ -f "$SERVER_ENV_FILE" ]; then
-  # Update ALLOWED_ORIGINS to include tunnel URL
   if grep -q "ALLOWED_ORIGINS=" "$SERVER_ENV_FILE"; then
     sed -i "s|ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=$TUNNEL_URL,http://localhost:8081,http://localhost:3001|" "$SERVER_ENV_FILE"
   else
     echo "ALLOWED_ORIGINS=$TUNNEL_URL,http://localhost:8081,http://localhost:3001" >> "$SERVER_ENV_FILE"
   fi
-  echo "✅ Updated $SERVER_ENV_FILE"
 else
   cat > "$SERVER_ENV_FILE" << ENVEOF
 PORT=3001
@@ -83,12 +75,19 @@ TELEGRAM_BOT_TOKEN=your-bot-token-here
 ALLOWED_ORIGINS=$TUNNEL_URL,http://localhost:8081,http://localhost:3001
 ADMIN_TELEGRAM_ID=your-telegram-id
 ENVEOF
-  echo "✅ Created $SERVER_ENV_FILE"
 fi
+echo "✅ Updated $SERVER_ENV_FILE"
+echo ""
+
+# Step 4: Build web frontend WITH correct env
+echo "📦 Step 4/6: Building web frontend (with tunnel URL)..."
+cd "$PROJECT_ROOT"
+yarn build:web
+echo "✅ Build complete"
 echo ""
 
 # Step 5: Start backend server
-echo "🖥️  Step 5/5: Starting backend server..."
+echo "🖥️  Step 5/6: Starting backend server..."
 cd "$PROJECT_ROOT/server"
 npm run dev > /tmp/server.log 2>&1 &
 SERVER_PID=$!
@@ -101,6 +100,16 @@ if ps -p $SERVER_PID > /dev/null; then
 else
   echo "❌ Server failed to start. Check /tmp/server.log"
   exit 1
+fi
+echo ""
+
+# Step 6: Verify everything
+echo "🔍 Step 6/6: Verifying setup..."
+sleep 2
+if curl -s "$TUNNEL_URL/api/health" > /dev/null 2>&1; then
+  echo "✅ Backend accessible via tunnel"
+else
+  echo "⚠️  Backend not yet accessible (may take a few seconds)"
 fi
 echo ""
 
