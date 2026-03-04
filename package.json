@@ -32,7 +32,9 @@
     "build:android:prod": "eas build --profile production --platform android --local",
     "gscreen": "npx ignite-cli@11.4.0 g screen",
     "gcomponent": "npx ignite-cli@11.4.0 g component",
-    "prebuild": "npx expo prebuild --clean"
+    "prebuild": "npx expo prebuild --clean",
+    "start:tunnel": "./scripts/start-tunnel.sh",
+    "start:full": "./scripts/start-with-tunnel.sh"
   },
   "dependencies": {
     "@expo-google-fonts/space-grotesk": "^0.4.0",
