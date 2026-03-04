@@ -6,7 +6,7 @@ import "intl-pluralrules"
 
 import { storage } from "@/utils/storage"
 
-// Import only EN and VI translations
+// Import EN and VI translations
 import en, { Translations } from "./en"
 import vi from "./vi"
 
