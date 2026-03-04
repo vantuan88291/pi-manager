@@ -47,7 +47,7 @@ class SocketManager {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 30000,
       timeout: 10000,
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       auth: this.sessionToken
         ? { sessionToken: this.sessionToken }
         : initData

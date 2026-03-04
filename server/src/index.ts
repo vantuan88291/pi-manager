@@ -14,13 +14,51 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "http://localhost:8081")
   .split(",")
   .map((s) => s.trim())
 
-const app = express()
-app.use(cors({ origin: ALLOWED_ORIGINS }))
+console.log("[config] allowed origins:", ALLOWED_ORIGINS)
 
+const app = express()
+
+// CORS config - allow all for dev
+app.use(cors({
+  origin: true,  // Allow all origins for dev
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}))
+
+app.use(express.json())
+
+// Health check endpoint
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() })
 })
 
+// System reboot endpoint (requires sudo)
+app.post("/api/system/reboot", async (_req, res) => {
+  console.log("[api] reboot requested")
+  
+  const { spawn } = await import("node:child_process")
+  
+  // Execute sudo reboot
+  const rebootProc = spawn("sudo", ["reboot"])
+  
+  rebootProc.on("close", (code) => {
+    if (code === 0) {
+      console.log("[api] reboot initiated")
+      res.json({ success: true, message: "System is rebooting" })
+    } else {
+      console.error("[api] reboot failed")
+      res.status(500).json({ success: false, error: "Reboot failed" })
+    }
+  })
+  
+  rebootProc.on("error", (err) => {
+    console.error("[api] reboot error:", err)
+    res.status(500).json({ success: false, error: "Reboot command failed" })
+  })
+})
+
+// Serve static frontend (production)
 const publicDir = path.join(__dirname, "../public")
 app.use(express.static(publicDir))
 app.get("*", (_req, res) => {
@@ -30,15 +68,19 @@ app.get("*", (_req, res) => {
 const server = http.createServer(app)
 
 const io = new Server(server, {
-  cors: { origin: ALLOWED_ORIGINS, methods: ["GET", "POST"] },
-  transports: ["websocket"],
+  cors: {
+    origin: true,  // Allow all origins
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+  transports: ["websocket", "polling"],
   pingInterval: 25_000,
   pingTimeout: 20_000,
 })
 
 setupSocketServer(io)
 
-server.listen(PORT, () => {
-  console.log(`[pi-manager] server listening on http://localhost:${PORT}`)
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`[pi-manager] server listening on http://0.0.0.0:${PORT}`)
   console.log(`[pi-manager] allowed origins: ${ALLOWED_ORIGINS.join(", ")}`)
 })

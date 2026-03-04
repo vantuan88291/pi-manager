@@ -1,6 +1,7 @@
 import { FC, useState, useEffect, useMemo } from "react"
 import { View, ViewStyle, RefreshControl } from "react-native"
 import { useTranslation } from "react-i18next"
+import { useNavigation } from "@react-navigation/native"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
@@ -13,12 +14,10 @@ import { useAppTheme } from "@/theme/context"
 import { getFeatureColor } from "@/theme/featureColors"
 import { useSocket } from "@/services/socket/SocketContext"
 import { storageClientModule } from "@/services/socket/modules/storage"
-import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import type { StorageStatus, Partition } from "../../../shared/types/storage"
 
-type StorageScreenProps = Omit<AppStackScreenProps<"Storage">, "navigation">
-
-export const StorageScreen: FC<StorageScreenProps> = function StorageScreen() {
+export const StorageScreen: FC = function StorageScreen() {
+  const navigation = useNavigation()
   const { t } = useTranslation()
   const { themed, theme } = useAppTheme()
   const { accent: storageAccent } = getFeatureColor("storage", theme.isDark)
@@ -51,11 +50,12 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen() {
 
   const handleRefresh = async () => {
     try {
-    setRefreshing(true)
-    await storageClientModule.refresh()
-    setTimeout(() => setRefreshing(false), 1000)
+      setRefreshing(true)
+      await storageClientModule.refresh()
     } catch (error) {
       console.error("[StorageScreen] refresh error:", error)
+    } finally {
+      setTimeout(() => setRefreshing(false), 1000)
     }
   }
 
@@ -159,7 +159,7 @@ export const StorageScreen: FC<StorageScreenProps> = function StorageScreen() {
                   <Text text={`${health.percentageUsed}%`} size="sm" weight="semiBold" color="text" />
                 </View>
                 <ProgressBar 
-                  progress={health.percentageUsed / 100} 
+                  progress={(health.percentageUsed || 0) / 100} 
                   color={healthStatus?.color || storageAccent} 
                   style={{ marginTop: 8 }} 
                 />
