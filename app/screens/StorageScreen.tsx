@@ -159,7 +159,7 @@ export const StorageScreen: FC = function StorageScreen() {
                   <Text text={`${health.percentageUsed}%`} size="sm" weight="semiBold" color="text" />
                 </View>
                 <ProgressBar 
-                  progress={(health.percentageUsed || 0) / 100} 
+                  value={health.percentageUsed || 0} 
                   color={healthStatus?.color || storageAccent} 
                   style={{ marginTop: 8 }} 
                 />
@@ -337,7 +337,7 @@ function PartitionRow({ partition, isLast }: { partition: Partition, isLast: boo
       </View>
       
       <ProgressBar 
-        progress={partition.percent / 100} 
+        value={partition.percent} 
         color={getProgressColor(partition.percent)} 
         style={{ marginTop: 8 }} 
       />
