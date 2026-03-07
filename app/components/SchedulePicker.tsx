@@ -246,12 +246,12 @@ const $dayInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   minHeight: 44,
 })
 
-const $weekdayRow: ViewStyle = {
+const $weekdayRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.sm,
   flexWrap: "wrap",
   justifyContent: "space-between",
-}
+})
 
 const $weekdayButton: ViewStyle = { 
   flex: 1, 
@@ -259,12 +259,12 @@ const $weekdayButton: ViewStyle = {
   height: 36,
 }
 
-const $intervalRow: ViewStyle = {
+const $intervalRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.lg,
   alignItems: "center",
   flexWrap: "wrap",
-}
+})
 
 const $intervalInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.surface,
@@ -280,12 +280,12 @@ const $intervalInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   minHeight: 44,
 })
 
-const $unitPicker: ViewStyle = {
+const $unitPicker: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
   flexDirection: "row",
   gap: spacing.sm,
   minWidth: 200,
-}
+})
 
 const $unitButton: ViewStyle = { 
   flex: 1,
@@ -306,7 +306,7 @@ const $cronInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   lineHeight: 20,
 })
 
-const $quickPickLabel: ThemedStyle<ViewStyle> = ({ colors }) => ({ 
+const $quickPickLabel: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ 
   marginTop: spacing.md,
   color: colors.textDim,
 })
