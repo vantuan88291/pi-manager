@@ -11,6 +11,7 @@ import { Icon } from "@/components/Icon"
 import { SectionHeader } from "@/components/SectionHeader"
 import { Button } from "@/components/Button"
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
+import { CreateJobModal, type CronJobFormData } from "@/components/CreateJobModal"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle, ThemedViewStyle } from "@/theme/types"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
@@ -80,6 +81,9 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     message?: string
     buttons: AlertButton[]
   }>({ visible: false, title: "", buttons: [] })
+  
+  // Create job modal state
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false)
 
   // Split jobs into active and disabled
   const { activeJobs, disabledJobs } = useMemo(() => {
@@ -94,11 +98,13 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   }
 
   const handleCreateJob = () => {
-    showAlert(
-      "Create Job",
-      "Create job modal will be implemented next",
-      [{ text: "OK" }]
-    )
+    setIsCreateModalVisible(true)
+  }
+
+  const handleJobSubmit = (data: CronJobFormData) => {
+    console.log("[CronJobScreen] Creating job with data:", data)
+    // TODO: Connect to socket module to create job
+    showAlert("Success", `Job "${data.name || "Untitled"}" created!`)
   }
 
   const handleRunJob = (jobId: string) => {
@@ -330,6 +336,13 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         message={alertConfig.message}
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
+
+      {/* Create Job Modal */}
+      <CreateJobModal
+        visible={isCreateModalVisible}
+        onClose={() => setIsCreateModalVisible(false)}
+        onSubmit={handleJobSubmit}
       />
     </Screen>
   )
