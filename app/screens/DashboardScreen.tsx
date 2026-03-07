@@ -118,7 +118,13 @@ export const DashboardScreen: FC = function DashboardScreen() {
 
       <View style={themed($statusRow)}>
         <ConnectionBadge status={connectionStatus} />
-        <Text text={info?.hostname ?? "connecting..."} size="sm" color="textDim" />
+        <Text 
+          text={connectionState.user 
+            ? `👤 ${connectionState.user.firstName}` 
+            : (info?.hostname ?? "connecting...")} 
+          size="sm" 
+          color="textDim" 
+        />
       </View>
 
       {/* Error state */}
