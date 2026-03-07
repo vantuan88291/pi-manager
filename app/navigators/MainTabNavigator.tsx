@@ -39,7 +39,7 @@ export const MainTabNavigator: FC = function MainTabNavigator() {
           borderTopColor: theme.colors.border,
           borderTopWidth: 1,
           height: 68,
-          paddingBottom: 4,
+          paddingBottom: 12,
           paddingTop: 8,
         },
         tabBarActiveTintColor: theme.colors.tint,

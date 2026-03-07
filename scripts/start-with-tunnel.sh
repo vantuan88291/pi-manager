@@ -1,5 +1,6 @@
 #!/bin/bash
-# Complete startup: tunnel → build → replace placeholder → start server
+# Complete startup script for Pi Manager
+# Uses runtime URL detection (window.location.origin) - no URL injection needed
 
 set -e
 
@@ -12,8 +13,8 @@ echo "🚀 Pi Manager - Complete Startup Script"
 echo "======================================="
 echo ""
 
-# Step 1: Kill existing
-echo "🛑 Step 1/7: Stopping existing processes..."
+# Step 1: Kill existing processes
+echo "🛑 Step 1/6: Stopping existing processes..."
 pkill -f "cloudflared tunnel" 2>/dev/null || true
 pkill -f "tsx watch" 2>/dev/null || true
 pkill -f "npm run dev" 2>/dev/null || true
@@ -21,8 +22,8 @@ sleep 2
 echo "✅ Stopped"
 echo ""
 
-# Step 2: Start tunnel
-echo "🌐 Step 2/7: Starting Cloudflare Tunnel..."
+# Step 2: Start Cloudflare Tunnel
+echo "🌐 Step 2/6: Starting Cloudflare Tunnel..."
 rm -f /tmp/tunnel.log
 cloudflared tunnel --url http://localhost:3001 >> /tmp/tunnel.log 2>&1 &
 TUNNEL_PID=$!
@@ -43,52 +44,41 @@ fi
 echo "✅ Tunnel: $TUNNEL_URL"
 echo ""
 
-# Step 3: Update .env
-echo "⚙️  Step 3/7: Updating .env files..."
-echo "EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL" > "$ENV_FILE"
+# Step 3: Update .env files (URL not baked into build - uses runtime detection)
+echo "⚙️  Step 3/6: Updating .env files..."
+echo "# Socket URL detected at runtime via window.location.origin" > "$ENV_FILE"
 cat > "$SERVER_ENV_FILE" << ENVEOF
 PORT=3001
-TELEGRAM_BOT_TOKEN=your-bot-token-here
+# TELEGRAM_BOT_TOKEN=your-bot-token-here
 ALLOWED_ORIGINS=$TUNNEL_URL,http://localhost:8081,http://localhost:3001
-ADMIN_TELEGRAM_ID=your-telegram-id
+# ADMIN_TELEGRAM_ID=your-telegram-id
 ENVEOF
-echo "✅ Updated"
+echo "✅ Updated (runtime URL detection enabled)"
 echo ""
 
-# Step 4: Build
-echo "📦 Step 4/7: Building..."
+# Step 4: Build frontend (clear cache to ensure fresh build)
+echo "📦 Step 4/6: Building frontend..."
 cd "$PROJECT_ROOT"
-rm -rf .expo dist
+rm -rf .expo dist node_modules/.cache
 npx expo export --platform web
 echo "✅ Build done"
 echo ""
 
-# Step 5: Add SDK + Replace PLACEHOLDER
-echo "💉 Step 5/7: Injecting URL..."
+# Step 5: Add Telegram SDK + copy to server
+echo "💉 Step 5/6: Preparing deployment..."
 
-# Add Telegram SDK
+# Add Telegram WebApp SDK
 sed -i 's|<title>Pi Manager</title>|<title>Pi Manager</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
 
 # Copy to server/public
 rm -rf server/public/*
 cp -r dist/* server/public/
 
-# CRITICAL: Replace __TUNNEL_URL__ placeholder with actual URL
-# This is 100% reliable - no cache issues
-find server/public/_expo/static/js/web/ -name "*.js" -type f -exec sed -i "s|__TUNNEL_URL__|$TUNNEL_URL|g" {} \;
-
-# Verify
-if grep -q "__TUNNEL_URL__" server/public/_expo/static/js/web/*.js 2>/dev/null; then
-  echo "❌ Placeholder not replaced!"
-  exit 1
-fi
-
-BUILT_URL=$(grep -o "https://[a-zA-Z0-9._-]*trycloudflare\.com" server/public/_expo/static/js/web/*.js 2>/dev/null | head -1)
-echo "✅ URL injected: $BUILT_URL"
+echo "✅ Deployment ready"
 echo ""
 
 # Step 6: Start server
-echo "🖥️  Step 6/7: Starting server..."
+echo "🖥️  Step 6/6: Starting server..."
 cd "$PROJECT_ROOT/server"
 npm run dev > /tmp/server.log 2>&1 &
 SERVER_PID=$!
@@ -97,20 +87,20 @@ sleep 3
 echo "✅ Server: $SERVER_PID"
 echo ""
 
-# Step 7: Verify
-echo "🔍 Step 7/7: Verifying..."
+# Verify backend is accessible
+echo "🔍 Verifying..."
 sleep 2
-curl -s "$TUNNEL_URL/api/health" > /dev/null 2>&1 && echo "✅ Backend accessible" || echo "⚠️  Not ready"
+curl -s "$TUNNEL_URL/api/health" > /dev/null 2>&1 && echo "✅ Backend accessible" || echo "⚠️  Not ready yet"
 echo ""
 
 # Summary
 echo "======================================="
-echo "🎉 Pi Manager started!"
+echo "🎉 Pi Manager started successfully!"
 echo ""
 echo "📊 Summary:"
 echo "   URL: $TUNNEL_URL"
-echo "   Server: $SERVER_PID"
-echo "   Tunnel: $TUNNEL_PID"
+echo "   Server PID: $SERVER_PID"
+echo "   Tunnel PID: $TUNNEL_PID"
 echo ""
 echo "🔗 Links:"
 echo "   Frontend: $TUNNEL_URL"
@@ -121,5 +111,7 @@ echo ""
 echo "📝 Bot setup:"
 echo "   @BotFather → /setmenubutton → $TUNNEL_URL"
 echo "======================================="
+echo ""
+echo "💡 Note: Socket URL is detected at runtime (no hardcoded URLs)"
 
 wait $SERVER_PID
