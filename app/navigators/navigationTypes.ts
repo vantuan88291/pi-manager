@@ -10,6 +10,10 @@ export type MainTabParamList = {
   Settings: undefined
 }
 
+export type CronJobParamList = {
+  CronJob: undefined
+}
+
 // App Stack Navigator types
 export type AppStackParamList = {
   TelegramAuth: undefined

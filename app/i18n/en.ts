@@ -49,6 +49,12 @@ const en = {
     control: "Control",
     settings: "Settings",
   },
+  cronjob: {
+    title: "Cron Jobs",
+    emptyState: "No cron jobs yet",
+    emptySubtitle: "Create your first scheduled task to get started",
+    createFirstJob: "Create Job",
+  },
   dashboard: {
     title: "Dashboard",
     hostname: "Hostname",
@@ -74,6 +80,7 @@ const en = {
     audio: "Audio",
     camera: "Camera",
     storage: "Storage",
+    cronjob: "Cron Jobs",
     reboot: "Reboot",
     subtitles: {
       wifiDisconnected: "Disconnected",
@@ -86,6 +93,7 @@ const en = {
       cameraOffline: "Offline",
       cameraStreaming: "Streaming",
       storageWear: "Wear: {{percent}}%",
+      cronjob: "Manage scheduled tasks",
     },
   },
   wifi: {

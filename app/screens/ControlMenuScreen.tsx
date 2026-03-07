@@ -26,7 +26,7 @@ interface MenuItem {
   icon: { font: "Ionicons" | "MaterialCommunityIcons"; name: string; color: string; badgeBg: string }
   accentColor: string
   danger?: boolean
-  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage"
+  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage" | "CronJob"
   action?: () => void
 }
 
@@ -207,6 +207,14 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
       accentColor: theme.colors.error, 
       danger: true, 
       action: handleReboot
+    },
+    { 
+      id: "cronjob", 
+      titleTx: "controlMenu:cronjob", 
+      subtitleTx: "controlMenu:subtitles.cronjob",
+      icon: { font: "Ionicons", name: "time", color: "#8B5CF6", badgeBg: "#F5F3FF" }, 
+      accentColor: "#8B5CF6", 
+      screen: "CronJob" 
     },
   ]
 
