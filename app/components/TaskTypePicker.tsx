@@ -116,7 +116,10 @@ export const TaskTypePicker: FC<TaskTypePickerProps> = ({ selectedType, onSelect
   )
 }
 
-const $container: ViewStyle = { gap: 0 }
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
+  gap: spacing.md,
+  paddingHorizontal: spacing.sm,
+})
 
 const $taskWrapper: ViewStyle = { marginBottom: 0 }
 
@@ -125,8 +128,9 @@ const $card: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderRadius: spacing.lg,
   borderWidth: 2,
   borderColor: colors.border,
-  padding: spacing.md,
+  padding: spacing.lg,
   marginBottom: 0,
+  minHeight: 70,
 })
 
 const $selectedCard: ThemedStyle<ViewStyle> = ({ colors }) => ({
@@ -169,11 +173,13 @@ const $checkmark: ViewStyle = {
 const $infoBox: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.info + '15', // 8% opacity
   borderRadius: spacing.lg,
-  padding: spacing.md,
-  marginTop: spacing.sm,
+  padding: spacing.lg,
+  marginTop: spacing.md,
   flexDirection: "row",
   alignItems: "flex-start",
-  gap: spacing.sm,
+  gap: spacing.md,
+  borderWidth: 1,
+  borderColor: colors.info + '30',
 })
 
 const $infoIcon: ViewStyle = {

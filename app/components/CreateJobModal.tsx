@@ -290,7 +290,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
   )
 }
 
-const $scrollView: ViewStyle = { maxHeight: 500 }
+const $scrollView: ViewStyle = { maxHeight: 550 }
 
 const $field: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginBottom: spacing.lg,
@@ -303,59 +303,79 @@ const $section: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   marginBottom: spacing.lg,
 })
 
-const $sectionTitle: ViewStyle = {
+const $sectionTitle: ThemedStyle<ViewStyle> = ({ colors }) => ({
   marginBottom: 12,
-}
+  color: colors.text,
+})
 
-const $label: ViewStyle = {
+const $label: ThemedStyle<ViewStyle> = ({ colors }) => ({
   marginBottom: 8,
-}
+  color: colors.text,
+})
 
 const $input: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.border,
+  backgroundColor: colors.surface,
   borderRadius: spacing.md,
-  padding: spacing.md,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.md,
   fontSize: 15,
+  borderWidth: 1,
+  borderColor: colors.border,
   minHeight: 44,
+  color: colors.text,
 })
 
 const $commandInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.border,
+  backgroundColor: colors.surface,
   borderRadius: spacing.md,
-  padding: spacing.md,
-  fontSize: 14,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.md,
+  fontSize: 13,
   fontFamily: "monospace",
-  minHeight: 80,
+  minHeight: 100,
+  borderWidth: 1,
+  borderColor: colors.border,
+  color: colors.text,
+  lineHeight: 20,
 })
 
 const $promptInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.border,
+  backgroundColor: colors.surface,
   borderRadius: spacing.md,
-  padding: spacing.md,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.md,
   fontSize: 15,
-  minHeight: 100,
+  minHeight: 120,
+  borderWidth: 1,
+  borderColor: colors.border,
+  color: colors.text,
+  lineHeight: 22,
 })
 
-const $helperText: ViewStyle = {
+const $helperText: ThemedStyle<ViewStyle> = ({ colors }) => ({
   marginTop: 6,
-}
+  color: colors.textDim,
+})
 
 const $footer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.md,
   paddingTop: spacing.lg,
+  paddingBottom: spacing.sm,
 })
 
 const $footerButton: ViewStyle = {
   flex: 1,
-  minHeight: 44,
+  height: 48,
 }
 
 const $checkboxRow: ViewStyle = {
   flexDirection: "row",
-  gap: 8,
+  gap: spacing.sm,
+  marginTop: spacing.sm,
 }
 
 const $checkbox: ViewStyle = {
   flex: 1,
+  height: 44,
 }

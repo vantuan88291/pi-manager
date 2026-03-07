@@ -185,92 +185,140 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
   )
 }
 
-const $container: ViewStyle = { gap: 16 }
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
+  gap: spacing.lg,
+})
 
 const $segmentedControl: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   flexDirection: "row",
-  backgroundColor: colors.border,
+  backgroundColor: colors.surface,
   borderRadius: spacing.md,
-  padding: spacing.xs,
-  gap: spacing.xs,
-  flexWrap: "wrap",
+  borderWidth: 1,
+  borderColor: colors.border,
+  padding: spacing.sm,
+  gap: spacing.sm,
 })
 
-const $segmentButton: ViewStyle = { flex: 1, minWidth: 80 }
+const $segmentButton: ViewStyle = { 
+  flex: 1,
+  minWidth: 70,
+  height: 36,
+}
 
 const $scheduleContent: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.surface,
   borderRadius: spacing.lg,
   padding: spacing.lg,
-  gap: spacing.md,
+  gap: spacing.lg,
+  borderWidth: 1,
+  borderColor: colors.border,
 })
 
-const $label: ViewStyle = { marginBottom: 4 }
+const $label: ThemedStyle<ViewStyle> = ({ colors }) => ({ 
+  marginBottom: 8,
+  color: colors.text,
+})
 
 const $timeInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.border,
+  backgroundColor: colors.surface,
   borderRadius: spacing.md,
-  padding: spacing.md,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.md,
   fontSize: 16,
   textAlign: "center",
+  borderWidth: 1,
+  borderColor: colors.border,
+  color: colors.text,
+  minHeight: 44,
 })
 
 const $dayInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.border,
+  backgroundColor: colors.surface,
   borderRadius: spacing.md,
-  padding: spacing.md,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.md,
   fontSize: 16,
   width: 80,
   textAlign: "center",
+  borderWidth: 1,
+  borderColor: colors.border,
+  color: colors.text,
+  minHeight: 44,
 })
 
 const $weekdayRow: ViewStyle = {
   flexDirection: "row",
-  gap: 4,
+  gap: spacing.sm,
   flexWrap: "wrap",
   justifyContent: "space-between",
 }
 
-const $weekdayButton: ViewStyle = { flex: 1, minWidth: 50 }
+const $weekdayButton: ViewStyle = { 
+  flex: 1, 
+  minWidth: 55,
+  height: 36,
+}
 
 const $intervalRow: ViewStyle = {
   flexDirection: "row",
-  gap: 12,
+  gap: spacing.lg,
   alignItems: "center",
+  flexWrap: "wrap",
 }
 
 const $intervalInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.border,
+  backgroundColor: colors.surface,
   borderRadius: spacing.md,
-  padding: spacing.md,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.md,
   fontSize: 16,
   width: 100,
   textAlign: "center",
+  borderWidth: 1,
+  borderColor: colors.border,
+  color: colors.text,
+  minHeight: 44,
 })
 
 const $unitPicker: ViewStyle = {
   flex: 1,
   flexDirection: "row",
-  gap: 4,
+  gap: spacing.sm,
+  minWidth: 200,
 }
 
-const $unitButton: ViewStyle = { flex: 1 }
+const $unitButton: ViewStyle = { 
+  flex: 1,
+  height: 36,
+}
 
 const $cronInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.border,
+  backgroundColor: colors.surface,
   borderRadius: spacing.md,
-  padding: spacing.md,
-  fontSize: 14,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.md,
+  fontSize: 13,
   fontFamily: "monospace",
-  minHeight: 60,
+  minHeight: 80,
+  borderWidth: 1,
+  borderColor: colors.border,
+  color: colors.text,
+  lineHeight: 20,
 })
 
-const $quickPickLabel: ViewStyle = { marginTop: 8 }
+const $quickPickLabel: ThemedStyle<ViewStyle> = ({ colors }) => ({ 
+  marginTop: spacing.md,
+  color: colors.textDim,
+})
 
 const $quickPicks: ViewStyle = {
   flexDirection: "row",
   flexWrap: "wrap",
   gap: 8,
+  marginTop: 8,
 }
 
-const $quickPick: ViewStyle = { minWidth: 100 }
+const $quickPick: ViewStyle = { 
+  minWidth: 90,
+  height: 36,
+}
