@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from "react"
-import { View, ViewStyle, Alert } from "react-native"
+import { View, ViewStyle } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useNavigation } from "@react-navigation/native"
 
@@ -8,6 +8,7 @@ import { Screen } from "@/components/Screen"
 import { FeatureCard } from "@/components/FeatureCard"
 import { useAppTheme } from "@/theme/context"
 import { featureColors } from "@/theme/featureColors"
+import { AlertModal, type AlertButton } from "@/components/AlertModal"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import type { ThemedStyle } from "@/theme/types"
 import { useSocket } from "@/services/socket/SocketContext"
@@ -26,7 +27,7 @@ interface MenuItem {
   icon: { font: "Ionicons" | "MaterialCommunityIcons"; name: string; color: string; badgeBg: string }
   accentColor: string
   danger?: boolean
-  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage"
+  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage" | "CronJob"
   action?: () => void
 }
 
@@ -34,6 +35,14 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
   const { themed, theme } = useAppTheme()
   const { t } = useTranslation()
   const { subscribeToModule, unsubscribeFromModule } = useSocket()
+  
+  // Alert modal state
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean
+    title: string
+    message?: string
+    buttons: AlertButton[]
+  }>({ visible: false, title: "", buttons: [] })
   
   // Real-time status states
   const [wifiStatus, setWifiStatus] = useState<{ connected: boolean; ssid?: string }>({ connected: false })
@@ -130,8 +139,12 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     return t("controlMenu:subtitles.storageWear", { percent: storageStatus.healthPercent })
   }
 
+  const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: "OK" }]) => {
+    setAlertConfig({ visible: true, title, message, buttons })
+  }
+
   const handleReboot = () => {
-    Alert.alert(
+    showAlert(
       t("reboot:title"),
       t("reboot:message"),
       [
@@ -145,12 +158,12 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
                 method: 'POST',
               })
               if (response.ok) {
-                Alert.alert(t("common:success"), t("reboot:rebooting"))
+                showAlert(t("common:success"), t("reboot:rebooting"))
               } else {
-                Alert.alert(t("common:error"), t("reboot:failed"))
+                showAlert(t("common:error"), t("reboot:failed"))
               }
             } catch (error) {
-              Alert.alert(t("common:error"), t("reboot:failed"))
+              showAlert(t("common:error"), t("reboot:failed"))
             }
           } 
         },
@@ -208,6 +221,14 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
       danger: true, 
       action: handleReboot
     },
+    { 
+      id: "cronjob", 
+      titleTx: "controlMenu:cronjob", 
+      subtitleTx: "controlMenu:subtitles.cronjob",
+      icon: { font: "Ionicons", name: "time", color: "#8B5CF6", badgeBg: "#F5F3FF" }, 
+      accentColor: "#8B5CF6", 
+      screen: "CronJob" 
+    },
   ]
 
   const handlePress = (item: MenuItem) => {
@@ -237,6 +258,15 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
           </View>
         ))}
       </View>
+
+      {/* Alert Modal */}
+      <AlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
     </Screen>
   )
 }

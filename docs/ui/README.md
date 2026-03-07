@@ -77,6 +77,7 @@
 - **Screen specs**
   - [`03-screens-dashboard-control.md`](./03-screens-dashboard-control.md) — Dashboard + Control Menu
   - [`04-screens-wifi-to-access-denied.md`](./04-screens-wifi-to-access-denied.md) — Wi‑Fi, Bluetooth, Audio, Camera, Storage, Settings, AccessDenied
+  - [`07-cronjob-screen.md`](./07-cronjob-screen.md) — Cronjob management screen (OpenClaw integration)
 
 - **Components & behavior**
   - [`05-components-and-interactions.md`](./05-components-and-interactions.md) — new component list, animations, responsive rules

@@ -61,6 +61,11 @@ interface BaseScreenProps {
    * Pass any additional props directly to the KeyboardAvoidingView component.
    */
   KeyboardAvoidingViewProps?: KeyboardAvoidingViewProps
+  /**
+   * Optional component to render at the bottom of the screen (outside ScrollView).
+   * Useful for floating action buttons or bottom bars.
+   */
+  bottomComponent?: ReactNode
 }
 
 interface FixedScreenProps extends BaseScreenProps {
@@ -173,12 +178,13 @@ function useAutoPreset(props: AutoScreenProps): {
  * @returns {JSX.Element} - The rendered `ScreenWithoutScrolling` component.
  */
 function ScreenWithoutScrolling(props: ScreenProps) {
-  const { style, contentContainerStyle, children, preset } = props
+  const { style, contentContainerStyle, children, preset, bottomComponent } = props
   return (
     <View style={[$outerStyle, style]}>
       <View style={[$innerStyle, preset === "fixed" && $justifyFlexEnd, contentContainerStyle]}>
         {children}
       </View>
+      {bottomComponent}
     </View>
   )
 }
@@ -195,6 +201,7 @@ function ScreenWithScrolling(props: ScreenProps) {
     contentContainerStyle,
     ScrollViewProps,
     style,
+    bottomComponent,
   } = props as ScrollScreenProps
 
   const ref = useRef<ScrollView>(null)
@@ -206,27 +213,30 @@ function ScreenWithScrolling(props: ScreenProps) {
   useScrollToTop(ref)
 
   return (
-    <KeyboardAwareScrollView
-      bottomOffset={keyboardBottomOffset}
-      {...{ keyboardShouldPersistTaps, scrollEnabled, ref }}
-      {...ScrollViewProps}
-      onLayout={(e) => {
-        onLayout(e)
-        ScrollViewProps?.onLayout?.(e)
-      }}
-      onContentSizeChange={(w: number, h: number) => {
-        onContentSizeChange(w, h)
-        ScrollViewProps?.onContentSizeChange?.(w, h)
-      }}
-      style={[$outerStyle, ScrollViewProps?.style, style]}
-      contentContainerStyle={[
-        $innerStyle,
-        ScrollViewProps?.contentContainerStyle,
-        contentContainerStyle,
-      ]}
-    >
-      {children}
-    </KeyboardAwareScrollView>
+    <View style={[$outerStyle, style]}>
+      <KeyboardAwareScrollView
+        bottomOffset={keyboardBottomOffset}
+        {...{ keyboardShouldPersistTaps, scrollEnabled, ref }}
+        {...ScrollViewProps}
+        onLayout={(e) => {
+          onLayout(e)
+          ScrollViewProps?.onLayout?.(e)
+        }}
+        onContentSizeChange={(w: number, h: number) => {
+          onContentSizeChange(w, h)
+          ScrollViewProps?.onContentSizeChange?.(w, h)
+        }}
+        style={[$outerStyle, ScrollViewProps?.style]}
+        contentContainerStyle={[
+          $innerStyle,
+          ScrollViewProps?.contentContainerStyle,
+          contentContainerStyle,
+        ]}
+      >
+        {children}
+      </KeyboardAwareScrollView>
+      {bottomComponent}
+    </View>
   )
 }
 

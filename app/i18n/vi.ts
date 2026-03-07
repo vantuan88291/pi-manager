@@ -51,6 +51,12 @@ const vi: Translations = {
     control: "Điều khiển",
     settings: "Cài đặt",
   },
+  cronjob: {
+    title: "Cron Jobs",
+    emptyState: "Chưa có cron job nào",
+    emptySubtitle: "Tạo tác vụ tự động đầu tiên để bắt đầu",
+    createFirstJob: "Tạo Job",
+  },
   dashboard: {
     title: "Tổng quan",
     hostname: "Tên máy",
@@ -76,6 +82,7 @@ const vi: Translations = {
     audio: "Âm thanh",
     camera: "Camera",
     storage: "Lưu trữ",
+    cronjob: "Cron Jobs",
     reboot: "Khởi động lại",
     subtitles: {
       wifiDisconnected: "Chưa kết nối",
@@ -88,6 +95,7 @@ const vi: Translations = {
       cameraOffline: "Ngoại tuyến",
       cameraStreaming: "Đang phát",
       storageWear: "Hao mòn: {{percent}}%",
+      cronjob: "Quản lý tác vụ tự động",
     },
   },
   wifi: {
