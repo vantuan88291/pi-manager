@@ -193,6 +193,7 @@ const vi: Translations = {
     appVersion: "Phiên bản ứng dụng",
     serverVersion: "Phiên bản máy chủ",
     telegramId: "Telegram ID",
+    userId: "User ID",
   },
   storage: {
     title: "Lưu trữ",

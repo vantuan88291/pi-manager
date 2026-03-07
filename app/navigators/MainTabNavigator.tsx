@@ -38,17 +38,17 @@ export const MainTabNavigator: FC = function MainTabNavigator() {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
           borderTopWidth: 1,
-          height: 68,
-          paddingBottom: 12,
-          paddingTop: 8,
+          height: 64,
         },
         tabBarActiveTintColor: theme.colors.tint,
         tabBarInactiveTintColor: theme.colors.textDim,
         tabBarLabelStyle: {
           textAlign: "center",
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: "600",
-          marginTop: 4,
+        },
+        tabBarIconStyle: {
+          height: 24,
         },
       }}
     >
