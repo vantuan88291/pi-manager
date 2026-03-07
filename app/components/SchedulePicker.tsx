@@ -172,7 +172,7 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
             style={themed($cronInput)}
             multiline
           />
-          <Text text="Quick picks:" weight="medium" color="textDim" size="xs" style={$quickPickLabel} />
+          <Text text="Quick picks:" weight="medium" color="textDim" size="xs" style={themed($quickPickLabel)} />
           <View style={$quickPicks}>
             <Button text="Every hour" preset="default" size="sm" onPress={() => handleQuickCron("0 * * * *")} style={$quickPick} />
             <Button text="Daily 8AM" preset="default" size="sm" onPress={() => handleQuickCron("0 8 * * *")} style={$quickPick} />
