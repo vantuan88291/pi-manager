@@ -107,12 +107,21 @@ echo ""
 echo "💉 Step 5/6: Preparing deployment..."
 
 # Add Telegram WebApp SDK (cross-platform sed for macOS and Linux)
+# Uses flexible regex to match title tag with any whitespace
 if [[ "$OSTYPE" == "darwin"* ]]; then
   # macOS requires empty backup extension
-  sed -i '' 's|<title>Pi Manager</title>|<title>Pi Manager</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
+  sed -i '' -E 's|</title>|</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
 else
   # Linux doesn't need backup extension
-  sed -i 's|<title>Pi Manager</title>|<title>Pi Manager</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
+  sed -i -E 's|</title>|</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
+fi
+
+# Verify Telegram SDK was injected
+if grep -q "telegram-web-app.js" dist/index.html; then
+  echo "✅ Telegram SDK injected"
+else
+  echo "❌ Failed to inject Telegram SDK!"
+  exit 1
 fi
 
 # Copy to server/public
