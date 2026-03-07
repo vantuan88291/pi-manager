@@ -49,9 +49,9 @@ echo "⚙️  Step 3/6: Updating .env files..."
 echo "# Socket URL detected at runtime via window.location.origin" > "$ENV_FILE"
 cat > "$SERVER_ENV_FILE" << ENVEOF
 PORT=3001
-# TELEGRAM_BOT_TOKEN=your-bot-token-here
+TELEGRAM_BOT_TOKEN=7968691178:AAFSU8x6dS3UUzTYrRlKxSJD_OVUm8UoDBY
 ALLOWED_ORIGINS=$TUNNEL_URL,http://localhost:8081,http://localhost:3001
-# ADMIN_TELEGRAM_ID=your-telegram-id
+ADMIN_TELEGRAM_ID=600843385
 ENVEOF
 echo "✅ Updated (runtime URL detection enabled)"
 echo ""

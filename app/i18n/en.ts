@@ -191,6 +191,7 @@ const en = {
     appVersion: "App Version",
     serverVersion: "Server Version",
     telegramId: "Telegram ID",
+    userId: "User ID",
   },
 
   storage: {

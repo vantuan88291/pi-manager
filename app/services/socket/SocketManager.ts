@@ -50,6 +50,11 @@ class SocketManager {
     if (this.socket?.connected) return
 
     this.initData = initData ?? null
+    console.log("[SocketManager] Connect called with initData:", initData ? "YES (length: " + initData.length + ")" : "NO")
+    if (initData) {
+      console.log("[SocketManager] initData preview:", initData.substring(0, 100) + "...")
+    }
+    
     this.state = { ...this.state, status: "connecting", error: null }
     this.notify()
 
