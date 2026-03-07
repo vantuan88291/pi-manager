@@ -74,8 +74,9 @@ const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderRadius: spacing.lg, 
   borderWidth: 1, 
   borderColor: colors.border, 
-  padding: spacing.lg, 
-  height: 140, 
+  paddingVertical: spacing.xl, 
+  paddingHorizontal: spacing.lg, 
+  height: 150, 
   overflow: "hidden", 
   alignItems: "center", 
   justifyContent: "center" 

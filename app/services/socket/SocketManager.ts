@@ -1,8 +1,20 @@
 import { io, Socket } from "socket.io-client"
 import type { SocketModule, ConnectionState, TelegramUser } from "./types"
 
-// Use placeholder - will be replaced at build time by script
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || "__TUNNEL_URL__"
+/**
+ * Get socket URL at runtime instead of build-time.
+ * This allows the app to work with dynamic Cloudflare tunnel URLs
+ * without needing to rebuild or inject URLs post-build.
+ * 
+ * In web browser: uses window.location.origin (current domain)
+ * In React Native: falls back to EXPO_PUBLIC_SOCKET_URL env var
+ */
+const getSocketUrl = () => {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin
+  }
+  return process.env.EXPO_PUBLIC_SOCKET_URL || "http://localhost:3001"
+}
 
 class SocketManager {
   private socket: Socket | null = null
@@ -41,7 +53,9 @@ class SocketManager {
     this.state = { ...this.state, status: "connecting", error: null }
     this.notify()
 
-    this.socket = io(SOCKET_URL, {
+    const url = getSocketUrl()
+    console.log("[SocketManager] Connecting to:", url)
+    this.socket = io(url, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: Infinity,
