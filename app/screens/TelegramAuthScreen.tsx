@@ -16,15 +16,15 @@ export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }
   const { themed, theme } = useAppTheme()
   const { state, connect } = useSocket()
   const [errorCode, setErrorCode] = useState<string | null>(null)
+  const [initData, setInitData] = useState<string | null>(null)
 
   useEffect(() => {
     const isTg = isTelegramMiniApp()
     const isWeb = isWebBrowser()
-    const initData = getInitData()
+    const data = getInitData()
+    console.log("[TelegramAuth] isTg:", isTg, "isWeb:", isWeb, "hasInitData:", !!data)
 
-    console.log("[TelegramAuth] isTg:", isTg, "isWeb:", isWeb, "hasInitData:", !!initData)
-
-    if (isTg && initData) {
+    if (isTg && data) {
       // In Telegram with initData - auth
       console.log("[TelegramAuth] Connecting with Telegram initData")
       const tg = window.Telegram?.WebApp
@@ -32,13 +32,11 @@ export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }
         tg.ready()
         tg.expand()
       }
-      connect(initData)
-    } else if (isWeb) {
-      // In web browser - dev mode, connect without auth
-      console.log("[TelegramAuth] Running in web browser (dev mode)")
-      connect()
+      setInitData(data)
+      connect(data)
     } else {
-      console.log("[TelegramAuth] Unknown environment")
+      // NOT in Telegram Mini App - block access
+      console.log("[TelegramAuth] Access denied: Not in Telegram (isTg:", isTg, ", hasData:", !!data, ")")
       setErrorCode("NOT_IN_TELEGRAM")
     }
   }, [])
@@ -63,9 +61,37 @@ export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }
         <Header titleTx="auth:error" titleMode="center" />
         <View style={themed($container)}>
           <Text text="❌" size="xxl" style={{ marginBottom: 16 }} />
-          <Text tx={`auth:error_${errorCode.toLowerCase()}`} size="lg" weight="bold" color="text" style={themed($title)} />
-          <Text text={state.error || "Unknown error"} size="md" color="textDim" style={themed($message)} />
-          <Button tx="common:retry" preset="default" onPress={() => { setErrorCode(null); connect() }} style={$button} />
+          <Text
+            tx={`auth:error_${errorCode.toLowerCase()}`}
+            size="lg"
+            weight="bold"
+            color="text"
+            style={themed($title)}
+          />
+          <Text
+            text={state.error || "Unknown error"}
+            size="md"
+            color="textDim"
+            style={themed($message)}
+          />
+          {errorCode !== "NOT_IN_TELEGRAM" && (
+            <Button
+              tx="common:retry"
+              preset="default"
+              onPress={() => {
+                setErrorCode(null)
+                // Retry with the same initData
+                if (initData) {
+                  console.log("[TelegramAuth] Retrying with initData")
+                  connect(initData)
+                } else {
+                  console.log("[TelegramAuth] No initData available for retry")
+                  connect()
+                }
+              }}
+              style={$button}
+            />
+          )}
         </View>
       </Screen>
     )

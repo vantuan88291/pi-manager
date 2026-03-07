@@ -66,15 +66,10 @@ export function setupSocketServer(io: Server) {
       return next()
     }
 
-    // Path C: No initData and no sessionToken = Dev mode (browser testing)
-    // Allow connection without auth for development
-    console.log("[socket] dev mode connection (no auth)")
-    const devUser = { id: 0, firstName: "Developer", username: "dev" }
-    const token = crypto.randomUUID()
-    sessions.set(token, { user: devUser, createdAt: Date.now() })
-    socket.data.user = devUser
-    socket.data.sessionToken = token
-    next()
+    // Path C: No initData and no sessionToken = Block access
+    // Only Telegram Mini Apps with valid initData are allowed
+    console.log("[socket] connection rejected: no auth provided")
+    return next(new Error("AUTH_REQUIRED"))
   })
 
   // --- Connection handler ---

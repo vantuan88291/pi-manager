@@ -29,7 +29,6 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
   const [selectedTheme, setSelectedTheme] = useState<"light" | "dark" | undefined>(themeContext)
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>("vi")
   const [isLangModalVisible, setIsLangModalVisible] = useState(false)
-  const [initDataDebug, setInitDataDebug] = useState<string>("N/A")
 
   // Load saved language on mount
   useEffect(() => {
@@ -38,32 +37,6 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
       if (saved) setSelectedLanguage(saved)
     }
     loadLang()
-  }, [])
-
-  // Capture initData for debug display
-  useEffect(() => {
-    const captureInitData = () => {
-      if (typeof window !== "undefined") {
-        const tg = (window as any).Telegram?.WebApp
-        if (tg) {
-          console.log("[Settings] Telegram WebApp found:", !!tg)
-          console.log("[Settings] initDataUnsafe:", tg.initDataUnsafe)
-          try {
-            const initDataUnsafe = tg.initDataUnsafe || {}
-            setInitDataDebug(JSON.stringify(initDataUnsafe, null, 2))
-          } catch (e) {
-            setInitDataDebug("Error: " + (e as Error).message)
-          }
-        } else {
-          setInitDataDebug("Telegram WebApp not available")
-        }
-      }
-    }
-    
-    // Try immediately and after delay (in case WebApp loads async)
-    captureInitData()
-    const timer = setTimeout(captureInitData, 1000)
-    return () => clearTimeout(timer)
   }, [])
 
   const handleThemeChange = (newTheme: "light" | "dark" | undefined) => {
@@ -103,9 +76,9 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
       <Header titleTx="settings:title" titleMode="center" />
 
       <View style={themed($content)}>
-        <Card 
-          headingTx="settings:appearance" 
-          style={themed($card)} 
+        <Card
+          headingTx="settings:appearance"
+          style={themed($card)}
           ContentComponent={
             <View>
               <View style={themed([$settingRow, $borderBottom])}>
@@ -133,12 +106,12 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
                 </Pressable>
               </View>
             </View>
-          } 
+          }
         />
 
-        <Card 
-          headingTx="settings:connection" 
-          style={themed([$card, $section])} 
+        <Card
+          headingTx="settings:connection"
+          style={themed([$card, $section])}
           ContentComponent={
             <View>
               <View style={themed([$settingRow, $borderBottom])}>
@@ -159,12 +132,12 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
                 </View>
               </View>
             </View>
-          } 
+          }
         />
 
-        <Card 
-          headingTx="settings:about" 
-          style={themed([$card, $section])} 
+        <Card
+          headingTx="settings:about"
+          style={themed([$card, $section])}
           ContentComponent={
             <View>
               <View style={themed([$settingRow, $borderBottom])}>
@@ -186,12 +159,12 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
                   <Icon font="Ionicons" icon="person" color={theme.colors.textDim} size={20} />
                   <Text tx="settings:telegramId" weight="medium" color="text" style={$settingLabel} />
                 </View>
-                <Text 
-                  text={connectionState.user 
-                    ? `${connectionState.user.firstName} (${connectionState.user.id})` 
-                    : "Not connected"} 
-                  color={connectionState.user ? "text" : "textDim"} 
-                  size="sm" 
+                <Text
+                  text={connectionState.user
+                    ? `${connectionState.user.firstName} (${connectionState.user.id})`
+                    : "Not connected"}
+                  color={connectionState.user ? "text" : "textDim"}
+                  size="sm"
                 />
               </View>
               <View style={themed($settingRow)}>
@@ -199,90 +172,18 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
                   <Icon font="Ionicons" icon="id-card" color={theme.colors.textDim} size={20} />
                   <Text tx="settings:userId" weight="medium" color="text" style={$settingLabel} />
                 </View>
-                <Text 
-                  text={connectionState.user?.id?.toString() || "N/A"} 
-                  color="text" 
+                <Text
+                  text={connectionState.user?.id?.toString() || "N/A"}
+                  color="text"
                   size="sm"
                   selectable
                 />
               </View>
             </View>
-          } 
+          }
         />
 
-        {/* Debug Info Card */}
-        <Card 
-          heading="🔍 Debug Info" 
-          style={themed([$card, $section, $debugCard])} 
-          ContentComponent={
-              <View>
-                <View style={themed([$settingRow, $borderBottom])}>
-                  <View style={$settingLeft}>
-                    <Icon font="Ionicons" icon="bug" color={theme.colors.textDim} size={20} />
-                    <Text text="Connection Status" weight="medium" color="text" style={$settingLabel} />
-                  </View>
-                  <Text 
-                    text={connectionState.status} 
-                    color={connectionState.status === "connected" ? "success" : "textDim"} 
-                    size="sm" 
-                  />
-                </View>
-                <View style={themed([$settingRow, $borderBottom])}>
-                  <View style={$settingLeft}>
-                    <Icon font="Ionicons" icon="key" color={theme.colors.textDim} size={20} />
-                    <Text text="Authenticated" weight="medium" color="text" style={$settingLabel} />
-                  </View>
-                  <Text 
-                    text={connectionState.isAuthenticated ? "✅ Yes" : "❌ No"} 
-                    color={connectionState.isAuthenticated ? "success" : "error"} 
-                    size="sm" 
-                  />
-                </View>
-                <View style={themed([$settingRow, $borderBottom])}>
-                  <View style={$settingLeft}>
-                    <Icon font="Ionicons" icon="link" color={theme.colors.textDim} size={20} />
-                    <Text text="Socket URL" weight="medium" color="text" style={$settingLabel} />
-                  </View>
-                  <Text 
-                    text={typeof window !== "undefined" ? window.location.origin : "N/A"} 
-                    color="textDim" 
-                    size="xs" 
-                    numberOfLines={1}
-                    ellipsizeMode="middle"
-                    selectable
-                  />
-                </View>
-                <View style={themed($settingRow)}>
-                  <View style={$settingLeft}>
-                    <Icon font="Ionicons" icon="user" color={theme.colors.textDim} size={20} />
-                    <Text text="User ID" weight="medium" color="text" style={$settingLabel} />
-                  </View>
-                  <Text 
-                    text={connectionState.user?.id?.toString() || "N/A"} 
-                    color="text" 
-                    size="sm" 
-                    selectable
-                  />
-                </View>
-                <View style={themed($debugSection)}>
-                  <View style={$settingLeft}>
-                    <Icon font="Ionicons" icon="document-text" color={theme.colors.textDim} size={20} />
-                    <Text text="InitData (JSON)" weight="medium" color="text" style={[$settingLabel, { flex: 1 }]} />
-                  </View>
-                  <View style={themed($jsonContainer)}>
-                    <Text 
-                      text={initDataDebug} 
-                      color="textDim" 
-                      size="xs" 
-                      selectable
-                      style={{ fontFamily: "monospace" }}
-                    />
-                  </View>
-                </View>
-              </View>
-            } 
-          />
-        )}
+
       </View>
 
       {/* Language Selection Modal */}
@@ -329,12 +230,3 @@ const $statusBadge: ViewStyle = { flexDirection: "row", alignItems: "center", ga
 const $statusDot: ViewStyle = { width: 8, height: 8, borderRadius: 4 }
 const $langList: ViewStyle = { maxHeight: 300 }
 const $langOption: ViewStyle = { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, paddingHorizontal: 16, borderRadius: 8 }
-const $debugCard: ThemedStyle<ViewStyle> = ({ colors }) => ({ borderWidth: 1, borderColor: colors.border, borderStyle: "dashed" })
-const $debugSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginTop: spacing.md })
-const $jsonContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ 
-  backgroundColor: colors.border, 
-  borderRadius: spacing.sm, 
-  padding: spacing.sm, 
-  marginTop: spacing.sm,
-  maxHeight: 200,
-})

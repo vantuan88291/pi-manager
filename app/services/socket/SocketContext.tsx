@@ -2,6 +2,21 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { socketManager, systemClientModule, wifiClientModule, bluetoothClientModule, audioClientModule, storageClientModule } from "./"
 import type { ConnectionState, TelegramUser } from "./types"
 
+// Helper to parse Telegram initDataUnsafe
+function parseTelegramInitData(initDataUnsafe: any): TelegramUser | null {
+  if (!initDataUnsafe?.user) return null
+  
+  const user = initDataUnsafe.user
+  return {
+    id: user.id,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    username: user.username,
+    photoUrl: user.photo_url,
+    languageCode: user.language_code,
+  }
+}
+
 interface SocketContextValue {
   state: ConnectionState
   connect: (initData?: string) => void
@@ -26,11 +41,40 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     // Subscribe to state changes
     const unsubscribe = socketManager.subscribe(setState)
 
-    // Auto-connect in dev mode (no initData)
-    // Telegram auth is handled by TelegramAuthScreen
-    if (!process.env.EXPO_PUBLIC_TELEGRAM_BOT_TOKEN) {
-      socketManager.connect()
+    // Auto-connect with Telegram initData (if available) or dev mode
+    const connectWithAuth = () => {
+      if (typeof window !== "undefined") {
+        const tg = (window as any).Telegram?.WebApp
+        if (tg && tg.initData) {
+          console.log("[SocketProvider] Telegram WebApp detected, connecting with auth...")
+          console.log("[SocketProvider] initDataUnsafe:", tg.initDataUnsafe)
+          
+          // Parse and set user data immediately for better UX
+          const user = parseTelegramInitData(tg.initDataUnsafe)
+          if (user) {
+            console.log(`[SocketProvider] Parsed user: ${user.firstName} (${user.id})`)
+            
+            // Set temporary state while waiting for backend validation
+            setState({
+              status: "connecting",
+              isAuthenticated: false,
+              user,
+              error: null,
+            })
+          }
+          
+          // Connect to backend for proper validation
+          socketManager.connect(tg.initData)
+        } else {
+          console.log("[SocketProvider] No Telegram WebApp, connecting in dev mode...")
+          socketManager.connect()
+        }
+      } else {
+        socketManager.connect()
+      }
     }
+
+    connectWithAuth()
 
     return () => {
       unsubscribe()

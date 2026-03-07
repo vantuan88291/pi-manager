@@ -46,14 +46,53 @@ echo ""
 
 # Step 3: Update .env files (URL not baked into build - uses runtime detection)
 echo "⚙️  Step 3/6: Updating .env files..."
-echo "# Socket URL detected at runtime via window.location.origin" > "$ENV_FILE"
+
+# Load bot token from root .env file
+echo "📖 Loading bot token from $ENV_FILE..."
+if [ -f "$ENV_FILE" ]; then
+  # Extract token safely
+  TELEGRAM_BOT_TOKEN=$(grep -E '^EXPO_PUBLIC_TELEGRAM_BOT_TOKEN=' "$ENV_FILE" | cut -d'=' -f2)
+  
+  if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ "$TELEGRAM_BOT_TOKEN" != "your-bot-token-here" ]; then
+    echo "✅ Loaded bot token from .env (length: ${#TELEGRAM_BOT_TOKEN})"
+  else
+    echo "⚠️  TELEGRAM_BOT_TOKEN not found or is placeholder in .env"
+    echo "   Please update $ENV_FILE with your actual bot token"
+    TELEGRAM_BOT_TOKEN="your-bot-token-here"
+  fi
+else
+  echo "⚠️  .env file not found at $ENV_FILE"
+  TELEGRAM_BOT_TOKEN="your-bot-token-here"
+fi
+
+# Load admin Telegram ID from root .env (optional)
+if [ -f "$ENV_FILE" ]; then
+  TELEGRAM_ID=$(grep -E '^ADMIN_TELEGRAM_ID=' "$ENV_FILE" | cut -d'=' -f2)
+  if [ -z "$TELEGRAM_ID" ] || [ "$TELEGRAM_ID" = "your-telegram-id" ]; then
+    echo "⚠️  ADMIN_TELEGRAM_ID not set or is placeholder"
+    TELEGRAM_ID="your-telegram-id"
+  else
+    echo "✅ Loaded admin Telegram ID from .env"
+  fi
+else
+  TELEGRAM_ID="your-telegram-id"
+fi
+
+# Update server .env with values from root .env
+echo "✍️  Writing server .env..."
 cat > "$SERVER_ENV_FILE" << ENVEOF
 PORT=3001
-TELEGRAM_BOT_TOKEN=7968691178:AAFSU8x6dS3UUzTYrRlKxSJD_OVUm8UoDBY
+TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN
 ALLOWED_ORIGINS=$TUNNEL_URL,http://localhost:8081,http://localhost:3001
-ADMIN_TELEGRAM_ID=600843385
+ADMIN_TELEGRAM_ID=$TELEGRAM_ID
 ENVEOF
-echo "✅ Updated (runtime URL detection enabled)"
+
+# Verify written values
+echo "✅ Server .env updated:"
+echo "   - PORT=3001"
+echo "   - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:0:10}... (length: ${#TELEGRAM_BOT_TOKEN})"
+echo "   - ALLOWED_ORIGINS=$TUNNEL_URL,..."
+echo "   - ADMIN_TELEGRAM_ID=${TELEGRAM_ID:0:5}..."
 echo ""
 
 # Step 4: Build frontend (clear cache to ensure fresh build)
@@ -67,8 +106,14 @@ echo ""
 # Step 5: Add Telegram SDK + copy to server
 echo "💉 Step 5/6: Preparing deployment..."
 
-# Add Telegram WebApp SDK
-sed -i 's|<title>Pi Manager</title>|<title>Pi Manager</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
+# Add Telegram WebApp SDK (cross-platform sed for macOS and Linux)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  # macOS requires empty backup extension
+  sed -i '' 's|<title>Pi Manager</title>|<title>Pi Manager</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
+else
+  # Linux doesn't need backup extension
+  sed -i 's|<title>Pi Manager</title>|<title>Pi Manager</title>\n    <script src="https://telegram.org/js/telegram-web-app.js"></script>|' dist/index.html
+fi
 
 # Copy to server/public
 rm -rf server/public/*
