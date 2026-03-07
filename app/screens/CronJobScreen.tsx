@@ -1,5 +1,5 @@
 import { FC, useState, useMemo } from "react"
-import { View, ViewStyle, ScrollView, Pressable, Alert } from "react-native"
+import { View, ViewStyle, Pressable } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { useTranslation } from "react-i18next"
 import Ionicons from "@expo/vector-icons/Ionicons"
@@ -10,6 +10,7 @@ import { Text } from "@/components/Text"
 import { Icon } from "@/components/Icon"
 import { SectionHeader } from "@/components/SectionHeader"
 import { Button } from "@/components/Button"
+import { AlertModal, type AlertButton } from "@/components/AlertModal"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle, ThemedViewStyle } from "@/theme/types"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
@@ -71,6 +72,14 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   const { t } = useTranslation()
   const [jobs, setJobs] = useState<MockCronJob[]>(MOCK_JOBS)
   const [isCreating, setIsCreating] = useState(false)
+  
+  // Alert modal state
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean
+    title: string
+    message?: string
+    buttons: AlertButton[]
+  }>({ visible: false, title: "", buttons: [] })
 
   // Split jobs into active and disabled
   const { activeJobs, disabledJobs } = useMemo(() => {
@@ -80,24 +89,31 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     }
   }, [jobs])
 
+  const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: "OK" }]) => {
+    setAlertConfig({ visible: true, title, message, buttons })
+  }
+
   const handleCreateJob = () => {
-    Alert.alert("Create Job", "Create job modal will be implemented next", [
-      { text: "OK", style: "default" },
-    ])
+    showAlert(
+      "Create Job",
+      "Create job modal will be implemented next",
+      [{ text: "OK" }]
+    )
   }
 
   const handleRunJob = (jobId: string) => {
     const job = jobs.find(j => j.jobId === jobId)
-    Alert.alert("Run Job", `Run "${job?.name}" now?`, [
-      { text: "Cancel", style: "cancel" },
-      { 
-        text: "Run", 
-        style: "default",
-        onPress: () => {
-          Alert.alert("Success", "Job triggered!")
-        }
-      },
-    ])
+    showAlert(
+      "Run Job",
+      `Run "${job?.name}" now?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Run",
+          onPress: () => showAlert("Success", "Job triggered!")
+        },
+      ]
+    )
   }
 
   const handleToggleJob = (jobId: string) => {
@@ -108,24 +124,26 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
 
   const handleEditJob = (jobId: string) => {
     const job = jobs.find(j => j.jobId === jobId)
-    Alert.alert("Edit Job", `Edit "${job?.name}"`, [
-      { text: "OK", style: "default" },
-    ])
+    showAlert("Edit Job", `Edit "${job?.name}"`, [{ text: "OK" }])
   }
 
   const handleDeleteJob = (jobId: string) => {
     const job = jobs.find(j => j.jobId === jobId)
-    Alert.alert("Delete Job", `Delete "${job?.name}"? This cannot be undone.`, [
-      { text: "Cancel", style: "cancel" },
-      { 
-        text: "Delete", 
-        style: "destructive",
-        onPress: () => {
-          setJobs(prev => prev.filter(j => j.jobId !== jobId))
-          Alert.alert("Deleted", "Job deleted successfully")
-        }
-      },
-    ])
+    showAlert(
+      "Delete Job",
+      `Delete "${job?.name}"? This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            setJobs(prev => prev.filter(j => j.jobId !== jobId))
+            showAlert("Deleted", "Job deleted successfully")
+          }
+        },
+      ]
+    )
   }
 
   return (
@@ -304,6 +322,15 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
           </View>
         )}
       </View>
+
+      {/* Alert Modal */}
+      <AlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
     </Screen>
   )
 }
