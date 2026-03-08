@@ -13,7 +13,7 @@ import { Button } from "@/components/Button"
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
 import { CreateJobModal, type CronJobFormData } from "@/components/CreateJobModal"
 import { useAppTheme } from "@/theme/context"
-import type { ThemedStyle, ThemedViewStyle } from "@/theme/types"
+import type { ThemedStyle } from "@/theme/types"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
 type CronJobScreenProps = AppStackScreenProps<"CronJob">
@@ -195,9 +195,9 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                   </View>
                 </View>
                 
-                <View style={themed($cardStatus)}>
+                <View style={$cardStatus}>
                   <View style={$statusRow}>
-                    <View style={themed($statusBadge)}>
+                    <View style={$statusBadge}>
                       <View style={[$statusDot, { backgroundColor: theme.colors.success }]} />
                       <Text text="Enabled" size="xs" weight="medium" color="success" />
                     </View>
@@ -205,7 +205,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                   </View>
                 </View>
                 
-                <View style={themed($cardActions)}>
+                <View style={$cardActions}>
                   <Button
                     preset="default"
                     size="sm"
@@ -259,16 +259,16 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                   </View>
                 </View>
                 
-                <View style={themed($cardStatus)}>
+                <View style={$cardStatus}>
                   <View style={$statusRow}>
-                    <View style={themed([$statusBadge, $disabledBadge])}>
+                    <View style={[$statusBadge, $disabledBadge]}>
                       <View style={[$statusDot, { backgroundColor: theme.colors.textDim }]} />
                       <Text text="Disabled" size="xs" weight="medium" color="textDim" />
                     </View>
                   </View>
                 </View>
                 
-                <View style={themed($cardActions)}>
+                <View style={$cardActions}>
                   <Button
                     preset="default"
                     size="sm"
@@ -348,17 +348,17 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   )
 }
 
-const $container: ThemedViewStyle = ({ spacing }) => ({ 
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
   padding: spacing.md,
   flex: 1,
 })
 
-const $sectionHeader: ThemedViewStyle = ({ spacing }) => ({ 
+const $sectionHeader: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
   marginTop: spacing.lg,
   marginBottom: spacing.sm,
 })
 
-const $jobCard: ThemedViewStyle = ({ colors, spacing }) => ({
+const $jobCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.surface,
   borderRadius: spacing.lg,
   borderWidth: 1,
@@ -367,7 +367,7 @@ const $jobCard: ThemedViewStyle = ({ colors, spacing }) => ({
   marginBottom: spacing.md,
 })
 
-const $disabledCard: ThemedViewStyle = ({ colors }) => ({
+const $disabledCard: ThemedStyle<ViewStyle> = ({ colors }) => ({
   opacity: 0.6,
   backgroundColor: colors.surface,
 })
@@ -435,7 +435,7 @@ const $actionButton: ViewStyle = {
   flex: 1,
 }
 
-const $emptyState: ThemedViewStyle = ({ spacing }) => ({
+const $emptyState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
@@ -443,12 +443,12 @@ const $emptyState: ThemedViewStyle = ({ spacing }) => ({
   paddingTop: spacing.xl * 2,
 })
 
-const $emptyTitle: ThemedViewStyle = ({ spacing }) => ({
+const $emptyTitle: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginBottom: spacing.sm,
   textAlign: "center",
 })
 
-const $emptySubtitle: ThemedViewStyle = ({ spacing }) => ({
+const $emptySubtitle: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginBottom: spacing.xl,
   textAlign: "center",
 })
@@ -457,7 +457,7 @@ const $createButton: ViewStyle = {
   minWidth: 200,
 }
 
-const $fab: ThemedViewStyle = ({ colors, spacing }) => ({
+const $fab: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   position: 'absolute',
   right: spacing.lg,
   bottom: spacing.lg,
