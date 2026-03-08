@@ -1,28 +1,27 @@
 import { FC, useState } from "react"
-import { View, ViewStyle, TextInput, ScrollView, StyleProp, TextStyle } from "react-native"
+import { View, ViewStyle, TextInput, ScrollView, Pressable } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import { useNavigation } from "@react-navigation/native"
 
 import { useAppTheme } from "@/theme/context"
 import { Text } from "@/components/Text"
 import { Button } from "@/components/Button"
-import { ActionModal } from "@/components/ActionModal"
+import { Icon } from "@/components/Icon"
+import { Screen } from "@/components/Screen"
 import { TaskTypeDropdown, type TaskType } from "@/components/TaskTypeDropdown"
-import { SchedulePicker, type ScheduleType } from "@/components/SchedulePicker"
+import { CalendarPicker, type ScheduleType } from "@/components/CalendarPicker"
 import { Checkbox } from "@/components/Toggle/Checkbox"
 import type { ThemedStyle } from "@/theme/types"
 
 export interface CronJobFormData {
   name: string
   taskType: TaskType
-  // Shell command
   command?: string
   workingDir?: string
   timeout?: number
-  // Agent task
   prompt?: string
   model?: string
-  // System event
   message?: string
-  // Schedule
   scheduleType: ScheduleType
   time?: string
   weekday?: number
@@ -30,16 +29,21 @@ export interface CronJobFormData {
   intervalValue?: number
   intervalUnit?: "minutes" | "hours" | "days"
   cronExpression?: string
-  // Settings
   notifySuccess?: boolean
   notifyFailure?: boolean
 }
 
-interface CreateJobModalProps {
-  visible: boolean
-  onClose: () => void
+interface CreateJobScreenParams {
   onSubmit: (data: CronJobFormData) => void
   initialData?: Partial<CronJobFormData>
+}
+
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList {
+      CreateJob: CreateJobScreenParams
+    }
+  }
 }
 
 const DEFAULT_DATA: CronJobFormData = {
@@ -62,13 +66,14 @@ const DEFAULT_DATA: CronJobFormData = {
   notifyFailure: true,
 }
 
-export const CreateJobModal: FC<CreateJobModalProps> = ({
-  visible,
-  onClose,
-  onSubmit,
-  initialData,
-}) => {
+export const CreateJobScreen: FC = () => {
+  const navigation = useNavigation()
   const { themed, theme } = useAppTheme()
+  const route = navigation.getState() as any
+  const params = route?.routes?.[route.routes.length - 1]?.params as CreateJobScreenParams | undefined
+  
+  const onSubmit = params?.onSubmit ?? (() => {})
+  const initialData = params?.initialData
 
   const [formData, setFormData] = useState<CronJobFormData>({
     ...DEFAULT_DATA,
@@ -95,7 +100,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
   const handleSubmit = () => {
     if (!handleValidate()) return
     onSubmit(formData)
-    onClose()
+    navigation.goBack()
   }
 
   const renderTaskSpecificFields = () => {
@@ -169,7 +174,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
                 maxLength={500}
                 textAlignVertical="top"
               />
-              <Text text={`${formData.prompt?.length || 0}/500`} size="xs" color="textDim" style={$charCount} />
+              <Text text={`${formData.prompt?.length || 0}/500`} size="xs" color="textDim" style={themed($charCount)} />
             </View>
 
             <View style={themed($field)}>
@@ -202,41 +207,29 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
               maxLength={200}
               textAlignVertical="top"
             />
-            <Text text={`${formData.message?.length || 0}/200`} size="xs" color="textDim" style={$charCount} />
+            <Text text={`${formData.message?.length || 0}/200`} size="xs" color="textDim" style={themed($charCount)} />
           </View>
         )
     }
   }
 
   return (
-    <ActionModal
-      visible={visible}
-      onClose={onClose}
-      title="✨ Create Scheduled Task"
-      bottomComponent={
-        <View style={themed($footer)}>
-          <Button
-            text="Cancel"
-            preset="filled"
-            onPress={onClose}
-            style={themed($cancelButton)}
-          />
-          <Button
-            text="Create Task"
-            preset="filled"
-            onPress={handleSubmit}
-            style={themed([$saveButton, { backgroundColor: theme.colors.tint }])}
-            textStyle={{ color: theme.colors.palette.neutral100 }}
-          />
-        </View>
-      }
+    <Screen
+      preset="scroll"
+      safeAreaEdges={["top", "bottom"]}
+      keyboardShouldPersistTaps="handled"
     >
-      <ScrollView
-        showsVerticalScrollIndicator={true}
-        style={$scrollView}
-        contentContainerStyle={$scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      {/* Header */}
+      <View style={themed($header)}>
+        <Pressable onPress={() => navigation.goBack()} style={themed($backButton)}>
+          <Icon font="Ionicons" icon="chevron-back" color={theme.colors.text} size={24} />
+        </Pressable>
+        <Text text="✨ Create Scheduled Task" weight="semiBold" size="lg" color="text" />
+        <View style={$spacer} />
+      </View>
+
+      {/* Form Content with Padding */}
+      <View style={themed($contentWrapper)}>
         {/* Task Name */}
         <View style={themed($field)}>
           <Text text="Task Name" weight="medium" color="text" size="sm" />
@@ -248,7 +241,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
             maxLength={50}
             placeholderTextColor={theme.colors.textDim}
           />
-          <Text text={`${formData.name.length}/50`} size="xs" color="textDim" style={$charCount} />
+          <Text text={`${formData.name.length}/50`} size="xs" color="textDim" style={themed($charCount)} />
         </View>
 
         {/* Task Type - Compact Dropdown */}
@@ -259,7 +252,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
 
         {/* Task-Specific Fields */}
         <View style={themed($section)}>
-          <Text text="Configuration" weight="semiBold" color="text" size="sm" style={$sectionTitle} />
+          <Text text="Configuration" weight="semiBold" color="text" size="md" style={$sectionTitle} />
           {renderTaskSpecificFields()}
         </View>
 
@@ -270,11 +263,11 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
         <View style={themed($section)}>
           <View style={themed($sectionHeaderWithIcon)}>
             <Text text="⏰ " size="sm" />
-            <Text text="When to Run" weight="semiBold" color="text" size="sm" />
+            <Text text="When to Run" weight="semiBold" color="text" size="md" />
           </View>
-          <SchedulePicker
-            selectedType={formData.scheduleType}
-            onSelect={handleScheduleTypeChange}
+          <CalendarPicker
+            scheduleType={formData.scheduleType}
+            onScheduleTypeChange={handleScheduleTypeChange}
             time={formData.time}
             onTimeChange={(time) => setFormData(prev => ({ ...prev, time }))}
             weekday={formData.weekday}
@@ -297,7 +290,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
         <View style={themed($section)}>
           <View style={themed($sectionHeaderWithIcon)}>
             <Text text="🔔 " size="sm" />
-            <Text text="Notifications" weight="semiBold" color="text" size="sm" />
+            <Text text="Notifications" weight="semiBold" color="text" size="md" />
           </View>
           <View style={themed($checkboxContainer)}>
             <View style={themed($checkboxRow)}>
@@ -317,18 +310,56 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
           </View>
         </View>
 
-        {/* Extra bottom padding for keyboard */}
-        <View style={{ height: 20 }} />
-      </ScrollView>
-    </ActionModal>
+        {/* Extra bottom padding for footer spacing */}
+        <View style={{ height: 16 }} />
+      </View>
+
+      {/* Footer Actions */}
+      <View style={themed($footer)}>
+        <Button
+          text="Cancel"
+          preset="filled"
+          onPress={() => navigation.goBack()}
+          style={themed($cancelButton)}
+        />
+        <Button
+          text="Create Task"
+          preset="filled"
+          onPress={handleSubmit}
+          style={themed([$saveButton, { backgroundColor: theme.colors.tint }])}
+          textStyle={{ color: theme.colors.palette.neutral100 }}
+        />
+      </View>
+    </Screen>
   )
 }
 
-const $scrollView: ViewStyle = { flex: 1 }
+const $container: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  flex: 1,
+  backgroundColor: colors.background,
+})
 
-const $scrollContent: ViewStyle = {
-  paddingHorizontal: 20,
-  paddingTop: 8,
+const $contentWrapper: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingHorizontal: spacing.lg,
+  paddingBottom: spacing.lg,
+})
+
+const $header: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.md,
+  borderBottomWidth: 1,
+  borderBottomColor: colors.border,
+})
+
+const $backButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  padding: spacing.sm,
+  marginLeft: -spacing.sm,
+})
+
+const $spacer: ViewStyle = {
+  width: 40,
 }
 
 const $field: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -336,12 +367,11 @@ const $field: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 })
 
 const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
-  flex: 1,
+  marginBottom: spacing.xl,
 })
 
 const $sectionTitle: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.sm,
+  marginBottom: spacing.md,
 })
 
 const $labelRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -358,7 +388,6 @@ const $sectionHeaderWithIcon: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginBottom: spacing.md,
 })
 
-// Standardized input style - all inputs use this
 const $input: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.surface,
   borderRadius: spacing.md,
@@ -371,7 +400,6 @@ const $input: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   color: colors.text,
 })
 
-// Multiline input for command/prompt/message
 const $multilineInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.surface,
   borderRadius: spacing.md,
@@ -385,7 +413,6 @@ const $multilineInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   lineHeight: 22,
 })
 
-// Small input for numbers (timeout, etc.)
 const $smallInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.surface,
   borderRadius: spacing.md,
@@ -439,12 +466,15 @@ const $checkboxLabel: ViewStyle = {
   flex: 1,
 }
 
-const $footer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+const $footer: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   flexDirection: "row",
   gap: spacing.md,
   paddingTop: spacing.lg,
   paddingBottom: spacing.lg,
-  paddingHorizontal: 20,
+  paddingHorizontal: spacing.lg,
+  borderTopWidth: 1,
+  borderTopColor: colors.border,
+  backgroundColor: colors.background,
 })
 
 const $cancelButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({

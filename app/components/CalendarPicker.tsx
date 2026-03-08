@@ -1,17 +1,21 @@
 import { FC, useState } from "react"
 import { View, ViewStyle, TextInput, Pressable } from "react-native"
+import { Calendar, LocaleConfig } from "react-native-calendars"
 
 import { useAppTheme } from "@/theme/context"
 import { Text } from "@/components/Text"
 import { Button } from "@/components/Button"
+import { Icon } from "@/components/Icon"
 import type { ThemedStyle } from "@/theme/types"
 
-export type ScheduleType = "daily" | "weekly" | "monthly" | "interval" | "custom"
+export type ScheduleType = "daily" | "weekly" | "monthly" | "interval" | "custom" | "datetime"
 
-interface SchedulePickerProps {
-  selectedType: ScheduleType
-  onSelect: (type: ScheduleType) => void
-  // Daily/Weekly/Monthly
+interface CalendarPickerProps {
+  scheduleType: ScheduleType
+  onScheduleTypeChange: (type: ScheduleType) => void
+  // Date/time selection
+  selectedDate?: string
+  onDateChange?: (date: string) => void
   time?: string
   onTimeChange?: (time: string) => void
   // Weekly
@@ -25,17 +29,18 @@ interface SchedulePickerProps {
   onIntervalValueChange?: (value: number) => void
   intervalUnit?: "minutes" | "hours" | "days"
   onIntervalUnitChange?: (unit: "minutes" | "hours" | "days") => void
-  // Custom
+  // Custom cron
   cronExpression?: string
   onCronExpressionChange?: (expr: string) => void
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-const SCHEDULE_OPTIONS: ScheduleType[] = ["daily", "weekly", "monthly", "interval", "custom"]
 
-export const SchedulePicker: FC<SchedulePickerProps> = ({
-  selectedType,
-  onSelect,
+export const CalendarPicker: FC<CalendarPickerProps> = ({
+  scheduleType,
+  onScheduleTypeChange,
+  selectedDate,
+  onDateChange = () => {},
   time = "08:00",
   onTimeChange = () => {},
   weekday = 1,
@@ -50,43 +55,63 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
   onCronExpressionChange = () => {},
 }) => {
   const { themed, theme } = useAppTheme()
+  const [showCalendar, setShowCalendar] = useState(false)
+
+  const handleDateSelect = (date: any) => {
+    onDateChange(date.dateString)
+    setShowCalendar(false)
+  }
 
   const handleQuickCron = (expr: string) => {
     onCronExpressionChange(expr)
   }
 
-  const renderSegment = (type: ScheduleType, label: string) => {
-    const isSelected = selectedType === type
-    return (
-      <Pressable
-        key={type}
-        onPress={() => onSelect(type)}
-        style={[
-          themed($segment),
-          isSelected && themed($segmentSelected),
-        ]}
-      >
-        <Text
-          text={label}
-          size="xs"
-          weight="medium"
-          color={isSelected ? "tint" : "textDim"}
-        />
-      </Pressable>
-    )
+  const formatSelectedDate = (dateString?: string) => {
+    if (!dateString) return "Select date"
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", { 
+      weekday: "short", 
+      year: "numeric", 
+      month: "short", 
+      day: "numeric" 
+    })
   }
+
+  const scheduleOptions = [
+    { type: "daily" as ScheduleType, label: "Daily", icon: "calendar" },
+    { type: "weekly" as ScheduleType, label: "Weekly", icon: "calendar" },
+    { type: "monthly" as ScheduleType, label: "Monthly", icon: "calendar" },
+    { type: "interval" as ScheduleType, label: "Interval", icon: "time" },
+    { type: "custom" as ScheduleType, label: "Custom", icon: "code" },
+  ]
 
   return (
     <View style={themed($container)}>
-      {/* iOS-style Segmented Control */}
-      <View style={themed($segmentedControl)}>
-        {SCHEDULE_OPTIONS.map((type) => renderSegment(type, type.charAt(0).toUpperCase() + type.slice(1)))}
+      {/* Schedule Type Selector */}
+      <View style={themed($typeSelector)}>
+        {scheduleOptions.map((option) => (
+          <Pressable
+            key={option.type}
+            onPress={() => onScheduleTypeChange(option.type)}
+            style={[
+              themed($typeOption),
+              scheduleType === option.type && themed($typeOptionSelected),
+            ]}
+          >
+            <Text
+              text={option.label}
+              size="xs"
+              weight="medium"
+              color={scheduleType === option.type ? "tint" : "textDim"}
+            />
+          </Pressable>
+        ))}
       </View>
 
       {/* Schedule Content */}
       <View style={themed($scheduleContent)}>
         {/* Daily Schedule */}
-        {selectedType === "daily" && (
+        {scheduleType === "daily" && (
           <View style={themed($scheduleRow)}>
             <Text text="Every day at" weight="medium" color="text" size="sm" />
             <TextInput
@@ -96,12 +121,13 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
               style={themed($timeInput)}
               keyboardType="number-pad"
               placeholderTextColor={theme.colors.textDim}
+              textAlign="center"
             />
           </View>
         )}
 
         {/* Weekly Schedule */}
-        {selectedType === "weekly" && (
+        {scheduleType === "weekly" && (
           <View style={themed($scheduleStack)}>
             <View style={themed($scheduleRow)}>
               <Text text="Every" weight="medium" color="text" size="sm" />
@@ -116,9 +142,9 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
                     ]}
                   >
                     <Text
-                      text={day}
-                      size="xs"
-                      weight="medium"
+                      text={day.charAt(0)}
+                      size="sm"
+                      weight="semiBold"
                       color={weekday === index ? "tint" : "textDim"}
                     />
                   </Pressable>
@@ -134,13 +160,14 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
                 style={themed($timeInput)}
                 keyboardType="number-pad"
                 placeholderTextColor={theme.colors.textDim}
+                textAlign="center"
               />
             </View>
           </View>
         )}
 
         {/* Monthly Schedule */}
-        {selectedType === "monthly" && (
+        {scheduleType === "monthly" && (
           <View style={themed($scheduleRow)}>
             <Text text="On day" weight="medium" color="text" size="sm" />
             <TextInput
@@ -150,6 +177,7 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
               style={themed($dayInput)}
               keyboardType="number-pad"
               placeholderTextColor={theme.colors.textDim}
+              textAlign="center"
             />
             <Text text="of every month at" weight="medium" color="text" size="sm" />
             <TextInput
@@ -159,12 +187,13 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
               style={themed($timeInput)}
               keyboardType="number-pad"
               placeholderTextColor={theme.colors.textDim}
+              textAlign="center"
             />
           </View>
         )}
 
         {/* Interval Schedule */}
-        {selectedType === "interval" && (
+        {scheduleType === "interval" && (
           <View style={themed($scheduleRow)}>
             <Text text="Every" weight="medium" color="text" size="sm" />
             <TextInput
@@ -174,6 +203,7 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
               style={themed($intervalInput)}
               keyboardType="number-pad"
               placeholderTextColor={theme.colors.textDim}
+              textAlign="center"
             />
             <View style={themed($unitPicker)}>
               {(["minutes", "hours", "days"] as const).map((unit) => (
@@ -198,7 +228,7 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
         )}
 
         {/* Custom Cron */}
-        {selectedType === "custom" && (
+        {scheduleType === "custom" && (
           <View style={themed($cronContainer)}>
             <Text text="Cron Expression" weight="medium" color="text" size="sm" style={$cronLabel} />
             <TextInput
@@ -207,6 +237,7 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
               placeholder="0 * * * *"
               style={themed($cronInput)}
               placeholderTextColor={theme.colors.textDim}
+              textAlign="center"
             />
             <Text text="Quick picks:" weight="medium" color="textDim" size="xs" style={$quickPickLabel} />
             <View style={themed($quickPicks)}>
@@ -236,31 +267,21 @@ const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   gap: spacing.md,
 })
 
-// iOS-style Segmented Control
-const $segmentedControl: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+const $typeSelector: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
-  backgroundColor: colors.palette.neutral200,
-  borderRadius: spacing.sm,
-  padding: 2,
-  minHeight: 36,
+  gap: spacing.xs,
+  flexWrap: "wrap",
 })
 
-const $segment: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  flex: 1,
-  alignItems: "center",
-  justifyContent: "center",
-  borderRadius: spacing.sm - 2,
+const $typeOption: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   paddingVertical: spacing.sm,
+  paddingHorizontal: spacing.md,
+  borderRadius: spacing.md,
+  backgroundColor: colors.palette.neutral100,
 })
 
-const $segmentSelected: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.surface,
-  borderRadius: spacing.sm - 2,
-  shadowColor: colors.text,
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.1,
-  shadowRadius: 2,
-  elevation: 2,
+const $typeOptionSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  backgroundColor: colors.tint + "20",
 })
 
 const $scheduleContent: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
@@ -270,7 +291,6 @@ const $scheduleContent: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   gap: spacing.md,
   borderWidth: 1,
   borderColor: colors.border,
-  flex: 1,
 })
 
 const $scheduleRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -322,7 +342,7 @@ const $weekdayButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   paddingVertical: spacing.sm,
   alignItems: "center",
   borderRadius: spacing.sm,
-  backgroundColor: colors.palette.neutral100,
+  backgroundColor: colors.palette.neutral200,
 })
 
 const $weekdayButtonSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
@@ -353,7 +373,7 @@ const $unitButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   paddingVertical: spacing.sm,
   alignItems: "center",
   borderRadius: spacing.sm,
-  backgroundColor: colors.palette.neutral100,
+  backgroundColor: colors.palette.neutral200,
 })
 
 const $unitButtonSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({

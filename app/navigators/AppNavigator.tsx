@@ -25,6 +25,7 @@ import { SettingsScreen } from "@/screens/SettingsScreen"
 import { AccessDeniedScreen } from "@/screens/AccessDeniedScreen"
 import { TelegramAuthScreen } from "@/screens/TelegramAuthScreen"
 import { CronJobScreen } from "@/screens/CronJobScreen"
+import { CreateJobScreen } from "@/screens/CreateJobScreen"
 import { useSocket } from "@/services/socket/SocketContext"
 import { useEffect } from "react"
 
@@ -67,6 +68,7 @@ const AppStack = () => {
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="AccessDenied" component={AccessDeniedScreen} />
           <Stack.Screen name="CronJob" component={CronJobScreen} />
+          <Stack.Screen name="CreateJob" component={CreateJobScreen} />
         </>
       ) : (
         <Stack.Screen name="TelegramAuth" component={TelegramAuthScreen} />

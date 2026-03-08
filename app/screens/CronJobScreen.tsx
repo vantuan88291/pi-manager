@@ -6,14 +6,15 @@ import { useTranslation } from "react-i18next"
 
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
 import { Button } from "@/components/Button"
-import { CreateJobModal, type CronJobFormData } from "@/components/CreateJobModal"
 import { Header } from "@/components/Header"
+import { CreateJobScreen, type CronJobFormData } from "@/screens/CreateJobScreen"
 import { Icon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
 import { SectionHeader } from "@/components/SectionHeader"
 import { Text } from "@/components/Text"
 import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
+import { $styles } from "@/theme/styles"
 import type { ThemedStyle } from "@/theme/types"
 
 type CronJobScreenProps = AppStackScreenProps<"CronJob">
@@ -72,7 +73,6 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   const { themed, theme } = useAppTheme()
   const { t } = useTranslation()
   const [jobs, setJobs] = useState<MockCronJob[]>(MOCK_JOBS)
-  const [isCreating, setIsCreating] = useState(false)
 
   // Alert modal state
   const [alertConfig, setAlertConfig] = useState<{
@@ -82,8 +82,8 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     buttons: AlertButton[]
   }>({ visible: false, title: "", buttons: [] })
 
-  // Create job modal state
-  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false)
+  // Create job screen state
+  const [isCreating, setIsCreating] = useState(false)
 
   // Split jobs into active and disabled
   const { activeJobs, disabledJobs } = useMemo(() => {
@@ -102,12 +102,15 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   }
 
   const handleCreateJob = () => {
-    setIsCreateModalVisible(true)
+    navigation.navigate("CreateJob", {
+      onSubmit: handleJobSubmit,
+    })
   }
 
   const handleJobSubmit = (data: CronJobFormData) => {
     console.log("[CronJobScreen] Creating job with data:", data)
     // TODO: Connect to socket module to create job
+    navigation.goBack()
     showAlert("Success", `Job "${data.name || "Untitled"}" created!`)
   }
 
@@ -157,7 +160,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
           style={themed($fab)}
           android_ripple={{ color: theme.colors.tint + "40" }}
         >
-          <View style={$fabIcon}>
+          <View style={themed($fabIcon)}>
             <Ionicons name="add" size={28} color={theme.colors.palette.neutral100} />
           </View>
         </Pressable>
@@ -181,33 +184,32 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
 
             {activeJobs.map((job) => (
               <View key={job.jobId} style={themed($jobCard)}>
-                <View style={$cardHeader}>
-                  <View style={$jobIcon}>
+                <View style={themed($cardHeader)}>
+                  <View style={themed($jobIcon)}>
                     <Text text={job.icon} size="xl" />
                   </View>
-                  <View style={$jobInfo}>
+                  <View style={themed($jobInfo)}>
                     <Text text={job.name} weight="semiBold" size="sm" color="text" />
                     <Text text={job.schedule} size="xs" color="textDim" />
                   </View>
                 </View>
 
-                <View style={$cardStatus}>
-                  <View style={$statusRow}>
-                    <View style={$statusBadge}>
-                      <View style={[$statusDot, { backgroundColor: theme.colors.success }]} />
+                <View style={themed($cardStatus)}>
+                  <View style={themed($statusRow)}>
+                    <View style={themed($statusBadge)}>
+                      <View style={themed($statusDot)} />
                       <Text text="Enabled" size="xs" weight="medium" color="success" />
                     </View>
                     <Text text={`🟢 Next: ${job.nextRun}`} size="xs" color="textDim" />
                   </View>
                 </View>
 
-                <View style={$cardActions}>
+                <View style={themed($cardActions)}>
                   <Button
                     preset="default"
                     size="sm"
                     onPress={() => handleRunJob(job.jobId)}
-                    style={$actionButton}
-                    textStyle={{ fontSize: 12 }}
+                    style={themed($actionButton)}
                   >
                     ▶️ Run
                   </Button>
@@ -215,8 +217,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     preset="default"
                     size="sm"
                     onPress={() => handleEditJob(job.jobId)}
-                    style={$actionButton}
-                    textStyle={{ fontSize: 12 }}
+                    style={themed($actionButton)}
                   >
                     ✏️ Edit
                   </Button>
@@ -224,8 +225,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     preset="default"
                     size="sm"
                     onPress={() => handleToggleJob(job.jobId)}
-                    style={$actionButton}
-                    textStyle={{ fontSize: 12 }}
+                    style={themed($actionButton)}
                   >
                     ⏸️ Disable
                   </Button>
@@ -244,33 +244,32 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
             />
 
             {disabledJobs.map((job) => (
-              <View key={job.jobId} style={themed([$jobCard, $disabledCard])}>
-                <View style={$cardHeader}>
-                  <View style={[$jobIcon, $disabledIcon]}>
+              <View key={job.jobId} style={themed($disabledJobCard)}>
+                <View style={themed($cardHeader)}>
+                  <View style={themed($disabledJobIcon)}>
                     <Text text={job.icon} size="xl" />
                   </View>
-                  <View style={$jobInfo}>
+                  <View style={themed($jobInfo)}>
                     <Text text={job.name} weight="semiBold" size="sm" color="textDim" />
                     <Text text={job.schedule} size="xs" color="textDim" />
                   </View>
                 </View>
 
-                <View style={$cardStatus}>
-                  <View style={$statusRow}>
-                    <View style={[$statusBadge, $disabledBadge]}>
-                      <View style={[$statusDot, { backgroundColor: theme.colors.textDim }]} />
+                <View style={themed($cardStatus)}>
+                  <View style={themed($statusRow)}>
+                    <View style={themed($disabledStatusBadge)}>
+                      <View style={themed($disabledStatusDot)} />
                       <Text text="Disabled" size="xs" weight="medium" color="textDim" />
                     </View>
                   </View>
                 </View>
 
-                <View style={$cardActions}>
+                <View style={themed($cardActions)}>
                   <Button
                     preset="default"
                     size="sm"
                     onPress={() => handleToggleJob(job.jobId)}
-                    style={$actionButton}
-                    textStyle={{ fontSize: 12 }}
+                    style={themed($actionButton)}
                   >
                     ▶️ Enable
                   </Button>
@@ -278,8 +277,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     preset="default"
                     size="sm"
                     onPress={() => handleEditJob(job.jobId)}
-                    style={$actionButton}
-                    textStyle={{ fontSize: 12 }}
+                    style={themed($actionButton)}
                   >
                     ✏️ Edit
                   </Button>
@@ -287,8 +285,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     preset="default"
                     size="sm"
                     onPress={() => handleDeleteJob(job.jobId)}
-                    style={$actionButton}
-                    textStyle={{ fontSize: 12 }}
+                    style={themed($actionButton)}
                   >
                     🗑️ Delete
                   </Button>
@@ -301,7 +298,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         {/* Empty State */}
         {jobs.length === 0 && (
           <View style={themed($emptyState)}>
-            <Text text="📭" size="xxl" style={{ marginBottom: 16 }} />
+            <Text text="📭" size="xxl" style={themed($emptyIcon)} />
             <Text
               tx="cronjob:emptyState"
               size="lg"
@@ -319,7 +316,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
               tx="cronjob:createFirstJob"
               preset="primary"
               onPress={handleCreateJob}
-              style={$createButton}
+              style={themed($createButton)}
             />
           </View>
         )}
@@ -332,13 +329,6 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         message={alertConfig.message}
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
-      />
-
-      {/* Create Job Modal */}
-      <CreateJobModal
-        visible={isCreateModalVisible}
-        onClose={() => setIsCreateModalVisible(false)}
-        onSubmit={handleJobSubmit}
       />
     </Screen>
   )
@@ -363,73 +353,99 @@ const $jobCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   marginBottom: spacing.md,
 })
 
-const $disabledCard: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  opacity: 0.6,
+const $disabledJobCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.surface,
+  borderRadius: spacing.lg,
+  borderWidth: 1,
+  borderColor: colors.border,
+  padding: spacing.lg,
+  marginBottom: spacing.md,
+  opacity: 0.6,
 })
 
-const $cardHeader: ViewStyle = {
+const $cardHeader: ThemedStyle<ViewStyle> = () => ({
   flexDirection: "row",
   alignItems: "flex-start",
   marginBottom: 12,
-}
+})
 
-const $jobIcon: ViewStyle = {
+const $jobIcon: ThemedStyle<ViewStyle> = ({ colors }) => ({
   width: 48,
   height: 48,
   borderRadius: 12,
-  backgroundColor: "#EEF2FF",
+  backgroundColor: colors.palette.accent50,
   alignItems: "center",
   justifyContent: "center",
   marginRight: 12,
-}
+})
 
-const $disabledIcon: ViewStyle = {
-  backgroundColor: "#F3F4F6",
-}
+const $disabledJobIcon: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  width: 48,
+  height: 48,
+  borderRadius: 12,
+  backgroundColor: colors.palette.neutral200,
+  alignItems: "center",
+  justifyContent: "center",
+  marginRight: 12,
+})
 
-const $jobInfo: ViewStyle = {
+const $jobInfo: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
   paddingTop: 4,
-}
+})
 
-const $cardStatus: ViewStyle = {
+const $cardStatus: ThemedStyle<ViewStyle> = () => ({
   marginBottom: 12,
-}
+})
 
-const $statusRow: ViewStyle = {
+const $statusRow: ThemedStyle<ViewStyle> = () => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-}
+})
 
-const $statusBadge: ViewStyle = {
+const $statusBadge: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   flexDirection: "row",
   alignItems: "center",
-  gap: 6,
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 12,
-}
+  gap: spacing.xs,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.xs,
+  borderRadius: spacing.lg,
+  backgroundColor: colors.palette.success200,
+})
 
-const $disabledBadge: ViewStyle = {
-  backgroundColor: "#F3F4F6",
-}
+const $disabledStatusBadge: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: spacing.xs,
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.xs,
+  borderRadius: spacing.lg,
+  backgroundColor: colors.palette.neutral200,
+})
 
-const $statusDot: ViewStyle = {
+const $statusDot: ThemedStyle<ViewStyle> = ({ colors }) => ({
   width: 8,
   height: 8,
   borderRadius: 4,
-}
+  backgroundColor: colors.success,
+})
 
-const $cardActions: ViewStyle = {
+const $disabledStatusDot: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  width: 8,
+  height: 8,
+  borderRadius: 4,
+  backgroundColor: colors.textDim,
+})
+
+const $cardActions: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
-  gap: 8,
-}
+  gap: spacing.sm,
+})
 
-const $actionButton: ViewStyle = {
+const $actionButton: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
-}
+})
 
 const $emptyState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
@@ -437,6 +453,10 @@ const $emptyState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: "center",
   paddingHorizontal: spacing.xl,
   paddingTop: spacing.xl * 2,
+})
+
+const $emptyIcon: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.md,
 })
 
 const $emptyTitle: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -449,9 +469,10 @@ const $emptySubtitle: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   textAlign: "center",
 })
 
-const $createButton: ViewStyle = {
+const $createButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   minWidth: 200,
-}
+  marginTop: spacing.md,
+})
 
 const $fab: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   position: "absolute",
@@ -471,7 +492,7 @@ const $fab: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   zIndex: 999,
 })
 
-const $fabIcon: ViewStyle = {
+const $fabIcon: ThemedStyle<ViewStyle> = () => ({
   alignItems: "center",
   justifyContent: "center",
-}
+})
