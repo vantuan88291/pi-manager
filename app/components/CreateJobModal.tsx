@@ -68,7 +68,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
   initialData,
 }) => {
   const { themed, theme } = useAppTheme()
-  
+
   const [formData, setFormData] = useState<CronJobFormData>({
     ...DEFAULT_DATA,
     ...initialData,
@@ -268,7 +268,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
         {/* Notifications */}
         <View style={themed($section)}>
           <Text text="Notifications" weight="semiBold" color="text" size="sm" style={$sectionTitle} />
-          <View style={$checkboxRow}>
+          <View style={themed($checkboxRow)}>
             <Button
               text={formData.notifySuccess ? "✅ On success" : "⬜ On success"}
               preset="default"
@@ -369,11 +369,11 @@ const $footerButton: ViewStyle = {
   height: 48,
 }
 
-const $checkboxRow: ViewStyle = {
+const $checkboxRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.sm,
   marginTop: spacing.sm,
-}
+})
 
 const $checkbox: ViewStyle = {
   flex: 1,

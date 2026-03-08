@@ -1,20 +1,20 @@
 import { FC, useState, useMemo } from "react"
 import { View, ViewStyle, Pressable } from "react-native"
+import Ionicons from "@expo/vector-icons/Ionicons"
 import { useNavigation } from "@react-navigation/native"
 import { useTranslation } from "react-i18next"
-import Ionicons from "@expo/vector-icons/Ionicons"
 
-import { Header } from "@/components/Header"
-import { Screen } from "@/components/Screen"
-import { Text } from "@/components/Text"
-import { Icon } from "@/components/Icon"
-import { SectionHeader } from "@/components/SectionHeader"
-import { Button } from "@/components/Button"
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
+import { Button } from "@/components/Button"
 import { CreateJobModal, type CronJobFormData } from "@/components/CreateJobModal"
+import { Header } from "@/components/Header"
+import { Icon } from "@/components/Icon"
+import { Screen } from "@/components/Screen"
+import { SectionHeader } from "@/components/SectionHeader"
+import { Text } from "@/components/Text"
+import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
-import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 
 type CronJobScreenProps = AppStackScreenProps<"CronJob">
 
@@ -73,7 +73,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   const { t } = useTranslation()
   const [jobs, setJobs] = useState<MockCronJob[]>(MOCK_JOBS)
   const [isCreating, setIsCreating] = useState(false)
-  
+
   // Alert modal state
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -81,19 +81,23 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     message?: string
     buttons: AlertButton[]
   }>({ visible: false, title: "", buttons: [] })
-  
+
   // Create job modal state
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false)
 
   // Split jobs into active and disabled
   const { activeJobs, disabledJobs } = useMemo(() => {
     return {
-      activeJobs: jobs.filter(job => job.enabled),
-      disabledJobs: jobs.filter(job => !job.enabled),
+      activeJobs: jobs.filter((job) => job.enabled),
+      disabledJobs: jobs.filter((job) => !job.enabled),
     }
   }, [jobs])
 
-  const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: "OK" }]) => {
+  const showAlert = (
+    title: string,
+    message?: string,
+    buttons: AlertButton[] = [{ text: "OK" }],
+  ) => {
     setAlertConfig({ visible: true, title, message, buttons })
   }
 
@@ -108,58 +112,50 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   }
 
   const handleRunJob = (jobId: string) => {
-    const job = jobs.find(j => j.jobId === jobId)
-    showAlert(
-      "Run Job",
-      `Run "${job?.name}" now?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Run",
-          onPress: () => showAlert("Success", "Job triggered!")
-        },
-      ]
-    )
+    const job = jobs.find((j) => j.jobId === jobId)
+    showAlert("Run Job", `Run "${job?.name}" now?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Run",
+        onPress: () => showAlert("Success", "Job triggered!"),
+      },
+    ])
   }
 
   const handleToggleJob = (jobId: string) => {
-    setJobs(prev => prev.map(job => 
-      job.jobId === jobId ? { ...job, enabled: !job.enabled } : job
-    ))
+    setJobs((prev) =>
+      prev.map((job) => (job.jobId === jobId ? { ...job, enabled: !job.enabled } : job)),
+    )
   }
 
   const handleEditJob = (jobId: string) => {
-    const job = jobs.find(j => j.jobId === jobId)
+    const job = jobs.find((j) => j.jobId === jobId)
     showAlert("Edit Job", `Edit "${job?.name}"`, [{ text: "OK" }])
   }
 
   const handleDeleteJob = (jobId: string) => {
-    const job = jobs.find(j => j.jobId === jobId)
-    showAlert(
-      "Delete Job",
-      `Delete "${job?.name}"? This cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            setJobs(prev => prev.filter(j => j.jobId !== jobId))
-            showAlert("Deleted", "Job deleted successfully")
-          }
+    const job = jobs.find((j) => j.jobId === jobId)
+    showAlert("Delete Job", `Delete "${job?.name}"? This cannot be undone.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          setJobs((prev) => prev.filter((j) => j.jobId !== jobId))
+          showAlert("Deleted", "Job deleted successfully")
         },
-      ]
-    )
+      },
+    ])
   }
 
   return (
-    <Screen 
+    <Screen
       preset="scroll"
       bottomComponent={
         <Pressable
           onPress={handleCreateJob}
           style={themed($fab)}
-          android_ripple={{ color: theme.colors.tint + '40' }}
+          android_ripple={{ color: theme.colors.tint + "40" }}
         >
           <View style={$fabIcon}>
             <Ionicons name="add" size={28} color={theme.colors.palette.neutral100} />
@@ -167,10 +163,10 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         </Pressable>
       }
     >
-      <Header 
-        titleTx="cronjob:title" 
-        titleMode="center" 
-        leftIcon="back" 
+      <Header
+        titleTx="cronjob:title"
+        titleMode="center"
+        leftIcon="back"
         onLeftPress={() => navigation.goBack()}
       />
 
@@ -178,11 +174,11 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         {/* Active Jobs Section */}
         {activeJobs.length > 0 && (
           <>
-            <SectionHeader 
-              title={`📊 ${activeJobs.length} Active Jobs`} 
-              style={themed($sectionHeader)} 
+            <SectionHeader
+              title={`📊 ${activeJobs.length} Active Jobs`}
+              style={themed($sectionHeader)}
             />
-            
+
             {activeJobs.map((job) => (
               <View key={job.jobId} style={themed($jobCard)}>
                 <View style={$cardHeader}>
@@ -194,7 +190,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     <Text text={job.schedule} size="xs" color="textDim" />
                   </View>
                 </View>
-                
+
                 <View style={$cardStatus}>
                   <View style={$statusRow}>
                     <View style={$statusBadge}>
@@ -204,7 +200,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     <Text text={`🟢 Next: ${job.nextRun}`} size="xs" color="textDim" />
                   </View>
                 </View>
-                
+
                 <View style={$cardActions}>
                   <Button
                     preset="default"
@@ -242,11 +238,11 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         {/* Disabled Jobs Section */}
         {disabledJobs.length > 0 && (
           <>
-            <SectionHeader 
-              title={`⚪ ${disabledJobs.length} Disabled Jobs`} 
-              style={themed($sectionHeader)} 
+            <SectionHeader
+              title={`⚪ ${disabledJobs.length} Disabled Jobs`}
+              style={themed($sectionHeader)}
             />
-            
+
             {disabledJobs.map((job) => (
               <View key={job.jobId} style={themed([$jobCard, $disabledCard])}>
                 <View style={$cardHeader}>
@@ -258,7 +254,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     <Text text={job.schedule} size="xs" color="textDim" />
                   </View>
                 </View>
-                
+
                 <View style={$cardStatus}>
                   <View style={$statusRow}>
                     <View style={[$statusBadge, $disabledBadge]}>
@@ -267,7 +263,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     </View>
                   </View>
                 </View>
-                
+
                 <View style={$cardActions}>
                   <Button
                     preset="default"
@@ -306,18 +302,18 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         {jobs.length === 0 && (
           <View style={themed($emptyState)}>
             <Text text="📭" size="xxl" style={{ marginBottom: 16 }} />
-            <Text 
-              tx="cronjob:emptyState" 
-              size="lg" 
-              weight="semiBold" 
-              color="text" 
-              style={themed($emptyTitle)} 
+            <Text
+              tx="cronjob:emptyState"
+              size="lg"
+              weight="semiBold"
+              color="text"
+              style={themed($emptyTitle)}
             />
-            <Text 
-              tx="cronjob:emptySubtitle" 
-              size="sm" 
-              color="textDim" 
-              style={themed($emptySubtitle)} 
+            <Text
+              tx="cronjob:emptySubtitle"
+              size="sm"
+              color="textDim"
+              style={themed($emptySubtitle)}
             />
             <Button
               tx="cronjob:createFirstJob"
@@ -335,7 +331,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         title={alertConfig.title}
         message={alertConfig.message}
         buttons={alertConfig.buttons}
-        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
       />
 
       {/* Create Job Modal */}
@@ -348,12 +344,12 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: spacing.md,
   flex: 1,
 })
 
-const $sectionHeader: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
+const $sectionHeader: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginTop: spacing.lg,
   marginBottom: spacing.sm,
 })
@@ -458,15 +454,15 @@ const $createButton: ViewStyle = {
 }
 
 const $fab: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  position: 'absolute',
+  position: "absolute",
   right: spacing.lg,
   bottom: spacing.lg,
   width: 56,
   height: 56,
   borderRadius: 28,
   backgroundColor: colors.tint,
-  alignItems: 'center',
-  justifyContent: 'center',
+  alignItems: "center",
+  justifyContent: "center",
   shadowColor: colors.tint,
   shadowOffset: { width: 0, height: 4 },
   shadowOpacity: 0.3,
@@ -476,6 +472,6 @@ const $fab: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 })
 
 const $fabIcon: ViewStyle = {
-  alignItems: 'center',
-  justifyContent: 'center',
+  alignItems: "center",
+  justifyContent: "center",
 }
