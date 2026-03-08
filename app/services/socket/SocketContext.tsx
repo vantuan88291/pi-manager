@@ -45,6 +45,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const connectWithAuth = () => {
       if (typeof window !== "undefined") {
         const tg = (window as any).Telegram?.WebApp
+        const isDebug = process.env.EXPO_PUBLIC_DEBUG === "true"
+        
         if (tg && tg.initData) {
           console.log("[SocketProvider] Telegram WebApp detected, connecting with auth...")
           console.log("[SocketProvider] initDataUnsafe:", tg.initDataUnsafe)
@@ -66,7 +68,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           // Connect to backend for proper validation
           socketManager.connect(tg.initData)
         } else {
-          console.log("[SocketProvider] No Telegram WebApp, connecting in dev mode...")
+          if (isDebug) {
+            console.log("[SocketProvider] DEBUG mode: connecting without Telegram auth (browser testing)")
+          } else {
+            console.log("[SocketProvider] No Telegram WebApp, connecting in dev mode...")
+          }
           socketManager.connect()
         }
       } else {

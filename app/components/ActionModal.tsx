@@ -2,6 +2,7 @@ import { FC, ReactNode } from "react"
 import { View, ViewStyle, TextStyle, Pressable, Modal as RNModal } from "react-native"
 
 import { useAppTheme } from "@/theme/context"
+import type { ThemedStyle } from "@/theme/types"
 
 import { Text } from "./Text"
 import { Button } from "./Button"
@@ -64,4 +65,8 @@ const $content: ViewStyle = {
 }
 const $title: TextStyle = { marginBottom: 16 }
 const $body: ViewStyle = { marginBottom: 16 }
-const $footer: ViewStyle = { gap: 12 }
+const $footer: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
+  flexDirection: "row",
+  gap: spacing.md,
+  paddingTop: spacing.lg,
+})
