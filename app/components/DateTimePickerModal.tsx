@@ -106,21 +106,20 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
   const datePickerStyles = {
     days: { 
       backgroundColor: theme.colors.surface,
-      padding: 8,
+      padding: 4,
     },
     day_cell: { 
-      padding: 2,
-      width: 36,
-      height: 36,
+      padding: 1,
     },
     day: { 
-      borderRadius: 10,
+      borderRadius: 8,
       backgroundColor: 'transparent',
     },
     day_label: { 
       color: theme.colors.text, 
       fontSize: 13,
       fontWeight: '500',
+      textAlign: 'center',
     },
     months: { backgroundColor: theme.colors.surface, padding: 8 },
     month: { 
@@ -217,7 +216,7 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
       color: theme.colors.textDim,
       opacity: 0.3,
     },
-    range_fill: { backgroundColor: theme.colors.tint + '30' },
+    range_fill: { backgroundColor: 'transparent' },
     range_middle: { backgroundColor: 'transparent' },
     range_middle_label: { color: theme.colors.text },
     range_start_label: { color: theme.colors.palette.neutral100 },
@@ -305,6 +304,7 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
                   }
                 }}
                 timePicker
+                use12Hours={false}
                 minuteInterval={15}
                 locale="en"
                 styles={datePickerStyles}
@@ -424,32 +424,38 @@ const $headerTitle: ViewStyle = {
 const $rangeInfo: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.tint + "10",
   borderRadius: spacing.lg,
-  padding: spacing.md,
-  marginBottom: spacing.lg,
-  gap: spacing.sm,
+  padding: spacing.lg,
+  paddingVertical: spacing.lg,
+  marginBottom: spacing.xl,
+  marginTop: spacing.sm,
+  marginHorizontal: spacing.md,
+  gap: spacing.md,
 })
 
 const $rangeItem: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   alignItems: "center",
-  gap: spacing.sm,
+  gap: spacing.md,
 })
 
 const $presetsSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginBottom: spacing.xl,
-  marginTop: spacing.md,
+  marginTop: spacing.lg,
+  paddingHorizontal: spacing.md,
 })
 
 const $presetsLabel: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginBottom: spacing.lg,
-  paddingHorizontal: spacing.md,
+  paddingHorizontal: spacing.sm,
+  marginTop: spacing.sm,
 })
 
 const $presetsRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   flexWrap: "wrap",
   gap: spacing.lg,
-  paddingHorizontal: spacing.sm,
+  paddingHorizontal: spacing.xs,
+  paddingBottom: spacing.sm,
 })
 
 const $presetButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({

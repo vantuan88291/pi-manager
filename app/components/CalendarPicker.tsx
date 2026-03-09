@@ -61,14 +61,32 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
     onCronExpressionChange(expr)
   }
 
-  const handleDateTimeConfirm = (date: Date, mode: "single" | "range") => {
+  const handleDateTimeConfirm = (date: Date, mode: "single" | "range", endDate?: Date) => {
     const dayOfMonth = date.getDate().toString()
     const month = (date.getMonth() + 1).toString()
     const dayOfWeek = date.getDay().toString()
     const hours = date.getHours().toString().padStart(2, '0')
     const minutes = date.getMinutes().toString().padStart(2, '0')
     
-    const cron = `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek}`
+    let cron: string
+    
+    if (mode === "range" && endDate) {
+      // For range mode, we'll use the start date's day and end date's day
+      // Creating a cron that runs on specific days of month
+      const endDayOfMonth = endDate.getDate().toString()
+      const endMonth = (endDate.getMonth() + 1).toString()
+      
+      // If same month, create comma-separated days
+      if (month === endMonth) {
+        cron = `${minutes} ${hours} ${dayOfMonth},${endDayOfMonth} ${month} *`
+      } else {
+        // Different months - use start date only as fallback
+        cron = `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek}`
+      }
+    } else {
+      // Single date mode
+      cron = `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek}`
+    }
     
     onCronExpressionChange(cron)
     onTimeChange(`${hours}:${minutes}`)
