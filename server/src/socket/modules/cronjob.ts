@@ -37,19 +37,90 @@ async function runOpenClawCommand(args: string[]): Promise<string> {
 }
 
 /**
- * Parse CLI output to CronJob array
+ * Parse CLI table output to CronJob array
+ * Format: ID  Name  Schedule  Next  Last  Status  Target  Agent
  */
 function parseJobsList(output: string): CronJob[] {
-  try {
-    // CLI output might be JSON or formatted text
-    // Try to parse as JSON first
-    const parsed = JSON.parse(output)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    // If not JSON, return empty array
-    console.warn("[cronjob] could not parse output as JSON")
-    return []
+  const jobs: CronJob[] = []
+  
+  if (!output || output.trim() === "") {
+    return jobs
   }
+  
+  const lines = output.trim().split("\n")
+  
+  // Skip header line (first line)
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line) continue
+    
+    // Parse table row (space-separated, but name can have spaces)
+    // Format: ID  Name  Schedule  Next  Last  Status  Target  Agent
+    const parts = line.split(/\s{2,}/) // Split by 2+ spaces
+    
+    if (parts.length >= 7) {
+      const jobId = parts[0].trim()
+      const name = parts[1]?.trim() || "Untitled"
+      const scheduleStr = parts[2]?.trim() || ""
+      const nextRun = parts[3]?.trim() || ""
+      // const lastRun = parts[4]?.trim() || ""
+      const status = parts[5]?.trim() || ""
+      // const target = parts[6]?.trim() || "isolated"
+      // const agent = parts[7]?.trim() || "main"
+      
+      // Parse schedule string to extract cron expression
+      // Format: "cron 25 22 * * * @ Asia/Saigon" or similar
+      let cronExpr = "* * * * *"
+      let timezone = "Asia/Saigon"
+      
+      if (scheduleStr.includes("cron")) {
+        const cronParts = scheduleStr.split(/\s+/)
+        if (cronParts.length >= 6) {
+          cronExpr = cronParts.slice(1, 6).join(" ")
+          if (cronParts[6] === "@") {
+            timezone = cronParts[7] || "Asia/Saigon"
+          }
+        }
+      }
+      
+      // Parse next run time
+      let nextRunAt: number | undefined
+      if (nextRun && nextRun !== "-" && nextRun !== "now") {
+        // Try to parse relative time like "in 30m", "in 2h", etc.
+        const match = nextRun.match(/in\s+(\d+)([mhd])/)
+        if (match) {
+          const value = parseInt(match[1])
+          const unit = match[2]
+          const now = Date.now()
+          if (unit === "m") nextRunAt = now + value * 60000
+          else if (unit === "h") nextRunAt = now + value * 3600000
+          else if (unit === "d") nextRunAt = now + value * 86400000
+        }
+      }
+      
+      jobs.push({
+        jobId,
+        name,
+        enabled: status === "idle" || status === "running",
+        schedule: {
+          kind: "cron" as const,
+          expr: cronExpr,
+          tz: timezone,
+        },
+        payload: {
+          kind: "systemEvent" as const,
+          text: `Job: ${name}`,
+        },
+        sessionTarget: "isolated",
+        createdAt: Date.now() - 86400000, // Approximate
+        updatedAt: Date.now(),
+        nextRunAt,
+      })
+    }
+  }
+  
+  console.log("[cronjob] parsed", jobs.length, "jobs from CLI output")
+  return jobs
 }
 
 export const cronjobModule: ServerSocketModule = {
