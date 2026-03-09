@@ -4628,6 +4628,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"clsx@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "clsx@npm:2.1.1"
+  checksum: 10c0/c4c8eb865f8c82baab07e71bfa8897c73454881c4f99d6bc81585aecd7c441746c1399d08363dc096c550cceaf97bd4ce1e8854e1771e9998d9f94c4fe075839
+  languageName: node
+  linkType: hard
+
 "co@npm:^4.6.0":
   version: 4.6.0
   resolution: "co@npm:4.6.0"
@@ -4921,6 +4928,13 @@ __metadata:
   version: 4.1.0
   resolution: "date-fns@npm:4.1.0"
   checksum: 10c0/b79ff32830e6b7faa009590af6ae0fb8c3fd9ffad46d930548fbb5acf473773b4712ae887e156ba91a7b3dc30591ce0f517d69fd83bd9c38650fdc03b4e0bac8
+  languageName: node
+  linkType: hard
+
+"dayjs@npm:^1.11.13":
+  version: 1.11.19
+  resolution: "dayjs@npm:1.11.19"
+  checksum: 10c0/7d8a6074a343f821f81ea284d700bd34ea6c7abbe8d93bce7aba818948957c1b7f56131702e5e890a5622cdfc05dcebe8aed0b8313bdc6838a594d7846b0b000
   languageName: node
   linkType: hard
 
@@ -7666,6 +7680,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jalali-plugin-dayjs@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "jalali-plugin-dayjs@npm:1.1.4"
+  checksum: 10c0/2a8fada01435fab90d754d87e383385a9b80f303cee3bf8425db91c7f5bd7be48f0995774b21d903ae840499f12762dc34392d757e3feb4516af6b7e0a2b651b
+  languageName: node
+  linkType: hard
+
 "jest-changed-files@npm:^29.7.0":
   version: 29.7.0
   resolution: "jest-changed-files@npm:29.7.0"
@@ -8593,7 +8614,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.15, lodash@npm:^4.17.19":
+"lodash@npm:^4.17.15, lodash@npm:^4.17.19, lodash@npm:^4.17.21":
   version: 4.17.23
   resolution: "lodash@npm:4.17.23"
   checksum: 10c0/1264a90469f5bb95d4739c43eb6277d15b6d9e186df4ac68c3620443160fc669e2f14c11e7d8b2ccf078b81d06147c01a8ccced9aab9f9f63d50dcf8cace6bf6
@@ -9978,6 +9999,7 @@ __metadata:
     react-native-reanimated: "npm:~4.1.1"
     react-native-safe-area-context: "npm:5.6.0"
     react-native-screens: "npm:~4.16.0"
+    react-native-ui-datepicker: "npm:^3.1.2"
     react-native-web: "npm:~0.21.0"
     react-native-worklets: "npm:0.6.1"
     react-test-renderer: "npm:19.1.0"
@@ -10495,6 +10517,22 @@ __metadata:
   version: 1.0.5
   resolution: "react-native-swipe-gestures@npm:1.0.5"
   checksum: 10c0/33bb8bd402de82ed751a8f1913fe7e02ddc533edb7178bf9e499387b93d0d14154cef120f273c554bb988ad1ba87165b80be213611cb92af8875f2380ec7878b
+  languageName: node
+  linkType: hard
+
+"react-native-ui-datepicker@npm:^3.1.2":
+  version: 3.1.2
+  resolution: "react-native-ui-datepicker@npm:3.1.2"
+  dependencies:
+    clsx: "npm:^2.1.1"
+    dayjs: "npm:^1.11.13"
+    jalali-plugin-dayjs: "npm:^1.1.4"
+    lodash: "npm:^4.17.21"
+    tailwind-merge: "npm:^3.0.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/eea9d7f39830b4f7226e7e7348738c9df19f2f653acf64cd861243cb8cf2eb9fd9a37a49974cbc77a630bb7c61b4a2fb9e9530f14446d7e6923abc3c6dc38b80
   languageName: node
   linkType: hard
 
@@ -11840,6 +11878,13 @@ __metadata:
   dependencies:
     "@pkgr/core": "npm:^0.2.9"
   checksum: 10c0/cc4d446806688ae0d728ae7bb3f53176d065cf9536647fb85bdd721dcefbd7bf94874df6799ff61580f2b03a392659219b778a9254ad499f9a1f56c34787c235
+  languageName: node
+  linkType: hard
+
+"tailwind-merge@npm:^3.0.1":
+  version: 3.5.0
+  resolution: "tailwind-merge@npm:3.5.0"
+  checksum: 10c0/4dc588f5b5296ba3f38e1ebb41f02b6d24a8c5bb45e44b33748c118fb4b5767dd0efc464431ca3e75404056b618b5f67bec3708158baa65fed8a2fc9201e0c53
   languageName: node
   linkType: hard
 
