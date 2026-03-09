@@ -305,7 +305,6 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
           onConfirm={handleDateTimeConfirm}
           initialDate={parseCronToDate(cronExpression)}
           title="Schedule Date & Time"
-          mode="single"
         />
       </View>
     </View>
