@@ -100,6 +100,7 @@ export const cronjobModule: ServerSocketModule = {
   name: "cronjob",
 
   register(socket: Socket, io: Server) {
+    console.log("[cronjob] module registered for socket:", socket.id)
     console.log("[cronjob] module registered")
 
     // List all cron jobs
@@ -273,5 +274,16 @@ export const cronjobModule: ServerSocketModule = {
         })
       }
     })
+  },
+
+  onSubscribe(socket: Socket) {
+    console.log("[cronjob] socket subscribed:", socket.id)
+    // Auto-request list when client subscribes
+    socket.emit("cronjob:list_request")
+  },
+
+  onUnsubscribe(socket: Socket) {
+    console.log("[cronjob] socket unsubscribed:", socket.id)
+    // Cleanup if needed
   },
 }
