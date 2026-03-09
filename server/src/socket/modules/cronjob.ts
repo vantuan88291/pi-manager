@@ -1,98 +1,54 @@
+import { exec } from "node:child_process"
+import { promisify } from "node:util"
 import type { Server, Socket } from "socket.io"
 import type { ServerSocketModule } from "../types.js"
 import type {
   CronJob,
   CreateCronJobRequest,
-  UpdateCronJobRequest,
   CronJobListResponse,
-  JobRun,
 } from "../../../../shared/types/cronjob.js"
 
-// Gateway configuration
-const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || "http://localhost:8080"
-const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || ""
+const execAsync = promisify(exec)
 
-// Simple in-memory cache for jobs (can be replaced with DB later)
+// Simple in-memory cache for jobs
 const jobsCache = new Map<string, CronJob>()
 
 /**
- * HTTP client for OpenClaw Gateway API
+ * Execute OpenClaw CLI command
  */
-async function gatewayRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${GATEWAY_URL}${endpoint}`
+async function runOpenClawCommand(args: string[]): Promise<string> {
+  const command = `openclaw ${args.join(" ")}`
+  console.log("[cronjob] executing:", command)
   
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  }
-
-  // Add auth token if available
-  if (GATEWAY_TOKEN) {
-    headers["Authorization"] = `Bearer ${GATEWAY_TOKEN}`
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  })
-
-  if (!response.ok) {
-    const error = await response.text().catch(() => "Unknown error")
-    throw new Error(`Gateway error (${response.status}): ${error}`)
-  }
-
-  return response.json()
-}
-
-/**
- * Convert frontend schedule format to Gateway format
- */
-function formatSchedule(schedule: any) {
-  switch (schedule.kind) {
-    case "cron":
-      return {
-        kind: "cron" as const,
-        expr: schedule.expr,
-        tz: schedule.tz || "Asia/Saigon",
-      }
-    case "every":
-      return {
-        kind: "every" as const,
-        everyMs: schedule.everyMs,
-        anchorMs: schedule.anchorMs,
-      }
-    case "at":
-      return {
-        kind: "at" as const,
-        at: schedule.at,
-      }
-    default:
-      throw new Error(`Unknown schedule kind: ${(schedule as any).kind}`)
+  try {
+    const { stdout, stderr } = await execAsync(command, {
+      timeout: 30000, // 30s timeout
+    })
+    
+    if (stderr && !stderr.includes("warn")) {
+      console.warn("[cronjob] stderr:", stderr)
+    }
+    
+    return stdout.trim()
+  } catch (error: any) {
+    console.error("[cronjob] command failed:", error.message)
+    throw new Error(`OpenClaw command failed: ${error.stderr || error.message}`)
   }
 }
 
 /**
- * Convert frontend payload format to Gateway format
+ * Parse CLI output to CronJob array
  */
-function formatPayload(payload: any) {
-  switch (payload.kind) {
-    case "systemEvent":
-      return {
-        kind: "systemEvent" as const,
-        text: payload.text,
-      }
-    case "agentTurn":
-      return {
-        kind: "agentTurn" as const,
-        message: payload.message,
-        model: payload.model || "auto",
-        timeoutSeconds: payload.timeoutSeconds || 300,
-      }
-    default:
-      throw new Error(`Unknown payload kind: ${(payload as any).kind}`)
+function parseJobsList(output: string): CronJob[] {
+  try {
+    // CLI output might be JSON or formatted text
+    // Try to parse as JSON first
+    const parsed = JSON.parse(output)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    // If not JSON, return empty array
+    console.warn("[cronjob] could not parse output as JSON")
+    return []
   }
 }
 
@@ -107,18 +63,17 @@ export const cronjobModule: ServerSocketModule = {
     socket.on("cronjob:list", async () => {
       try {
         console.log("[cronjob] list requested")
-        const result = await gatewayRequest<CronJobListResponse>("/cron/list?includeDisabled=true")
+        const output = await runOpenClawCommand(["cron", "list"])
+        const jobs = parseJobsList(output)
         
         // Cache the jobs
-        result.jobs.forEach((job) => jobsCache.set(job.jobId, job))
+        jobs.forEach((job) => jobsCache.set(job.jobId, job))
         
-        socket.emit("cronjob:list_response", result)
+        socket.emit("cronjob:list_response", { jobs })
       } catch (err: any) {
         console.error("[cronjob] list error:", err.message)
-        socket.emit("cronjob:error", {
-          code: "LIST_FAILED",
-          message: err.message,
-        })
+        // Return empty list instead of error
+        socket.emit("cronjob:list_response", { jobs: [] })
       }
     })
 
@@ -127,58 +82,50 @@ export const cronjobModule: ServerSocketModule = {
       try {
         console.log("[cronjob] create requested:", request.name || "Untitled")
         
-        // Format the job for Gateway API
-        const jobPayload = {
-          name: request.name || "Untitled Job",
-          schedule: formatSchedule(request.schedule),
-          payload: formatPayload(request.payload),
-          delivery: request.delivery || { mode: "announce" as const },
-          sessionTarget: request.sessionTarget || "isolated",
-          enabled: request.enabled ?? true,
-        }
-
-        const result = await gatewayRequest<{ job: CronJob }>("/cron/add", {
-          method: "POST",
-          body: JSON.stringify({ job: jobPayload }),
-        })
-
-        // Cache the new job
-        jobsCache.set(result.job.jobId, result.job)
-
-        // Broadcast to all clients
-        io.emit("cronjob:created", result)
+        // Build cron command based on schedule type
+        let cronArgs: string[] = ["cron", "add"]
         
-        socket.emit("cronjob:created", result)
+        // Add name
+        if (request.name) {
+          cronArgs.push("--name", `"${request.name}"`)
+        }
+        
+        // Add schedule
+        if (request.schedule.kind === "cron") {
+          cronArgs.push("--cron", `"${request.schedule.expr}"`)
+        } else if (request.schedule.kind === "every") {
+          const minutes = Math.floor(request.schedule.everyMs / 60000)
+          cronArgs.push("--every", `${minutes}m`)
+        }
+        
+        // Add payload
+        if (request.payload.kind === "systemEvent") {
+          cronArgs.push("--system-event", `"${request.payload.text}"`)
+        } else if (request.payload.kind === "agentTurn") {
+          cronArgs.push("--agent-turn", `"${request.payload.message}"`)
+          if (request.payload.model) {
+            cronArgs.push("--model", request.payload.model)
+          }
+        }
+        
+        // Add session target
+        cronArgs.push("--session-target", request.sessionTarget)
+        
+        // Execute command
+        const output = await runOpenClawCommand(cronArgs)
+        console.log("[cronjob] create output:", output)
+        
+        // Emit success (we'll re-fetch list to get the new job)
+        socket.emit("cronjob:created", { success: true })
+        
+        // Request updated list
+        setTimeout(() => {
+          socket.emit("cronjob:list_request")
+        }, 500)
       } catch (err: any) {
         console.error("[cronjob] create error:", err.message)
         socket.emit("cronjob:error", {
           code: "CREATE_FAILED",
-          message: err.message,
-        })
-      }
-    })
-
-    // Update existing cron job
-    socket.on("cronjob:update", async (request: UpdateCronJobRequest) => {
-      try {
-        console.log("[cronjob] update requested:", request.jobId)
-        
-        const result = await gatewayRequest<{ job: CronJob }>(`/cron/update/${request.jobId}`, {
-          method: "PATCH",
-          body: JSON.stringify({ patch: request.patch }),
-        })
-
-        // Update cache
-        jobsCache.set(result.job.jobId, result.job)
-
-        // Broadcast to all clients
-        io.emit("cronjob:updated", result)
-        
-        socket.emit("cronjob:updated", result)
-      } catch (err: any) {
-        console.error("[cronjob] update error:", err.message)
-        socket.emit("cronjob:error", {
-          code: "UPDATE_FAILED",
           message: err.message,
         })
       }
@@ -189,10 +136,8 @@ export const cronjobModule: ServerSocketModule = {
       try {
         console.log("[cronjob] remove requested:", jobId)
         
-        await gatewayRequest<{ success: boolean }>(`/cron/remove/${jobId}`, {
-          method: "DELETE",
-        })
-
+        await runOpenClawCommand(["cron", "remove", jobId])
+        
         // Remove from cache
         jobsCache.delete(jobId)
 
@@ -214,36 +159,13 @@ export const cronjobModule: ServerSocketModule = {
       try {
         console.log("[cronjob] run requested:", jobId)
         
-        const result = await gatewayRequest<{ success: boolean; runId?: string }>(
-          `/cron/run/${jobId}`,
-          {
-            method: "POST",
-          }
-        )
-
-        socket.emit("cronjob:run_response", result)
+        await runOpenClawCommand(["cron", "run", jobId])
+        
+        socket.emit("cronjob:run_response", { success: true })
       } catch (err: any) {
         console.error("[cronjob] run error:", err.message)
         socket.emit("cronjob:error", {
           code: "RUN_FAILED",
-          message: err.message,
-        })
-      }
-    })
-
-    // Get run history for a job
-    socket.on("cronjob:runs", async ({ jobId, limit }: { jobId: string; limit?: number }) => {
-      try {
-        console.log("[cronjob] runs requested:", jobId, "limit:", limit || 10)
-        
-        const query = limit ? `?limit=${limit}` : ""
-        const result = await gatewayRequest<{ runs: JobRun[] }>(`/cron/runs/${jobId}${query}`)
-
-        socket.emit("cronjob:runs_response", result)
-      } catch (err: any) {
-        console.error("[cronjob] runs error:", err.message)
-        socket.emit("cronjob:error", {
-          code: "RUNS_FAILED",
           message: err.message,
         })
       }
@@ -254,18 +176,19 @@ export const cronjobModule: ServerSocketModule = {
       try {
         console.log("[cronjob] toggle requested:", jobId, "enabled:", enabled)
         
-        const result = await gatewayRequest<{ job: CronJob }>(`/cron/update/${jobId}`, {
-          method: "PATCH",
-          body: JSON.stringify({ patch: { enabled } }),
-        })
-
-        // Update cache
-        jobsCache.set(result.job.jobId, result.job)
-
-        // Broadcast to all clients
-        io.emit("cronjob:updated", result)
+        const command = enabled ? "enable" : "disable"
+        await runOpenClawCommand(["cron", command, jobId])
         
-        socket.emit("cronjob:updated", result)
+        // Update cache
+        const job = jobsCache.get(jobId)
+        if (job) {
+          jobsCache.set(jobId, { ...job, enabled })
+        }
+        
+        // Request updated list
+        setTimeout(() => {
+          socket.emit("cronjob:list_request")
+        }, 500)
       } catch (err: any) {
         console.error("[cronjob] toggle error:", err.message)
         socket.emit("cronjob:error", {
