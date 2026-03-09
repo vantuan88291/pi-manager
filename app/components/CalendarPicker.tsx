@@ -65,14 +65,16 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
     const dayOfMonth = date.getDate().toString()
     const month = (date.getMonth() + 1).toString()
     const dayOfWeek = date.getDay().toString()
-    const hours = date.getHours().toString().padStart(2, '0')
-    const minutes = date.getMinutes().toString().padStart(2, '0')
+    
+    // For range mode, use default time 00:00 since calendar doesn't support time selection
+    const hours = mode === "range" ? "00" : date.getHours().toString().padStart(2, '0')
+    const minutes = mode === "range" ? "00" : date.getMinutes().toString().padStart(2, '0')
     
     let cron: string
     
     if (mode === "range" && endDate) {
       // For range mode, we'll use the start date's day and end date's day
-      // Creating a cron that runs on specific days of month
+      // Creating a cron that runs on specific days of month at 00:00
       const endDayOfMonth = endDate.getDate().toString()
       const endMonth = (endDate.getMonth() + 1).toString()
       
@@ -84,7 +86,7 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
         cron = `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek}`
       }
     } else {
-      // Single date mode
+      // Single date mode with time picker
       cron = `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek}`
     }
     
