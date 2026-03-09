@@ -39,6 +39,9 @@ async function runOpenClawCommand(args: string[]): Promise<string> {
 /**
  * Parse CLI table output to CronJob array
  * Format: ID  Name  Schedule  Next  Last  Status  Target  Agent
+ * Example:
+ * ID                                   Name                     Schedule                         Next       Last       Status    Target    Agent     
+ * 3e5ef3cf-d78e-4ec3-81a6-e8e680c4e030 Auto Shutdown 22:25      cron 25 22 * * * @ Asia/Saigo... in 20m     -          idle      isolated  main
  */
 function parseJobsList(output: string): CronJob[] {
   const jobs: CronJob[] = []
@@ -48,25 +51,41 @@ function parseJobsList(output: string): CronJob[] {
   }
   
   const lines = output.trim().split("\n")
+  console.log("[cronjob] parsing", lines.length, "lines")
   
   // Skip header line (first line)
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (!line) continue
+    const line = lines[i]
+    console.log("[cronjob] line", i, ":", line.substring(0, 100))
     
-    // Parse table row (space-separated, but name can have spaces)
-    // Format: ID  Name  Schedule  Next  Last  Status  Target  Agent
-    const parts = line.split(/\s{2,}/) // Split by 2+ spaces
+    if (!line || line.trim() === "") continue
     
-    if (parts.length >= 7) {
-      const jobId = parts[0].trim()
-      const name = parts[1]?.trim() || "Untitled"
-      const scheduleStr = parts[2]?.trim() || ""
-      const nextRun = parts[3]?.trim() || ""
-      // const lastRun = parts[4]?.trim() || ""
-      const status = parts[5]?.trim() || ""
-      // const target = parts[6]?.trim() || "isolated"
-      // const agent = parts[7]?.trim() || "main"
+    // UUID is always 36 chars, followed by spaces
+    // Extract jobId (first 36 chars should be UUID)
+    const jobId = line.substring(0, 36).trim()
+    
+    // Validate UUID format
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId)) {
+      console.warn("[cronjob] invalid UUID in line:", line.substring(0, 50))
+      continue
+    }
+    
+    // Rest of the line after UUID and spaces
+    const rest = line.substring(36).trim()
+    
+    // Split by multiple spaces (3 or more to avoid splitting schedule)
+    const parts = rest.split(/\s{3,}/).map(p => p.trim())
+    console.log("[cronjob] parts:", parts.length, JSON.stringify(parts))
+    
+    if (parts.length >= 5) {
+      const name = parts[0] || "Untitled"
+      const scheduleStr = parts[1] || ""
+      const nextRun = parts[2] || ""
+      const lastRun = parts[3] || ""
+      const status = parts[4] || ""
+      const target = parts[5] || "isolated"
+      // const target = parts[5] || "isolated"
+      // const agent = parts[6] || "main"
       
       // Parse schedule string to extract cron expression
       // Format: "cron 25 22 * * * @ Asia/Saigon" or similar
@@ -98,10 +117,12 @@ function parseJobsList(output: string): CronJob[] {
         }
       }
       
+      const enabled = status === "idle" || status === "running"
+      
       jobs.push({
         jobId,
         name,
-        enabled: status === "idle" || status === "running",
+        enabled,
         schedule: {
           kind: "cron" as const,
           expr: cronExpr,
@@ -111,15 +132,17 @@ function parseJobsList(output: string): CronJob[] {
           kind: "systemEvent" as const,
           text: `Job: ${name}`,
         },
-        sessionTarget: "isolated",
+        sessionTarget: target as "main" | "isolated" || "isolated",
         createdAt: Date.now() - 86400000, // Approximate
         updatedAt: Date.now(),
         nextRunAt,
       })
+      
+      console.log("[cronjob] parsed job:", jobId, name, "enabled:", enabled, "status:", status)
     }
   }
   
-  console.log("[cronjob] parsed", jobs.length, "jobs from CLI output")
+  console.log("[cronjob] parsed", jobs.length, "jobs total")
   return jobs
 }
 
