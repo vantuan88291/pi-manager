@@ -1,6 +1,6 @@
 import { FC, useState } from "react"
 import { View, ViewStyle, TextInput, Pressable } from "react-native"
-import { Calendar, LocaleConfig } from "react-native-calendars"
+import { DateTimePickerModal } from "@/components/DateTimePickerModal"
 
 import { useAppTheme } from "@/theme/context"
 import { Text } from "@/components/Text"
@@ -55,26 +55,39 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
   onCronExpressionChange = () => {},
 }) => {
   const { themed, theme } = useAppTheme()
-  const [showCalendar, setShowCalendar] = useState(false)
-
-  const handleDateSelect = (date: any) => {
-    onDateChange(date.dateString)
-    setShowCalendar(false)
-  }
+  const [showDateTimeModal, setShowDateTimeModal] = useState(false)
 
   const handleQuickCron = (expr: string) => {
     onCronExpressionChange(expr)
   }
 
-  const formatSelectedDate = (dateString?: string) => {
-    if (!dateString) return "Select date"
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", { 
-      weekday: "short", 
-      year: "numeric", 
-      month: "short", 
-      day: "numeric" 
-    })
+  const handleDateTimeConfirm = (date: Date, mode: "single" | "range") => {
+    const dayOfMonth = date.getDate().toString()
+    const month = (date.getMonth() + 1).toString()
+    const dayOfWeek = date.getDay().toString()
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    
+    const cron = `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek}`
+    
+    onCronExpressionChange(cron)
+    onTimeChange(`${hours}:${minutes}`)
+  }
+
+  const parseCronToDate = (cron: string): Date => {
+    // Parse cron expression to Date object for date picker
+    const parts = cron.split(' ')
+    const now = new Date()
+    if (parts.length >= 5) {
+      const minutes = parseInt(parts[0]) || 0
+      const hours = parseInt(parts[1]) || 0
+      // Handle wildcard "*" by using current date values
+      const dayOfMonth = parts[2] === '*' ? now.getDate() : parseInt(parts[2]) || now.getDate()
+      const month = parts[3] === '*' ? now.getMonth() : (parseInt(parts[3]) || (now.getMonth() + 1)) - 1
+      const year = now.getFullYear()
+      return new Date(year, month, dayOfMonth, hours, minutes)
+    }
+    return now
   }
 
   const scheduleOptions = [
@@ -168,27 +181,29 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
 
         {/* Monthly Schedule */}
         {scheduleType === "monthly" && (
-          <View style={themed($scheduleRow)}>
-            <Text text="On day" weight="medium" color="text" size="sm" />
-            <TextInput
-              value={dayOfMonth.toString()}
-              onChangeText={(text) => onDayOfMonthChange(parseInt(text) || 1)}
-              placeholder="1"
-              style={themed($dayInput)}
-              keyboardType="number-pad"
-              placeholderTextColor={theme.colors.textDim}
-              textAlign="center"
-            />
-            <Text text="of every month at" weight="medium" color="text" size="sm" />
-            <TextInput
-              value={time}
-              onChangeText={onTimeChange}
-              placeholder="08:00"
-              style={themed($timeInput)}
-              keyboardType="number-pad"
-              placeholderTextColor={theme.colors.textDim}
-              textAlign="center"
-            />
+          <View style={themed($scheduleStack)}>
+            <View style={themed($scheduleRow)}>
+              <Text text="On day" weight="medium" color="text" size="sm" />
+              <TextInput
+                value={dayOfMonth.toString()}
+                onChangeText={(text) => onDayOfMonthChange(parseInt(text) || 1)}
+                placeholder="1"
+                style={themed($dayInput)}
+                keyboardType="number-pad"
+                placeholderTextColor={theme.colors.textDim}
+                textAlign="center"
+              />
+              <Text text="of every month at" weight="medium" color="text" size="sm" />
+              <TextInput
+                value={time}
+                onChangeText={onTimeChange}
+                placeholder="08:00"
+                style={themed($timeInput)}
+                keyboardType="number-pad"
+                placeholderTextColor={theme.colors.textDim}
+                textAlign="center"
+              />
+            </View>
           </View>
         )}
 
@@ -230,34 +245,68 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
         {/* Custom Cron */}
         {scheduleType === "custom" && (
           <View style={themed($cronContainer)}>
-            <Text text="Cron Expression" weight="medium" color="text" size="sm" style={$cronLabel} />
-            <TextInput
-              value={cronExpression}
-              onChangeText={onCronExpressionChange}
-              placeholder="0 * * * *"
-              style={themed($cronInput)}
-              placeholderTextColor={theme.colors.textDim}
-              textAlign="center"
-            />
-            <Text text="Quick picks:" weight="medium" color="textDim" size="xs" style={$quickPickLabel} />
-            <View style={themed($quickPicks)}>
-              {[
-                { label: "Hourly", expr: "0 * * * *" },
-                { label: "Daily 8AM", expr: "0 8 * * *" },
-                { label: "Weekly Mon", expr: "0 2 * * 1" },
-                { label: "Monthly 1st", expr: "0 9 1 * *" },
-              ].map((pick) => (
-                <Pressable
-                  key={pick.expr}
-                  onPress={() => handleQuickCron(pick.expr)}
-                  style={themed($quickPickButton)}
-                >
-                  <Text text={pick.label} size="xs" color="tint" />
-                </Pressable>
-              ))}
+            <Pressable
+              onPress={() => setShowDateTimeModal(true)}
+              style={themed($calendarButton)}
+            >
+              <View style={themed($calendarButtonContent)}>
+                <View style={$calendarIconBadge}>
+                  <Icon
+                    font="Ionicons"
+                    icon="calendar"
+                    color={theme.colors.tint}
+                    size={20}
+                  />
+                </View>
+                <View style={$calendarButtonText}>
+                  <Text
+                    text="Select Date & Time"
+                    weight="semiBold"
+                    size="sm"
+                    color="text"
+                  />
+                  <Text
+                    text={parseCronToDate(cronExpression).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                    size="xs"
+                    color="textDim"
+                  />
+                </View>
+                <Icon
+                  font="Ionicons"
+                  icon="chevron-forward"
+                  color={theme.colors.textDim}
+                  size={20}
+                />
+              </View>
+            </Pressable>
+
+            <Text text="Cron Expression" weight="medium" color="textDim" size="xs" style={$cronLabel} />
+            <View style={themed($cronDisplay)}>
+              <Text
+                text={cronExpression}
+                size="sm"
+                color="text"
+                weight="medium"
+                style={{ fontFamily: "monospace" }}
+              />
             </View>
           </View>
         )}
+
+        {/* DateTime Picker Modal */}
+        <DateTimePickerModal
+          visible={showDateTimeModal}
+          onClose={() => setShowDateTimeModal(false)}
+          onConfirm={handleDateTimeConfirm}
+          initialDate={parseCronToDate(cronExpression)}
+          title="Schedule Date & Time"
+          mode="single"
+        />
       </View>
     </View>
   )
@@ -298,7 +347,8 @@ const $scheduleRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: "center",
   gap: spacing.sm,
   flexWrap: "wrap",
-  minHeight: 40,
+  minHeight: 44,
+  paddingHorizontal: spacing.xs,
 })
 
 const $scheduleStack: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -335,18 +385,23 @@ const $weekdayRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.xs,
   flex: 1,
+  paddingHorizontal: spacing.xs,
 })
 
 const $weekdayButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   flex: 1,
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.sm,
   alignItems: "center",
-  borderRadius: spacing.sm,
+  borderRadius: spacing.md,
   backgroundColor: colors.palette.neutral200,
+  minHeight: 40,
 })
 
 const $weekdayButtonSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
   backgroundColor: colors.tint + "20",
+  borderWidth: 2,
+  borderColor: colors.tint,
 })
 
 const $intervalInput: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
@@ -370,21 +425,22 @@ const $unitPicker: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 
 const $unitButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   flex: 1,
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.sm,
   alignItems: "center",
-  borderRadius: spacing.sm,
+  borderRadius: spacing.md,
   backgroundColor: colors.palette.neutral200,
+  minHeight: 40,
 })
 
 const $unitButtonSelected: ThemedStyle<ViewStyle> = ({ colors }) => ({
   backgroundColor: colors.tint + "20",
-})
-
-const $cronContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  gap: spacing.sm,
+  borderWidth: 2,
+  borderColor: colors.tint,
 })
 
 const $cronLabel: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginTop: spacing.sm,
   marginBottom: spacing.xs,
 })
 
@@ -416,4 +472,49 @@ const $quickPickButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   paddingHorizontal: spacing.md,
   borderRadius: spacing.sm,
   backgroundColor: colors.tint + "15",
+})
+
+const $cronContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  gap: spacing.md,
+})
+
+const $calendarButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.surface,
+  borderRadius: spacing.lg,
+  padding: spacing.lg,
+  borderWidth: 1,
+  borderColor: colors.border,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: spacing.md,
+  minHeight: 64,
+})
+
+const $calendarButtonContent: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  flex: 1,
+  gap: 12,
+}
+
+const $calendarIconBadge: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  width: 40,
+  height: 40,
+  borderRadius: 10,
+  backgroundColor: colors.tint + "15",
+  alignItems: "center",
+  justifyContent: "center",
+})
+
+const $calendarButtonText: ViewStyle = {
+  flex: 1,
+  gap: 2,
+}
+
+const $cronDisplay: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral100,
+  borderRadius: spacing.md,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.lg,
+  alignItems: "center",
 })
