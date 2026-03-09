@@ -15,7 +15,6 @@ interface DateTimePickerModalProps {
   initialDate?: Date
   initialEndDate?: Date
   title?: string
-  mode?: "single" | "range"
 }
 
 export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
@@ -25,9 +24,9 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
   initialDate = new Date(),
   initialEndDate,
   title = "Select Date & Time",
-  mode = "range",
 }) => {
   const { themed, theme } = useAppTheme()
+  const [mode, setMode] = useState<"single" | "range">("range")
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate)
   const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>(initialEndDate)
   const [rangeSelectionStep, setRangeSelectionStep] = useState<"start" | "end">("start")
@@ -272,9 +271,29 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
                 />
               )}
             </View>
-            <Pressable onPress={onClose} style={themed($closeButton)}>
-              <Icon font="Ionicons" icon="close" color={theme.colors.text} size={24} />
-            </Pressable>
+            <View style={$headerActions}>
+              {/* Mode Toggle Button */}
+              <Pressable
+                onPress={() => {
+                  setMode(mode === "single" ? "range" : "single")
+                  if (mode === "range") {
+                    setSelectedEndDate(undefined)
+                    setRangeSelectionStep("start")
+                  }
+                }}
+                style={themed($modeToggleButton)}
+              >
+                <Text 
+                  text={mode === "range" ? "📅 Range" : "📍 Single"} 
+                  size="sm" 
+                  weight="semiBold" 
+                  color="tint" 
+                />
+              </Pressable>
+              <Pressable onPress={onClose} style={themed($closeButton)}>
+                <Icon font="Ionicons" icon="close" color={theme.colors.text} size={24} />
+              </Pressable>
+            </View>
           </View>
 
           {/* Scrollable Content */}
@@ -419,7 +438,22 @@ const $datePicker: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 const $headerTitle: ViewStyle = {
   flexDirection: "row",
   alignItems: "center",
+  flex: 1,
 }
+
+const $headerActions: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+}
+
+const $modeToggleButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  paddingVertical: spacing.sm,
+  paddingHorizontal: spacing.md,
+  borderRadius: spacing.md,
+  backgroundColor: colors.tint + "15",
+  marginRight: spacing.sm,
+})
 
 const $rangeInfo: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.tint + "10",
