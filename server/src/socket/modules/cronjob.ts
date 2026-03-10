@@ -70,20 +70,18 @@ function parseJobsList(output: string): CronJob[] {
       continue
     }
     
-    // Rest of the line after UUID and spaces
-    const rest = line.substring(36).trim()
+    // Parse CLI table by fixed column positions
+    // Format: ID (36) | Name (25) | Schedule (33) | Next (11) | Last (10) | Status (10) | Target (10) | Agent
+    // Total: ~145 chars per line
+    const jobId = line.substring(0, 36).trim()
+    const name = line.substring(36, 61).trim() || "Untitled"
+    const scheduleStr = line.substring(61, 94).trim() || ""
+    const nextRun = line.substring(94, 105).trim() || ""
+    const lastRun = line.substring(105, 115).trim() || ""
+    const status = line.substring(115, 125).trim() || ""
+    const target = line.substring(125, 135).trim() || "isolated"
     
-    // Split by multiple spaces (3 or more to avoid splitting schedule)
-    const parts = rest.split(/\s{3,}/).map(p => p.trim())
-    console.log("[cronjob] parts:", parts.length, JSON.stringify(parts))
-    
-    if (parts.length >= 5) {
-      const name = parts[0] || "Untitled"
-      const scheduleStr = parts[1] || ""
-      const nextRun = parts[2] || ""
-      const lastRun = parts[3] || ""
-      const status = parts[4] || ""
-      const target = parts[5] || "isolated"
+    console.log("[cronjob] parsed columns:", { jobId, name, schedule: scheduleStr.substring(0,20), nextRun, lastRun, status, target })
       // const target = parts[5] || "isolated"
       // const agent = parts[6] || "main"
       
