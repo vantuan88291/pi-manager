@@ -73,6 +73,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   const { t } = useTranslation()
   const [jobs, setJobs] = useState<CronJob[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Alert modal state
@@ -98,6 +99,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     cronjobModule.onListResponse = ({ jobs }) => {
       setJobs(jobs)
       setLoading(false)
+      setRefreshing(false)
       setError(null)
     }
 
@@ -248,7 +250,13 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
       enabled: true,
     })
 
-    navigation.goBack()
+    // Navigate back to CronJob list explicitly (not goBack which may go too far)
+    // List will auto-refresh via socket event
+    showAlert("Success", "Job created!")
+    setRefreshing(true)
+    setTimeout(() => {
+      navigation.navigate("CronJob")
+    }, 500)
   }
 
   const handleRunJob = (jobId: string) => {
@@ -379,6 +387,14 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
       />
 
       <View style={themed($container)}>
+        {/* Refreshing Indicator */}
+        {refreshing && (
+          <View style={themed($refreshingBar)}>
+            <ActivityIndicator size="small" color={theme.colors.tint} />
+            <Text text="Refreshing..." size="xs" color="textDim" style={themed($refreshingText)} />
+          </View>
+        )}
+
         {/* Active Jobs Section */}
         {activeJobs.length > 0 && (
           <>
@@ -578,6 +594,22 @@ const $retryButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: spacing.md,
   flex: 1,
+})
+
+const $refreshingBar: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: colors.tint + "10",
+  borderRadius: spacing.md,
+  paddingVertical: spacing.sm,
+  paddingHorizontal: spacing.md,
+  marginBottom: spacing.md,
+  gap: spacing.sm,
+})
+
+const $refreshingText: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginLeft: spacing.xs,
 })
 
 const $sectionHeader: ThemedStyle<ViewStyle> = ({ spacing }) => ({

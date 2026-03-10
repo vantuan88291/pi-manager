@@ -147,10 +147,16 @@ export const cronjobModule: ServerSocketModule = {
         }
         
         await runOpenClawCommand(args)
-        // Fetch the created job to return full data
-        setTimeout(() => {
-          socket.emit("cronjob:list_request")
-        }, 300)
+        // Fetch updated list and broadcast to all clients
+        setTimeout(async () => {
+          try {
+            const output = await runOpenClawCommand(["cron", "list"])
+            const jobs = parseJobsList(output)
+            io.emit("cronjob:list_response", { jobs })
+          } catch (err) {
+            console.error("[cronjob] failed to refresh list:", err)
+          }
+        }, 500)
       } catch (err: any) {
         console.error("[cronjob] create error:", err.message)
         socket.emit("cronjob:error", { code: "CREATE_FAILED", message: err.message })
