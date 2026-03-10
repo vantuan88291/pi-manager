@@ -7,6 +7,7 @@ import { wifiModule } from "./modules/wifi.js"
 import { bluetoothModule } from "./modules/bluetooth.js"
 import { audioModule } from "./modules/audio.js"
 import { storageModule } from "./modules/storage.js"
+import { cronjobModule } from "./modules/cronjob.js"
 
 import type { ServerSocketModule } from "./types.js"
 
@@ -34,6 +35,7 @@ const modules: ServerSocketModule[] = [
   bluetoothModule,
   audioModule,
   storageModule,
+  cronjobModule,
 ]
 
 export function setupSocketServer(io: Server) {

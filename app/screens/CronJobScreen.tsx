@@ -1,5 +1,5 @@
-import { FC, useState, useMemo } from "react"
-import { View, ViewStyle, Pressable } from "react-native"
+import { FC, useState, useMemo, useEffect, useCallback } from "react"
+import { View, ViewStyle, Pressable, ActivityIndicator } from "react-native"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { useNavigation } from "@react-navigation/native"
 import { useTranslation } from "react-i18next"
@@ -16,63 +16,65 @@ import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
 import { $styles } from "@/theme/styles"
 import type { ThemedStyle } from "@/theme/types"
+import type { CronJob } from "@/services/socket/modules/cronjob"
+import { socketManager, cronjobClientModule } from "@/services/socket"
+import { useSafeAreaFrame } from "react-native-safe-area-context"
 
 type CronJobScreenProps = AppStackScreenProps<"CronJob">
 
-// Mock data for development - will be replaced with socket data
-interface MockCronJob {
-  jobId: string
-  name: string
-  icon: string
-  schedule: string
-  enabled: boolean
-  nextRun: string
-  type: "shell" | "agent" | "event"
+// Helper to format schedule to human-readable string
+const formatSchedule = (schedule: CronJob["schedule"]): string => {
+  switch (schedule.kind) {
+    case "cron":
+      return `Cron: ${schedule.expr}`
+    case "every":
+      const minutes = Math.floor(schedule.everyMs / 60000)
+      const hours = Math.floor(schedule.everyMs / 3600000)
+      const days = Math.floor(schedule.everyMs / 86400000)
+      if (days > 0) return `Every ${days} day${days > 1 ? "s" : ""}`
+      if (hours > 0) return `Every ${hours} hour${hours > 1 ? "s" : ""}`
+      return `Every ${minutes} minute${minutes > 1 ? "s" : ""}`
+    case "at":
+      return `Once at ${new Date(schedule.at).toLocaleString()}`
+    default:
+      return "Unknown schedule"
+  }
 }
 
-const MOCK_JOBS: MockCronJob[] = [
-  {
-    jobId: "1",
-    name: "Daily Shutdown",
-    icon: "🖥️",
-    schedule: "Every day at 10:00 PM",
-    enabled: true,
-    nextRun: "2h 15m",
-    type: "shell",
-  },
-  {
-    jobId: "2",
-    name: "Weekly Backup",
-    icon: "💾",
-    schedule: "Every Monday at 2:00 AM",
-    enabled: true,
-    nextRun: "3d 5h",
-    type: "shell",
-  },
-  {
-    jobId: "3",
-    name: "System Report",
-    icon: "🤖",
-    schedule: "Every day at 8:00 AM",
-    enabled: true,
-    nextRun: "18h 30m",
-    type: "agent",
-  },
-  {
-    jobId: "4",
-    name: "Old Log Cleanup",
-    icon: "🗑️",
-    schedule: "Every Sunday at 3:00 AM",
-    enabled: false,
-    nextRun: "--",
-    type: "shell",
-  },
-]
+// Helper to format next run time
+const formatNextRun = (nextRunAt?: number): string => {
+  if (!nextRunAt) return "--"
+  const diff = nextRunAt - Date.now()
+  if (diff < 0) return "Now"
+  
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  
+  if (days > 0) return `${days}d ${hours % 24}h`
+  if (hours > 0) return `${hours}h ${minutes % 60}m`
+  return `${minutes}m`
+}
+
+// Helper to get icon based on payload type
+const getJobIcon = (payload: CronJob["payload"]): string => {
+  switch (payload.kind) {
+    case "systemEvent":
+      return "📢"
+    case "agentTurn":
+      return "🤖"
+    default:
+      return "⚙️"
+  }
+}
 
 export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ navigation }) {
   const { themed, theme } = useAppTheme()
   const { t } = useTranslation()
-  const [jobs, setJobs] = useState<MockCronJob[]>(MOCK_JOBS)
+  const [jobs, setJobs] = useState<CronJob[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Alert modal state
   const [alertConfig, setAlertConfig] = useState<{
@@ -84,6 +86,55 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
 
   // Create job screen state
   const [isCreating, setIsCreating] = useState(false)
+
+  // Initialize socket module
+  useEffect(() => {
+    const socket = socketManager.getSocket()
+    if (!socket) return
+
+    // Create cronjob client module
+    const cronjobModule = cronjobClientModule(socket)
+
+    // Set up event handlers
+    cronjobModule.onListResponse = ({ jobs }) => {
+      setJobs(jobs)
+      setLoading(false)
+      setRefreshing(false)
+      setError(null)
+    }
+
+    cronjobModule.onCreated = () => {
+      // List will be refreshed automatically by backend
+      showAlert("Success", "Job created successfully!")
+    }
+
+    cronjobModule.onUpdated = ({ job }) => {
+      setJobs(prev => prev.map(j => j.jobId === job.jobId ? job : j))
+      showAlert("Success", `Job "${job.name || "Untitled"}" updated!`)
+    }
+
+    cronjobModule.onRemoved = ({ jobId }) => {
+      setJobs(prev => prev.filter(j => j.jobId !== jobId))
+      showAlert("Deleted", "Job deleted successfully")
+    }
+
+    cronjobModule.onError = (err) => {
+      setError(err.message)
+      setLoading(false)
+      showAlert("Error", err.message)
+    }
+
+    // Subscribe to module
+    socketManager.subscribeToModule("cronjob")
+    
+    // Request initial list
+    cronjobModule.requestList()
+
+    // Cleanup
+    return () => {
+      socketManager.unsubscribeFromModule("cronjob")
+    }
+  }, [])
 
   // Split jobs into active and disabled
   const { activeJobs, disabledJobs } = useMemo(() => {
@@ -109,9 +160,103 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
 
   const handleJobSubmit = (data: CronJobFormData) => {
     console.log("[CronJobScreen] Creating job with data:", data)
-    // TODO: Connect to socket module to create job
-    navigation.goBack()
-    showAlert("Success", `Job "${data.name || "Untitled"}" created!`)
+    
+    const socket = socketManager.getSocket()
+    if (!socket) {
+      showAlert("Error", "Not connected to server")
+      return
+    }
+
+    const cronjobModule = cronjobClientModule(socket)
+
+    // Convert form data to API format
+    let payload: any
+    switch (data.taskType) {
+      case "shell":
+        payload = {
+          kind: "systemEvent" as const,
+          text: `🖥️ Running: ${data.command}`,
+        }
+        break
+      case "agent":
+        payload = {
+          kind: "agentTurn" as const,
+          message: data.prompt || "Check system status",
+          model: data.model || "auto",
+          timeoutSeconds: data.timeout || 300,
+        }
+        break
+      case "event":
+        payload = {
+          kind: "systemEvent" as const,
+          text: data.message || "Scheduled event",
+        }
+        break
+    }
+
+    // Convert schedule type to schedule format
+    let schedule: any
+    switch (data.scheduleType) {
+      case "daily":
+        schedule = {
+          kind: "cron" as const,
+          expr: `${data.time ? data.time.split(":")[1] : "0"} ${data.time ? data.time.split(":")[0] : "8"} * * *`,
+          tz: "Asia/Saigon",
+        }
+        break
+      case "weekly":
+        schedule = {
+          kind: "cron" as const,
+          expr: `${data.time ? data.time.split(":")[1] : "0"} ${data.time ? data.time.split(":")[0] : "8"} * * ${data.weekday || 1}`,
+          tz: "Asia/Saigon",
+        }
+        break
+      case "monthly":
+        schedule = {
+          kind: "cron" as const,
+          expr: `${data.time ? data.time.split(":")[1] : "0"} ${data.time ? data.time.split(":")[0] : "8"} ${data.dayOfMonth || 1} * *`,
+          tz: "Asia/Saigon",
+        }
+        break
+      case "interval":
+        const unitMs = data.intervalUnit === "minutes" ? 60000 : data.intervalUnit === "hours" ? 3600000 : 86400000
+        schedule = {
+          kind: "every" as const,
+          everyMs: (data.intervalValue || 1) * unitMs,
+        }
+        break
+      case "custom":
+        schedule = {
+          kind: "cron" as const,
+          expr: data.cronExpression || "* * * * *",
+          tz: "Asia/Saigon",
+        }
+        break
+      default:
+        schedule = {
+          kind: "cron" as const,
+          expr: "* * * * *",
+        }
+    }
+
+    cronjobModule.requestCreate({
+      name: data.name || "Untitled Job",
+      schedule,
+      payload,
+      sessionTarget: "isolated",
+      delivery: {
+        mode: "announce",
+      },
+      enabled: true,
+    })
+
+    // Navigate back to CronJob list explicitly (not goBack which may go too far)
+    // List will auto-refresh via socket event
+    showAlert("Success", "Job created!")
+    setRefreshing(true)
+    setTimeout(() => {
+      navigation.navigate("CronJob")
+    }, 500)
   }
 
   const handleRunJob = (jobId: string) => {
@@ -120,20 +265,35 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
       { text: "Cancel", style: "cancel" },
       {
         text: "Run",
-        onPress: () => showAlert("Success", "Job triggered!"),
+        onPress: () => {
+          const socket = socketManager.getSocket()
+          if (!socket) return
+          const cronjobModule = cronjobClientModule(socket)
+          cronjobModule.requestRun(jobId)
+        },
       },
     ])
   }
 
-  const handleToggleJob = (jobId: string) => {
-    setJobs((prev) =>
-      prev.map((job) => (job.jobId === jobId ? { ...job, enabled: !job.enabled } : job)),
-    )
+  const handleToggleJob = (jobId: string, currentEnabled: boolean) => {
+    const socket = socketManager.getSocket()
+    if (!socket) return
+    const cronjobModule = cronjobClientModule(socket)
+    
+    // Optimistic update
+    setJobs(prev => prev.map(job => 
+      job.jobId === jobId ? { ...job, enabled: !currentEnabled } : job
+    ))
+    
+    cronjobModule.requestToggle(jobId, !currentEnabled)
   }
 
   const handleEditJob = (jobId: string) => {
     const job = jobs.find((j) => j.jobId === jobId)
-    showAlert("Edit Job", `Edit "${job?.name}"`, [{ text: "OK" }])
+    if (!job) return
+    
+    // TODO: Navigate to edit screen with pre-filled data
+    showAlert("Edit Job", `Edit "${job.name}" - Coming soon`, [{ text: "OK" }])
   }
 
   const handleDeleteJob = (jobId: string) => {
@@ -144,11 +304,64 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         text: "Delete",
         style: "destructive",
         onPress: () => {
-          setJobs((prev) => prev.filter((j) => j.jobId !== jobId))
-          showAlert("Deleted", "Job deleted successfully")
+          const socket = socketManager.getSocket()
+          if (!socket) return
+          const cronjobModule = cronjobClientModule(socket)
+          cronjobModule.requestRemove(jobId)
         },
       },
     ])
+  }
+
+  // Render loading state
+  if (loading) {
+    return (
+      <Screen preset="scroll" bottomComponent={null}>
+        <Header
+          titleTx="cronjob:title"
+          titleMode="center"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+        />
+        <View style={themed($loadingContainer)}>
+          <ActivityIndicator size="large" color={theme.colors.tint} />
+          <Text text="Loading jobs..." size="md" color="textDim" style={themed($loadingText)} />
+        </View>
+      </Screen>
+    )
+  }
+
+  // Render error state
+  if (error && jobs.length === 0) {
+    return (
+      <Screen preset="scroll" bottomComponent={null}>
+        <Header
+          titleTx="cronjob:title"
+          titleMode="center"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+        />
+        <View style={themed($errorContainer)}>
+          <Text text="❌" size="xxl" style={themed($errorIcon)} />
+          <Text text="Failed to load jobs" size="lg" weight="semiBold" color="text" style={themed($errorTitle)} />
+          <Text text={error} size="sm" color="textDim" textAlign="center" style={themed($errorMessage)} />
+          <Button
+            text="Retry"
+            preset="primary"
+            onPress={() => {
+              setLoading(true)
+              setError(null)
+              const socket = socketManager.getSocket()
+              if (socket) {
+                const cronjobModule = cronjobClientModule(socket)
+                cronjobModule.requestList()
+              }
+            }}
+            style={themed($retryButton)}
+          />
+        </View>
+      </Screen>
+    )
   }
 
   return (
@@ -174,6 +387,14 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
       />
 
       <View style={themed($container)}>
+        {/* Refreshing Indicator */}
+        {refreshing && (
+          <View style={themed($refreshingBar)}>
+            <ActivityIndicator size="small" color={theme.colors.tint} />
+            <Text text="Refreshing..." size="xs" color="textDim" style={themed($refreshingText)} />
+          </View>
+        )}
+
         {/* Active Jobs Section */}
         {activeJobs.length > 0 && (
           <>
@@ -186,11 +407,11 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
               <View key={job.jobId} style={themed($jobCard)}>
                 <View style={themed($cardHeader)}>
                   <View style={themed($jobIcon)}>
-                    <Text text={job.icon} size="xl" />
+                    <Text text={getJobIcon(job.payload)} size="xl" />
                   </View>
                   <View style={themed($jobInfo)}>
-                    <Text text={job.name} weight="semiBold" size="sm" color="text" />
-                    <Text text={job.schedule} size="xs" color="textDim" />
+                    <Text text={job.name || "Untitled Job"} weight="semiBold" size="sm" color="text" />
+                    <Text text={formatSchedule(job.schedule)} size="xs" color="textDim" />
                   </View>
                 </View>
 
@@ -200,7 +421,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                       <View style={themed($statusDot)} />
                       <Text text="Enabled" size="xs" weight="medium" color="success" />
                     </View>
-                    <Text text={`🟢 Next: ${job.nextRun}`} size="xs" color="textDim" />
+                    <Text text={`🟢 Next: ${formatNextRun(job.nextRunAt)}`} size="xs" color="textDim" />
                   </View>
                 </View>
 
@@ -224,7 +445,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                   <Button
                     preset="default"
                     size="sm"
-                    onPress={() => handleToggleJob(job.jobId)}
+                    onPress={() => handleToggleJob(job.jobId, true)}
                     style={themed($actionButton)}
                   >
                     ⏸️ Disable
@@ -247,11 +468,11 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
               <View key={job.jobId} style={themed($disabledJobCard)}>
                 <View style={themed($cardHeader)}>
                   <View style={themed($disabledJobIcon)}>
-                    <Text text={job.icon} size="xl" />
+                    <Text text={getJobIcon(job.payload)} size="xl" />
                   </View>
                   <View style={themed($jobInfo)}>
-                    <Text text={job.name} weight="semiBold" size="sm" color="textDim" />
-                    <Text text={job.schedule} size="xs" color="textDim" />
+                    <Text text={job.name || "Untitled Job"} weight="semiBold" size="sm" color="textDim" />
+                    <Text text={formatSchedule(job.schedule)} size="xs" color="textDim" />
                   </View>
                 </View>
 
@@ -268,7 +489,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                   <Button
                     preset="default"
                     size="sm"
-                    onPress={() => handleToggleJob(job.jobId)}
+                    onPress={() => handleToggleJob(job.jobId, false)}
                     style={themed($actionButton)}
                   >
                     ▶️ Enable
@@ -334,9 +555,61 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   )
 }
 
+const $loadingContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  padding: spacing.xl,
+})
+
+const $loadingText: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginTop: spacing.lg,
+})
+
+const $errorContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  padding: spacing.xl,
+})
+
+const $errorIcon: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.md,
+})
+
+const $errorTitle: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.sm,
+  textAlign: "center",
+})
+
+const $errorMessage: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.xl,
+  textAlign: "center",
+})
+
+const $retryButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  minWidth: 150,
+})
+
 const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: spacing.md,
   flex: 1,
+})
+
+const $refreshingBar: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: colors.tint + "10",
+  borderRadius: spacing.md,
+  paddingVertical: spacing.sm,
+  paddingHorizontal: spacing.md,
+  marginBottom: spacing.md,
+  gap: spacing.sm,
+})
+
+const $refreshingText: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginLeft: spacing.xs,
 })
 
 const $sectionHeader: ThemedStyle<ViewStyle> = ({ spacing }) => ({
