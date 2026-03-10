@@ -101,9 +101,9 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
       setError(null)
     }
 
-    cronjobModule.onCreated = ({ job }) => {
-      setJobs(prev => [...prev, job])
-      showAlert("Success", `Job "${job.name || "Untitled"}" created!`)
+    cronjobModule.onCreated = () => {
+      // List will be refreshed automatically by backend
+      showAlert("Success", "Job created successfully!")
     }
 
     cronjobModule.onUpdated = ({ job }) => {

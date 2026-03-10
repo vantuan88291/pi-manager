@@ -147,8 +147,10 @@ export const cronjobModule: ServerSocketModule = {
         }
         
         await runOpenClawCommand(args)
-        socket.emit("cronjob:created", { success: true })
-        setTimeout(() => socket.emit("cronjob:list_request"), 500)
+        // Fetch the created job to return full data
+        setTimeout(() => {
+          socket.emit("cronjob:list_request")
+        }, 300)
       } catch (err: any) {
         console.error("[cronjob] create error:", err.message)
         socket.emit("cronjob:error", { code: "CREATE_FAILED", message: err.message })
