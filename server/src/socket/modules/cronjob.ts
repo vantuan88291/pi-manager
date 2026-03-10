@@ -9,26 +9,17 @@ import type {
 } from "../../../../shared/types/cronjob.js"
 
 const execAsync = promisify(exec)
-
-// Simple in-memory cache for jobs
 const jobsCache = new Map<string, CronJob>()
 
-/**
- * Execute OpenClaw CLI command
- */
 async function runOpenClawCommand(args: string[]): Promise<string> {
   const command = `openclaw ${args.join(" ")}`
   console.log("[cronjob] executing:", command)
   
   try {
-    const { stdout, stderr } = await execAsync(command, {
-      timeout: 30000, // 30s timeout
-    })
-    
+    const { stdout, stderr } = await execAsync(command, { timeout: 30000 })
     if (stderr && !stderr.includes("warn")) {
       console.warn("[cronjob] stderr:", stderr)
     }
-    
     return stdout.trim()
   } catch (error: any) {
     console.error("[cronjob] command failed:", error.message)
@@ -36,111 +27,71 @@ async function runOpenClawCommand(args: string[]): Promise<string> {
   }
 }
 
-/**
- * Parse CLI table output to CronJob array
- * Format: ID  Name  Schedule  Next  Last  Status  Target  Agent
- * Example:
- * ID                                   Name                     Schedule                         Next       Last       Status    Target    Agent     
- * 3e5ef3cf-d78e-4ec3-81a6-e8e680c4e030 Auto Shutdown 22:25      cron 25 22 * * * @ Asia/Saigo... in 20m     -          idle      isolated  main
- */
 function parseJobsList(output: string): CronJob[] {
   const jobs: CronJob[] = []
-  
-  if (!output || output.trim() === "") {
-    return jobs
-  }
+  if (!output || output.trim() === "") return jobs
   
   const lines = output.trim().split("\n")
   console.log("[cronjob] parsing", lines.length, "lines")
   
-  // Skip header line (first line)
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]
-    console.log("[cronjob] line", i, ":", line.substring(0, 100))
-    
     if (!line || line.trim() === "") continue
     
-    // UUID is always 36 chars, followed by spaces
-    // Extract jobId (first 36 chars should be UUID)
-    const jobId = line.substring(0, 36).trim()
-    
-    // Validate UUID format
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId)) {
-      console.warn("[cronjob] invalid UUID in line:", line.substring(0, 50))
-      continue
-    }
-    
-    // Parse CLI table by fixed column positions
-    // Format: ID (36) | Name (25) | Schedule (33) | Next (11) | Last (10) | Status (10) | Target (10) | Agent
-    // Total: ~145 chars per line
+    // Parse by fixed column positions
     const jobId = line.substring(0, 36).trim()
     const name = line.substring(36, 61).trim() || "Untitled"
     const scheduleStr = line.substring(61, 94).trim() || ""
     const nextRun = line.substring(94, 105).trim() || ""
-    const lastRun = line.substring(105, 115).trim() || ""
     const status = line.substring(115, 125).trim() || ""
     const target = line.substring(125, 135).trim() || "isolated"
     
-    console.log("[cronjob] parsed columns:", { jobId, name, schedule: scheduleStr.substring(0,20), nextRun, lastRun, status, target })
-      // const target = parts[5] || "isolated"
-      // const agent = parts[6] || "main"
-      
-      // Parse schedule string to extract cron expression
-      // Format: "cron 25 22 * * * @ Asia/Saigon" or similar
-      let cronExpr = "* * * * *"
-      let timezone = "Asia/Saigon"
-      
-      if (scheduleStr.includes("cron")) {
-        const cronParts = scheduleStr.split(/\s+/)
-        if (cronParts.length >= 6) {
-          cronExpr = cronParts.slice(1, 6).join(" ")
-          if (cronParts[6] === "@") {
-            timezone = cronParts[7] || "Asia/Saigon"
-          }
-        }
-      }
-      
-      // Parse next run time
-      let nextRunAt: number | undefined
-      if (nextRun && nextRun !== "-" && nextRun !== "now") {
-        // Try to parse relative time like "in 30m", "in 2h", etc.
-        const match = nextRun.match(/in\s+(\d+)([mhd])/)
-        if (match) {
-          const value = parseInt(match[1])
-          const unit = match[2]
-          const now = Date.now()
-          if (unit === "m") nextRunAt = now + value * 60000
-          else if (unit === "h") nextRunAt = now + value * 3600000
-          else if (unit === "d") nextRunAt = now + value * 86400000
-        }
-      }
-      
-      const enabled = status === "idle" || status === "running"
-      
-      jobs.push({
-        jobId,
-        name,
-        enabled,
-        schedule: {
-          kind: "cron" as const,
-          expr: cronExpr,
-          tz: timezone,
-        },
-        payload: {
-          kind: "systemEvent" as const,
-          text: `Job: ${name}`,
-        },
-        sessionTarget: target as "main" | "isolated" || "isolated",
-        createdAt: Date.now() - 86400000, // Approximate
-        updatedAt: Date.now(),
-        nextRunAt,
-      })
-      
-      console.log("[cronjob] parsed job:", jobId, name, "enabled:", enabled, "status:", status)
+    console.log("[cronjob] parsed:", { jobId, name, status })
+    
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId)) {
+      console.warn("[cronjob] invalid UUID:", line.substring(0, 50))
+      continue
     }
+    
+    // Parse cron expression from schedule
+    let cronExpr = "* * * * *"
+    let timezone = "Asia/Saigon"
+    if (scheduleStr.includes("cron")) {
+      const parts = scheduleStr.split(/\s+/)
+      if (parts.length >= 6) {
+        cronExpr = parts.slice(1, 6).join(" ")
+        if (parts[6] === "@") timezone = parts[7] || "Asia/Saigon"
+      }
+    }
+    
+    // Parse next run time
+    let nextRunAt: number | undefined
+    if (nextRun && nextRun !== "-" && nextRun !== "now") {
+      const match = nextRun.match(/in\s+(\d+)([mhd])/)
+      if (match) {
+        const value = parseInt(match[1])
+        const unit = match[2]
+        const now = Date.now()
+        if (unit === "m") nextRunAt = now + value * 60000
+        else if (unit === "h") nextRunAt = now + value * 3600000
+        else if (unit === "d") nextRunAt = now + value * 86400000
+      }
+    }
+    
+    jobs.push({
+      jobId,
+      name,
+      enabled: status === "idle" || status === "running",
+      schedule: { kind: "cron" as const, expr: cronExpr, tz: timezone },
+      payload: { kind: "systemEvent" as const, text: `Job: ${name}` },
+      sessionTarget: target as "main" | "isolated" || "isolated",
+      createdAt: Date.now() - 86400000,
+      updatedAt: Date.now(),
+      nextRunAt,
+    })
   }
   
-  console.log("[cronjob] parsed", jobs.length, "jobs total")
+  console.log("[cronjob] parsed", jobs.length, "jobs")
   return jobs
 }
 
@@ -148,157 +99,106 @@ export const cronjobModule: ServerSocketModule = {
   name: "cronjob",
 
   register(socket: Socket, io: Server) {
-    console.log("[cronjob] module registered for socket:", socket.id)
     console.log("[cronjob] module registered")
 
-    // List all cron jobs
     socket.on("cronjob:list", async () => {
       try {
         console.log("[cronjob] list requested")
         const output = await runOpenClawCommand(["cron", "list"])
         const jobs = parseJobsList(output)
-        
-        // Cache the jobs
         jobs.forEach((job) => jobsCache.set(job.jobId, job))
-        
         socket.emit("cronjob:list_response", { jobs })
       } catch (err: any) {
         console.error("[cronjob] list error:", err.message)
-        // Return empty list instead of error
         socket.emit("cronjob:list_response", { jobs: [] })
       }
     })
 
-    // Create new cron job
     socket.on("cronjob:create", async (request: CreateCronJobRequest) => {
       try {
-        console.log("[cronjob] create requested:", request.name || "Untitled")
+        console.log("[cronjob] create:", request.name || "Untitled")
+        let args = ["cron", "add"]
         
-        // Build cron command based on schedule type
-        let cronArgs: string[] = ["cron", "add"]
+        if (request.name) args.push("--name", `"${request.name}"`)
         
-        // Add name
-        if (request.name) {
-          cronArgs.push("--name", `"${request.name}"`)
-        }
-        
-        // Add schedule
+        // Schedule
         if (request.schedule.kind === "cron") {
-          cronArgs.push("--cron", `"${request.schedule.expr}"`)
+          args.push("--cron", `"${request.schedule.expr}"`)
         } else if (request.schedule.kind === "every") {
-          const minutes = Math.floor(request.schedule.everyMs / 60000)
-          cronArgs.push("--every", `${minutes}m`)
+          const mins = Math.floor(request.schedule.everyMs / 60000)
+          args.push("--every", `${mins}m`)
         }
         
-        // Add payload
-        if (request.payload.kind === "systemEvent") {
-          cronArgs.push("--system-event", `"${request.payload.text}"`)
-        } else if (request.payload.kind === "agentTurn") {
-          cronArgs.push("--agent-turn", `"${request.payload.message}"`)
-          if (request.payload.model) {
-            cronArgs.push("--model", request.payload.model)
-          }
+        // Payload - only agent jobs use --agent and --message
+        if (request.payload.kind === "agentTurn") {
+          args.push("--agent", "main")  // Default to main agent
+          args.push("--message", `"${request.payload.message}"`)
+          if (request.payload.model) args.push("--model", request.payload.model)
+          args.push("--announce")  // Announce results
+        } else if (request.payload.kind === "systemEvent") {
+          // System events - just announce the text
+          args.push("--announce")
+          // Note: system events may need different handling
         }
         
-        // Add session target
-        cronArgs.push("--session-target", request.sessionTarget)
+        // Session target
+        if (request.sessionTarget === "isolated") {
+          args.push("--agent", "main")  // isolated = run agent
+        }
         
-        // Execute command
-        const output = await runOpenClawCommand(cronArgs)
-        console.log("[cronjob] create output:", output)
-        
-        // Emit success (we'll re-fetch list to get the new job)
+        await runOpenClawCommand(args)
         socket.emit("cronjob:created", { success: true })
-        
-        // Request updated list
-        setTimeout(() => {
-          socket.emit("cronjob:list_request")
-        }, 500)
+        setTimeout(() => socket.emit("cronjob:list_request"), 500)
       } catch (err: any) {
         console.error("[cronjob] create error:", err.message)
-        socket.emit("cronjob:error", {
-          code: "CREATE_FAILED",
-          message: err.message,
-        })
+        socket.emit("cronjob:error", { code: "CREATE_FAILED", message: err.message })
       }
     })
 
-    // Remove cron job
     socket.on("cronjob:remove", async ({ jobId }: { jobId: string }) => {
       try {
-        console.log("[cronjob] remove requested:", jobId)
-        
+        console.log("[cronjob] remove:", jobId)
         await runOpenClawCommand(["cron", "remove", jobId])
-        
-        // Remove from cache
         jobsCache.delete(jobId)
-
-        // Broadcast to all clients
         io.emit("cronjob:removed", { jobId })
-        
         socket.emit("cronjob:removed", { jobId, success: true })
       } catch (err: any) {
         console.error("[cronjob] remove error:", err.message)
-        socket.emit("cronjob:error", {
-          code: "REMOVE_FAILED",
-          message: err.message,
-        })
+        socket.emit("cronjob:error", { code: "REMOVE_FAILED", message: err.message })
       }
     })
 
-    // Manually trigger cron job
     socket.on("cronjob:run", async ({ jobId }: { jobId: string }) => {
       try {
-        console.log("[cronjob] run requested:", jobId)
-        
+        console.log("[cronjob] run:", jobId)
         await runOpenClawCommand(["cron", "run", jobId])
-        
         socket.emit("cronjob:run_response", { success: true })
       } catch (err: any) {
         console.error("[cronjob] run error:", err.message)
-        socket.emit("cronjob:error", {
-          code: "RUN_FAILED",
-          message: err.message,
-        })
+        socket.emit("cronjob:error", { code: "RUN_FAILED", message: err.message })
       }
     })
 
-    // Toggle job enabled state (convenience method)
     socket.on("cronjob:toggle", async ({ jobId, enabled }: { jobId: string; enabled: boolean }) => {
       try {
-        console.log("[cronjob] toggle requested:", jobId, "enabled:", enabled)
-        
-        const command = enabled ? "enable" : "disable"
-        await runOpenClawCommand(["cron", command, jobId])
-        
-        // Update cache
+        console.log("[cronjob] toggle:", jobId, enabled)
+        await runOpenClawCommand(["cron", enabled ? "enable" : "disable", jobId])
         const job = jobsCache.get(jobId)
-        if (job) {
-          jobsCache.set(jobId, { ...job, enabled })
-        }
-        
-        // Request updated list
-        setTimeout(() => {
-          socket.emit("cronjob:list_request")
-        }, 500)
+        if (job) jobsCache.set(jobId, { ...job, enabled })
+        setTimeout(() => socket.emit("cronjob:list_request"), 500)
       } catch (err: any) {
         console.error("[cronjob] toggle error:", err.message)
-        socket.emit("cronjob:error", {
-          code: "TOGGLE_FAILED",
-          message: err.message,
-        })
+        socket.emit("cronjob:error", { code: "TOGGLE_FAILED", message: err.message })
       }
     })
   },
 
   onSubscribe(socket: Socket) {
-    console.log("[cronjob] socket subscribed:", socket.id)
-    // Auto-request list when client subscribes
+    console.log("[cronjob] subscribed:", socket.id)
     socket.emit("cronjob:list_request")
   },
 
   onUnsubscribe(socket: Socket) {
-    console.log("[cronjob] socket unsubscribed:", socket.id)
-    // Cleanup if needed
+    console.log("[cronjob] unsubscribed:", socket.id)
   },
 }
