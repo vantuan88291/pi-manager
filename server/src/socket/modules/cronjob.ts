@@ -130,6 +130,10 @@ export const cronjobModule: ServerSocketModule = {
         }
         
         // Payload
+        // Session target (required for --announce)
+        args.push("--session-target", request.sessionTarget || "isolated")
+        
+        // Payload
         if (request.payload.kind === "agentTurn") {
           args.push("--agent", "main")
           args.push("--message", `"${request.payload.message}"`)
@@ -139,6 +143,8 @@ export const cronjobModule: ServerSocketModule = {
         } else if (request.payload.kind === "systemEvent") {
           args.push("--system-event", `"${request.payload.text}"`)
         }
+        
+        // Delivery
         args.push("--announce")
         
         // Session target
