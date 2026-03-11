@@ -129,16 +129,22 @@ export const cronjobModule: ServerSocketModule = {
           args.push("--every", `${mins}m`)
         }
         
-        // Payload - only agent jobs use --agent and --message
+        // Payload
+        // Session target and delivery based on payload type
         if (request.payload.kind === "agentTurn") {
-          args.push("--agent", "main")  // Default to main agent
+          // Agent tasks: isolated session with announce
+          args.push("--session", "isolated")
+          args.push("--agent", "main")
           args.push("--message", `"${request.payload.message}"`)
-          if (request.payload.model) args.push("--model", request.payload.model)
-          args.push("--announce")  // Announce results
-        } else if (request.payload.kind === "systemEvent") {
-          // System events - just announce the text
+          if (request.payload.model && request.payload.model !== "auto") {
+            args.push("--model", request.payload.model)
+          }
           args.push("--announce")
-          // Note: system events may need different handling
+        } else if (request.payload.kind === "systemEvent") {
+          // System events: main session, no announce needed (auto-delivers)
+          args.push("--session", "main")
+          args.push("--system-event", `"${request.payload.text}"`)
+          // Don't add --announce for system events (causes conflict)
         }
         
         // Session target
@@ -197,6 +203,19 @@ export const cronjobModule: ServerSocketModule = {
       } catch (err: any) {
         console.error("[cronjob] toggle error:", err.message)
         socket.emit("cronjob:error", { code: "TOGGLE_FAILED", message: err.message })
+      }
+    })
+
+    // Get run history
+    socket.on("cronjob:runs", async ({ jobId, limit = 10 }: { jobId: string; limit?: number }) => {
+      try {
+        console.log("[cronjob] runs:", jobId, "limit:", limit)
+        const output = await runOpenClawCommand(["cron", "runs", jobId, "--limit", String(limit)])
+        // Parse runs from CLI output (simplified - just return raw for now)
+        socket.emit("cronjob:runs_response", { runs: [], raw: output })
+      } catch (err: any) {
+        console.error("[cronjob] runs error:", err.message)
+        socket.emit("cronjob:error", { code: "RUNS_FAILED", message: err.message })
       }
     })
   },
