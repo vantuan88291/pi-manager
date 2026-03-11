@@ -130,24 +130,22 @@ export const cronjobModule: ServerSocketModule = {
         }
         
         // Payload
-        // Session target based on payload type
-        // System events require main session, agent tasks use isolated
-        const sessionTarget = request.payload.kind === "systemEvent" ? "main" : (request.sessionTarget || "isolated")
-        args.push("--session", sessionTarget)
-        
-        // Payload
+        // Session target and delivery based on payload type
         if (request.payload.kind === "agentTurn") {
+          // Agent tasks: isolated session with announce
+          args.push("--session", "isolated")
           args.push("--agent", "main")
           args.push("--message", `"${request.payload.message}"`)
           if (request.payload.model && request.payload.model !== "auto") {
             args.push("--model", request.payload.model)
           }
+          args.push("--announce")
         } else if (request.payload.kind === "systemEvent") {
+          // System events: main session, no announce needed (auto-delivers)
+          args.push("--session", "main")
           args.push("--system-event", `"${request.payload.text}"`)
+          // Don't add --announce for system events (causes conflict)
         }
-        
-        // Delivery
-        args.push("--announce")
         
         // Session target
         if (request.sessionTarget === "isolated") {
