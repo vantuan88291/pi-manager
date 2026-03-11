@@ -68,12 +68,26 @@ const getJobIcon = (payload: CronJob["payload"]): string => {
   }
 }
 
+// Helper to get job description based on payload
+const getJobDescription = (payload: CronJob["payload"]): string => {
+  switch (payload.kind) {
+    case "systemEvent":
+      return payload.text || "System notification"
+    case "agentTurn":
+      return payload.message || "AI agent task"
+    default:
+      return "Shell command"
+  }
+}
+
 export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ navigation }) {
   const { themed, theme } = useAppTheme()
   const { t } = useTranslation()
   const [jobs, setJobs] = useState<CronJob[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [deletingJobId, setDeletingJobId] = useState<string | null>(null)
+  const [runningJobId, setRunningJobId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Alert modal state
@@ -264,12 +278,14 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     showAlert("Run Job", `Run "${job?.name}" now?`, [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Run",
+        text: runningJobId === jobId ? "Running..." : "▶️ Run",
         onPress: () => {
           const socket = socketManager.getSocket()
           if (!socket) return
           const cronjobModule = cronjobClientModule(socket)
+          setRunningJobId(jobId)
           cronjobModule.requestRun(jobId)
+          setTimeout(() => setRunningJobId(null), 2000)
         },
       },
     ])
@@ -301,12 +317,13 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     showAlert("Delete Job", `Delete "${job?.name}"? This cannot be undone.`, [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Delete",
+        text: deletingJobId === jobId ? "Deleting..." : "🗑️ Delete",
         style: "destructive",
         onPress: () => {
           const socket = socketManager.getSocket()
           if (!socket) return
           const cronjobModule = cronjobClientModule(socket)
+          setDeletingJobId(jobId)
           cronjobModule.requestRemove(jobId)
         },
       },
@@ -412,6 +429,13 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                   <View style={themed($jobInfo)}>
                     <Text text={job.name || "Untitled Job"} weight="semiBold" size="sm" color="text" />
                     <Text text={formatSchedule(job.schedule)} size="xs" color="textDim" />
+                    <Text 
+                      text={getJobDescription(job.payload)} 
+                      size="xs" 
+                      color="textDim" 
+                      numberOfLines={2}
+                      style={themed($jobDescription)}
+                    />
                   </View>
                 </View>
 
@@ -431,8 +455,9 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     size="sm"
                     onPress={() => handleRunJob(job.jobId)}
                     style={themed($actionButton)}
+                    disabled={runningJobId === job.jobId}
                   >
-                    ▶️ Run
+                    {runningJobId === job.jobId ? "⏳" : "▶️"} Run
                   </Button>
                   <Button
                     preset="default"
@@ -473,6 +498,13 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                   <View style={themed($jobInfo)}>
                     <Text text={job.name || "Untitled Job"} weight="semiBold" size="sm" color="textDim" />
                     <Text text={formatSchedule(job.schedule)} size="xs" color="textDim" />
+                    <Text 
+                      text={getJobDescription(job.payload)} 
+                      size="xs" 
+                      color="textDim" 
+                      numberOfLines={2}
+                      style={themed($jobDescription)}
+                    />
                   </View>
                 </View>
 
@@ -507,8 +539,9 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     size="sm"
                     onPress={() => handleDeleteJob(job.jobId)}
                     style={themed($actionButton)}
+                    disabled={deletingJobId === job.jobId}
                   >
-                    🗑️ Delete
+                    {deletingJobId === job.jobId ? "⏳" : "🗑️"} Delete
                   </Button>
                 </View>
               </View>
@@ -665,6 +698,11 @@ const $disabledJobIcon: ThemedStyle<ViewStyle> = ({ colors }) => ({
 const $jobInfo: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
   paddingTop: 4,
+})
+
+const $jobDescription: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginTop: spacing.xs,
+  fontStyle: "italic",
 })
 
 const $cardStatus: ThemedStyle<ViewStyle> = () => ({

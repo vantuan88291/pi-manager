@@ -45,7 +45,7 @@ export const AlertModal: FC<AlertModalProps> = ({
     if (button.style === "cancel") {
       return {
         preset: "default" as const,
-        textStyle: { color: theme.colors.textDim },
+        textStyle: { color: theme.colors.text },
       }
     }
     return { preset: "primary" as const }
@@ -64,7 +64,7 @@ export const AlertModal: FC<AlertModalProps> = ({
               txOptions={{ text: button.text }}
               text={button.text}
               onPress={() => handleButtonPress(button)}
-              style={$button}
+              style={themed([$button, button.style === "cancel" && $cancelButton])}
               {...getButtonStyle(button)}
             />
           ))}
@@ -74,8 +74,8 @@ export const AlertModal: FC<AlertModalProps> = ({
       {message && (
         <Text
           text={message}
-          size="sm"
-          color="textDim"
+          size="md"
+          color="text"
           style={themed($message)}
         />
       )}
@@ -83,18 +83,26 @@ export const AlertModal: FC<AlertModalProps> = ({
   )
 }
 
-const $buttonContainer: ViewStyle = {
+const $buttonContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
-  gap: 12,
-  marginTop: 8,
-}
+  gap: spacing.md,
+  marginTop: spacing.lg,
+})
 
-const $button: ViewStyle = {
+const $button: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
-  minHeight: 44,
-}
+  minHeight: 48,
+  borderRadius: spacing.md,
+})
 
-const $message: ViewStyle = {
+const $cancelButton: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.palette.neutral200,
+  borderWidth: 1,
+  borderColor: colors.palette.neutral300,
+})
+
+const $message: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   textAlign: "center",
-  lineHeight: 20,
-}
+  lineHeight: 24,
+  paddingHorizontal: spacing.sm,
+})
