@@ -148,6 +148,15 @@ sleep 2
 curl -s "$TUNNEL_URL/api/health" > /dev/null 2>&1 && echo "✅ Backend accessible" || echo "⚠️  Not ready yet"
 echo ""
 
+# Step 7: Update Telegram bot menu button
+echo "🤖 Step 7/6: Updating Telegram bot menu..."
+if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ "$TELEGRAM_BOT_TOKEN" != "your-bot-token-here" ]; then
+  /home/vantuan88291/update-telegram-bot.sh "$TELEGRAM_BOT_TOKEN" "$TUNNEL_URL"
+else
+  echo "⚠️  Skipping bot update (no valid token)"
+fi
+echo ""
+
 # Summary
 echo "======================================="
 echo "🎉 Pi Manager started successfully!"
@@ -164,7 +173,8 @@ echo ""
 echo "🛑 Stop: kill $SERVER_PID $TUNNEL_PID"
 echo ""
 echo "📝 Bot setup:"
-echo "   @BotFather → /setmenubutton → $TUNNEL_URL"
+echo "   Bot menu auto-updated to: $TUNNEL_URL"
+echo "   Or manual: @BotFather → /setmenubutton → $TUNNEL_URL"
 echo "======================================="
 echo ""
 echo "💡 Note: Socket URL is detected at runtime (no hardcoded URLs)"
