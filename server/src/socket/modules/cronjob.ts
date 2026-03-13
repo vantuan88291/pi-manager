@@ -104,10 +104,29 @@ export const cronjobModule: ServerSocketModule = {
     socket.on("cronjob:list", async () => {
       try {
         console.log("[cronjob] list requested")
-        const output = await runOpenClawCommand(["cron", "list"])
-        const jobs = parseJobsList(output)
-        jobs.forEach((job) => jobsCache.set(job.jobId, job))
-        socket.emit("cronjob:list_response", { jobs })
+        // Read directly from jobs.json for complete data including enabled status
+        const fs = await import('fs')
+        const jobsPath = '/home/vantuan88291/.openclaw/cron/jobs.json'
+        
+        if (fs.existsSync(jobsPath)) {
+          const data = JSON.parse(fs.readFileSync(jobsPath, 'utf8'))
+          const jobs = data.jobs?.map((job: any) => ({
+            jobId: job.id,
+            name: job.name || "Untitled",
+            enabled: job.enabled ?? true,
+            schedule: job.schedule,
+            payload: job.payload,
+            sessionTarget: job.sessionTarget || "isolated",
+            createdAt: job.createdAtMs,
+            updatedAt: job.updatedAtMs,
+            lastRunAt: job.state?.lastRunAtMs,
+            nextRunAt: job.state?.nextRunAtMs,
+          })) || []
+          jobs.forEach((job: CronJob) => jobsCache.set(job.jobId, job))
+          socket.emit("cronjob:list_response", { jobs })
+        } else {
+          socket.emit("cronjob:list_response", { jobs: [] })
+        }
       } catch (err: any) {
         console.error("[cronjob] list error:", err.message)
         socket.emit("cronjob:list_response", { jobs: [] })
