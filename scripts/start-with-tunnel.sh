@@ -151,7 +151,7 @@ echo ""
 # Step 7: Update Telegram bot menu button
 echo "🤖 Step 7/6: Updating Telegram bot menu..."
 if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ "$TELEGRAM_BOT_TOKEN" != "your-bot-token-here" ]; then
-  /home/vantuan88291/update-telegram-bot.sh "$TELEGRAM_BOT_TOKEN" "$TUNNEL_URL"
+  "$SCRIPT_DIR/update-telegram-bot.sh" "$TELEGRAM_BOT_TOKEN" "$TUNNEL_URL"
 else
   echo "⚠️  Skipping bot update (no valid token)"
 fi
