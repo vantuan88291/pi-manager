@@ -67,13 +67,18 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           
           // Connect to backend for proper validation
           socketManager.connect(tg.initData)
-        } else {
-          if (isDebug) {
-            console.log("[SocketProvider] DEBUG mode: connecting without Telegram auth (browser testing)")
-          } else {
-            console.log("[SocketProvider] No Telegram WebApp, connecting in dev mode...")
-          }
+        } else if (isDebug) {
+          console.log("[SocketProvider] DEBUG mode: connecting without Telegram auth (browser testing)")
           socketManager.connect()
+        } else {
+          // Production mode without Telegram = show unauthenticated state
+          console.log("[SocketProvider] No Telegram WebApp, showing unauthenticated state")
+          setState({
+            status: "disconnected",
+            isAuthenticated: false,
+            user: null,
+            error: "Telegram required. Please open this app from Telegram.",
+          })
         }
       } else {
         socketManager.connect()

@@ -2,6 +2,7 @@ import { FC, useState } from "react"
 import { View, ViewStyle, TextInput, ScrollView, Pressable } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { useNavigation } from "@react-navigation/native"
+import { useTranslation } from "react-i18next"
 
 import { useAppTheme } from "@/theme/context"
 import { Text } from "@/components/Text"
@@ -69,6 +70,7 @@ const DEFAULT_DATA: CronJobFormData = {
 export const CreateJobScreen: FC = () => {
   const navigation = useNavigation()
   const { themed, theme } = useAppTheme()
+  const { t } = useTranslation()
   const route = navigation.getState() as any
   const params = route?.routes?.[route.routes.length - 1]?.params as CreateJobScreenParams | undefined
   
@@ -110,8 +112,8 @@ export const CreateJobScreen: FC = () => {
           <>
             <View style={themed($field)}>
               <View style={themed($labelRow)}>
-                <Text text="Command" weight="medium" color="text" size="sm" />
-                <Text text=" *" color="error" size="sm" />
+                <Text tx="cronjob:command" weight="medium" color="text" size="sm" />
+                <Text tx="cronjob:commandRequired" color="error" size="sm" />
               </View>
               <TextInput
                 value={formData.command}
@@ -123,12 +125,12 @@ export const CreateJobScreen: FC = () => {
                 textAlignVertical="top"
               />
               <View style={themed($warningBanner)}>
-                <Text text="⚠️ Requires sudo permissions" size="xs" color="warning" />
+                <Text tx="cronjob:requiresSudo" size="xs" color="warning" />
               </View>
             </View>
 
             <View style={themed($field)}>
-              <Text text="Working Directory" weight="medium" color="text" size="sm" />
+              <Text tx="cronjob:workingDirectory" weight="medium" color="text" size="sm" />
               <TextInput
                 value={formData.workingDir}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, workingDir: text }))}
@@ -139,7 +141,7 @@ export const CreateJobScreen: FC = () => {
             </View>
 
             <View style={themed($field)}>
-              <Text text="Timeout (seconds)" weight="medium" color="text" size="sm" />
+              <Text tx="cronjob:timeout" weight="medium" color="text" size="sm" />
               <View style={themed($inputRow)}>
                 <TextInput
                   value={formData.timeout?.toString() || "60"}
@@ -150,7 +152,7 @@ export const CreateJobScreen: FC = () => {
                   placeholderTextColor={theme.colors.textDim}
                   textAlign="center"
                 />
-                <Text text="Max: 3600" size="sm" color="textDim" />
+                <Text tx="cronjob:maxTimeout" size="sm" color="textDim" />
               </View>
             </View>
           </>
@@ -161,8 +163,8 @@ export const CreateJobScreen: FC = () => {
           <>
             <View style={themed($field)}>
               <View style={themed($labelRow)}>
-                <Text text="Prompt" weight="medium" color="text" size="sm" />
-                <Text text=" *" color="error" size="sm" />
+                <Text tx="cronjob:prompt" weight="medium" color="text" size="sm" />
+                <Text tx="cronjob:promptRequired" color="error" size="sm" />
               </View>
               <TextInput
                 value={formData.prompt}
@@ -174,11 +176,11 @@ export const CreateJobScreen: FC = () => {
                 maxLength={500}
                 textAlignVertical="top"
               />
-              <Text text={`${formData.prompt?.length || 0}/500`} size="xs" color="textDim" style={themed($charCount)} />
+              <Text text={t('cronjob:charCount', { count: formData.prompt?.length || 0, max: 500 })} size="xs" color="textDim" style={themed($charCount)} />
             </View>
 
             <View style={themed($field)}>
-              <Text text="Model" weight="medium" color="text" size="sm" />
+              <Text tx="cronjob:model" weight="medium" color="text" size="sm" />
               <TextInput
                 value={formData.model}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, model: text }))}
@@ -194,8 +196,8 @@ export const CreateJobScreen: FC = () => {
         return (
           <View style={themed($field)}>
             <View style={themed($labelRow)}>
-              <Text text="Message" weight="medium" color="text" size="sm" />
-              <Text text=" *" color="error" size="sm" />
+              <Text tx="cronjob:message" weight="medium" color="text" size="sm" />
+              <Text tx="cronjob:messageRequired" color="error" size="sm" />
             </View>
             <TextInput
               value={formData.message}
@@ -207,7 +209,7 @@ export const CreateJobScreen: FC = () => {
               maxLength={200}
               textAlignVertical="top"
             />
-            <Text text={`${formData.message?.length || 0}/200`} size="xs" color="textDim" style={themed($charCount)} />
+            <Text text={t('cronjob:charCount', { count: formData.message?.length || 0, max: 200 })} size="xs" color="textDim" style={themed($charCount)} />
           </View>
         )
     }
@@ -224,7 +226,7 @@ export const CreateJobScreen: FC = () => {
         <Pressable onPress={() => navigation.goBack()} style={themed($backButton)}>
           <Icon font="Ionicons" icon="chevron-back" color={theme.colors.text} size={24} />
         </Pressable>
-        <Text text="✨ Create Scheduled Task" weight="semiBold" size="lg" color="text" />
+        <Text tx="cronjob:createScheduledTaskTitle" weight="semiBold" size="lg" color="text" />
         <View style={$spacer} />
       </View>
 
@@ -232,7 +234,7 @@ export const CreateJobScreen: FC = () => {
       <View style={themed($contentWrapper)}>
         {/* Task Name */}
         <View style={themed($field)}>
-          <Text text="Task Name" weight="medium" color="text" size="sm" />
+          <Text tx="cronjob:taskName" weight="medium" color="text" size="sm" />
           <TextInput
             value={formData.name}
             onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
@@ -241,18 +243,18 @@ export const CreateJobScreen: FC = () => {
             maxLength={50}
             placeholderTextColor={theme.colors.textDim}
           />
-          <Text text={`${formData.name.length}/50`} size="xs" color="textDim" style={themed($charCount)} />
+          <Text text={t('cronjob:charCount', { count: formData.name.length, max: 50 })} size="xs" color="textDim" style={themed($charCount)} />
         </View>
 
         {/* Task Type - Compact Dropdown */}
         <View style={themed($field)}>
-          <Text text="Task Type" weight="medium" color="text" size="sm" />
+          <Text tx="cronjob:taskType" weight="medium" color="text" size="sm" />
           <TaskTypeDropdown selectedType={formData.taskType} onSelect={handleTaskTypeChange} />
         </View>
 
         {/* Task-Specific Fields */}
         <View style={themed($section)}>
-          <Text text="Configuration" weight="semiBold" color="text" size="md" style={$sectionTitle} />
+          <Text tx="cronjob:configuration" weight="semiBold" color="text" size="md" style={$sectionTitle} />
           {renderTaskSpecificFields()}
         </View>
 
@@ -263,7 +265,7 @@ export const CreateJobScreen: FC = () => {
         <View style={themed($section)}>
           <View style={themed($sectionHeaderWithIcon)}>
             <Text text="⏰ " size="sm" />
-            <Text text="When to Run" weight="semiBold" color="text" size="md" />
+            <Text tx="cronjob:whenToRun" weight="semiBold" color="text" size="md" />
           </View>
           <CalendarPicker
             scheduleType={formData.scheduleType}
@@ -290,7 +292,7 @@ export const CreateJobScreen: FC = () => {
         <View style={themed($section)}>
           <View style={themed($sectionHeaderWithIcon)}>
             <Text text="🔔 " size="sm" />
-            <Text text="Notifications" weight="semiBold" color="text" size="md" />
+            <Text tx="cronjob:notifications" weight="semiBold" color="text" size="md" />
           </View>
           <View style={themed($checkboxContainer)}>
             <View style={themed($checkboxRow)}>
@@ -298,14 +300,14 @@ export const CreateJobScreen: FC = () => {
                 value={formData.notifySuccess ?? true}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, notifySuccess: value }))}
               />
-              <Text text="Notify on completion" size="sm" color="text" style={$checkboxLabel} />
+              <Text tx="cronjob:notifyOnCompletion" size="sm" color="text" style={$checkboxLabel} />
             </View>
             <View style={themed($checkboxRow)}>
               <Checkbox
                 value={formData.notifyFailure ?? true}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, notifyFailure: value }))}
               />
-              <Text text="Notify on failure" size="sm" color="text" style={$checkboxLabel} />
+              <Text tx="cronjob:notifyOnFailure" size="sm" color="text" style={$checkboxLabel} />
             </View>
           </View>
         </View>
@@ -317,13 +319,13 @@ export const CreateJobScreen: FC = () => {
       {/* Footer Actions */}
       <View style={themed($footer)}>
         <Button
-          text="Cancel"
+          tx="cronjob:cancel"
           preset="filled"
           onPress={() => navigation.goBack()}
           style={themed($cancelButton)}
         />
         <Button
-          text="Create Task"
+          tx="cronjob:createTask"
           preset="filled"
           onPress={handleSubmit}
           style={themed([$saveButton, { backgroundColor: theme.colors.tint }])}
