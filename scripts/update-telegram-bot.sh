@@ -14,7 +14,6 @@ echo "🔄 Updating Telegram bot menu to: $URL"
 RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/setChatMenuButton" \
   -H "Content-Type: application/json" \
   -d "{
-    \"chat_id\": 0,
     \"menu_button\": {
       \"type\": \"web_app\",
       \"text\": \"Open Pi Manager\",
