@@ -129,5 +129,5 @@ Sau khi test thành công:
 
 ## 🔗 Tài liệu liên quan
 
-- [docs/backend/appendix-c-telegram-mini-app-integration.md](./docs/backend/appendix-c-telegram-mini-app-integration.md)
-- [docs/backend/appendix-d-cloudflare-tunnel.md](./docs/backend/appendix-d-cloudflare-tunnel.md)
+- [docs/backend/appendix-c-telegram-mini-app-integration.md](../backend/appendix-c-telegram-mini-app-integration.md)
+- [docs/backend/appendix-d-cloudflare-tunnel.md](../backend/appendix-d-cloudflare-tunnel.md)

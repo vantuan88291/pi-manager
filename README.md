@@ -1,5 +1,7 @@
 # Pi Manager
 
+> Built entirely with AI assistance
+
 Remote management dashboard for Raspberry Pi via Telegram Mini App.
 
 ## 🚀 Quick Start
@@ -12,6 +14,7 @@ yarn start:full
 ```
 
 This will:
+
 1. Build web frontend
 2. Start Cloudflare Quick Tunnel
 3. Auto-update environment files with tunnel URL
@@ -57,6 +60,7 @@ cd server && npm run dev
 ### 4. Update Configuration
 
 **`server/.env`:**
+
 ```env
 PORT=3001
 TELEGRAM_BOT_TOKEN=<your-bot-token>
@@ -65,6 +69,7 @@ ADMIN_TELEGRAM_ID=<your-telegram-id>
 ```
 
 **`server/src/config/whitelist.json`:**
+
 ```json
 [<your-telegram-id>]
 ```
@@ -130,15 +135,18 @@ pi-manager/
 ### `yarn start:full`
 
 Complete deployment automation:
+
 - Builds web frontend
 - Starts Cloudflare tunnel
 - Updates `.env` files with tunnel URL
 - Starts backend server
 - Outputs tunnel URL and PIDs
+- Auto setup mini app for telegram
 
 ### `yarn start:tunnel`
 
 Tunnel-only startup:
+
 - Kills existing tunnels
 - Starts new Cloudflare tunnel
 - Updates `.env` files
@@ -147,6 +155,7 @@ Tunnel-only startup:
 ### `yarn build:web`
 
 Build frontend:
+
 - Exports web build to `dist/`
 - Auto-injects Telegram WebApp SDK
 - Copies to `server/public/`
@@ -181,12 +190,13 @@ Only Telegram user IDs in `server/src/config/whitelist.json` can access the app.
 
 - [Backend docs](./docs/backend/README.md)
 - [UI specs](./docs/ui/README.md)
-- [Telegram setup](./TELEGRAM_SETUP.md)
+- [Telegram setup](docs/telegram/TELEGRAM_SETUP.md)
 - [Cloudflare tunnel](./docs/backend/appendix-d-cloudflare-tunnel.md)
 
 ## 🐛 Troubleshooting
 
 ### Tunnel fails to start
+
 ```bash
 # Check if port 3001 is in use
 lsof -ti:3001 | xargs kill -9
@@ -196,6 +206,7 @@ yarn start:tunnel
 ```
 
 ### 502 Bad Gateway
+
 ```bash
 # Check server status
 cat /tmp/server.log
@@ -205,6 +216,7 @@ cd server && npm run dev
 ```
 
 ### Telegram auth fails
+
 - Verify BOT_TOKEN in `server/.env`
 - Check whitelist includes your Telegram ID
 - Ensure tunnel URL matches bot menu button URL
