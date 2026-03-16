@@ -2,6 +2,8 @@
 
 > Built entirely with AI assistance
 
+![Demo](./pi-manager.gif)
+
 Remote management dashboard for Raspberry Pi via Telegram Mini App.
 
 ## 🚀 Quick Start
