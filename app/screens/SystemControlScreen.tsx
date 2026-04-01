@@ -199,6 +199,7 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
   return (
     <Screen
       preset="scroll"
+      style={themed($screen)}
       ScrollViewProps={{
         refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
       }}
@@ -298,6 +299,10 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
     </Screen>
   )
 }
+
+const $screen: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingHorizontal: spacing.md,
+})
 
 const $card: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginBottom: spacing.lg,
