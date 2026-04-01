@@ -38,26 +38,28 @@ const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }
     <View style={themed($processItem)}>
       <View style={$processInfo}>
         <View style={$processHeader}>
-          <Text weight="semiBold" size="md" color="text" numberOfLines={1}>
-            {process.name}
-          </Text>
+          <View style={$processName}>
+            <Text weight="semiBold" size="md" color="text" numberOfLines={1}>
+              {process.name}
+            </Text>
+            <Text size="xs" color="textDim" numberOfLines={1}>
+              PID: {process.pid} • {process.user}
+            </Text>
+            <Text size="xs" color="textDim" numberOfLines={2} style={{ marginTop: 4 }}>
+              {process.command}
+            </Text>
+          </View>
+          
           <Button
-            preset="reversed"
+            preset="default"
             size="sm"
             onPress={() => onKill(process)}
             disabled={disabled}
+            style={{ backgroundColor: theme.colors.error + "15" }}
           >
             <Icon font="Ionicons" icon="close" size={16} color={theme.colors.error} />
           </Button>
         </View>
-        
-        <Text size="xs" color="textDim" numberOfLines={1} style={{ marginTop: 4 }}>
-          PID: {process.pid} • {process.user}
-        </Text>
-        
-        <Text size="xs" color="textDim" numberOfLines={2} style={{ marginTop: 6 }}>
-          {process.command}
-        </Text>
 
         {/* CPU Progress Bar */}
         <View style={themed($progressSection)}>
@@ -66,9 +68,9 @@ const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }
             <Text size="xs" weight="semiBold" color={cpuColor}>{(process.cpu ?? 0).toFixed(1)}%</Text>
           </View>
           <ProgressBar
-            progress={(process.cpu ?? 0) / 100}
+            value={process.cpu ?? 0}
             color={cpuColor}
-            size="sm"
+            height={8}
           />
         </View>
 
@@ -79,9 +81,9 @@ const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }
             <Text size="xs" weight="semiBold" color={memColor}>{(process.memory ?? 0).toFixed(1)}%</Text>
           </View>
           <ProgressBar
-            progress={(process.memory ?? 0) / 100}
+            value={process.memory ?? 0}
             color={memColor}
-            size="sm"
+            height={8}
           />
         </View>
       </View>
@@ -210,24 +212,26 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
         ContentComponent={
           <View style={$actionButtons}>
             <Button
-              preset="reversed"
-              style={{ flex: 1 }}
+              preset="default"
+              style={[{ flex: 1, borderColor: theme.colors.error + "40", borderWidth: 1 }, themed($actionButton)]}
               onPress={handleReboot}
               disabled={actionInProgress !== null}
+              textStyle={{ color: theme.colors.error }}
             >
               <Icon font="Ionicons" icon="refresh" size={20} color={theme.colors.error} />
-              <Text weight="medium" style={{ marginLeft: 8 }}>
+              <Text weight="medium" style={{ marginLeft: 8, color: theme.colors.error }}>
                 {t("systemControl:reboot")}
               </Text>
             </Button>
             <Button
-              preset="reversed"
-              style={{ flex: 1, marginLeft: theme.spacing.sm }}
+              preset="default"
+              style={[{ flex: 1, borderColor: theme.colors.error + "40", borderWidth: 1 }, themed($actionButton)]}
               onPress={handleShutdown}
               disabled={actionInProgress !== null}
+              textStyle={{ color: theme.colors.error }}
             >
               <Icon font="Ionicons" icon="power" size={20} color={theme.colors.error} />
-              <Text weight="medium" style={{ marginLeft: 8 }}>
+              <Text weight="medium" style={{ marginLeft: 8, color: theme.colors.error }}>
                 {t("systemControl:shutdown")}
               </Text>
             </Button>
@@ -244,13 +248,14 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
               titleTx="systemControl:processes"
               rightAction={
                 <Button
-                  preset="reversed"
+                  preset="default"
                   size="sm"
                   onPress={() => {
                     setLoading(true)
                     systemClientModule.requestProcessList()
                   }}
                   disabled={loading || actionInProgress !== null}
+                  style={{ borderColor: theme.colors.border, borderWidth: 1 }}
                 >
                   <Icon font="Ionicons" icon="refresh" size={16} />
                 </Button>
@@ -303,6 +308,11 @@ const $actionButtons: ViewStyle = {
   gap: 12,
 }
 
+const $actionButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingVertical: spacing.md,
+  borderRadius: 12,
+})
+
 const $processItem: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.md,
 })
@@ -314,7 +324,13 @@ const $processInfo: ViewStyle = {
 const $processHeader: ViewStyle = {
   flexDirection: "row",
   justifyContent: "space-between",
-  alignItems: "center",
+  alignItems: "flex-start",
+  marginBottom: 12,
+}
+
+const $processName: ViewStyle = {
+  flex: 1,
+  marginRight: 12,
 }
 
 const $progressSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
