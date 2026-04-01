@@ -39,7 +39,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const route = useRoute<RouteProps>()
   const { t } = useTranslation()
   const { themed, theme } = useAppTheme()
-  const { socket } = useSocket()
+  const { state } = useSocket()
   
   const { filePath, fileName } = route.params
   const language = getLanguageFromExtension(fileName)
@@ -111,7 +111,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   useEffect(() => {
     addLog(`=== Opening file: ${filePath} ===`)
     addLog(`Language: ${language}`)
-    addLog(`Socket connected: ${socket?.connected}`)
+    addLog(`Socket status: ${state?.status}`)
     
     // Reset state for new file
     callbackRegisteredRef.current = false
@@ -153,7 +153,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
       unsubRead()
       unsubWrite()
     }
-  }, [filePath, language, socket?.connected, handleFileRead, handleFileWrite, loading, addLog])
+  }, [filePath, language, state?.status, handleFileRead, handleFileWrite, addLog])
 
   const hasChanges = content.length > 0
   
@@ -201,7 +201,9 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           <View style={$centered}>
             <Icon font="Ionicons" icon="hourglass" size={32} color={theme.colors.textDim} />
             <Text color="textDim" style={{ marginTop: 16 }}>Loading file...</Text>
-            <Text color="textDim" size="xs" style={{ marginTop: 8 }}>Socket: {socket?.connected ? 'Connected' : 'Disconnected'}</Text>
+            <Text color="textDim" size="xs" style={{ marginTop: 8 }}>
+              Socket: {state?.status === 'connected' ? 'Connected ✓' : state?.status || 'Connecting...'}
+            </Text>
           </View>
         ) : error ? (
           <View style={$centered}>
