@@ -1,5 +1,6 @@
 import { FC, useState, useEffect } from 'react'
 import { View, ViewStyle } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import CodeEditor from '@uiw/react-textarea-code-editor'
 
@@ -42,7 +43,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [language, setLanguage] = useState('text')
   
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -67,7 +67,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         
         if (result.success && result.data) {
           setContent(result.data.content)
-          setLanguage(result.data.language)
         } else {
           setError(result.error || 'Failed to read file')
           setAlertConfig({
@@ -193,8 +192,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
             <CodeEditor
               key={`editor-${filePath}`}
               value={content}
-              language={language}
-              placeholder="File content..."
               onChange={(e) => setContent(e.target.value)}
               padding={16}
               style={{
@@ -203,6 +200,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
                 backgroundColor: 'transparent',
                 color: editorColor,
                 minHeight: 500,
+                lineHeight: 1.5,
               }}
             />
           </View>
