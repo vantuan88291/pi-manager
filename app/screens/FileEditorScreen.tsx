@@ -162,17 +162,10 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         titleTx="fileEditor:title" 
         leftIcon="back" 
         onLeftPress={handleBack}
-        rightComponent={
-          <Button
-            preset="default"
-            size="sm"
-            onPress={handleSave}
-            disabled={saving || !hasChanges}
-            style={{ marginRight: 8 }}
-          >
-            <Icon font="Ionicons" icon="save" size={18} color={theme.colors.tint} />
-          </Button>
-        }
+        rightIcon="save"
+        rightIconColor={hasChanges ? theme.colors.tint : theme.colors.textDim}
+        onRightPress={handleSave}
+        disabled={saving || !hasChanges}
       />
       
       <View style={themed($editorContainer)}>
