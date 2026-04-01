@@ -260,8 +260,8 @@ export const fileManagerModule: ServerSocketModule = {
     })
 
     // Create folder
-    socket.on('file:create-folder', async ({ path: folderPath, name }: { path: string; name: string }) => {
-      const folderPath = path.join(folderPath, name)
+    socket.on('file:create-folder', async ({ path: parentPath, name }: { path: string; name: string }) => {
+      const folderPath = path.join(parentPath, name)
       console.log(`[file-manager] creating folder: ${folderPath}`)
       try {
         await createFolder(folderPath)
