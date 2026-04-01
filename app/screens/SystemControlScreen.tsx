@@ -1,32 +1,36 @@
 import { FC, useState, useEffect } from "react"
-import { View, ViewStyle, FlatList } from "react-native"
+import { View, ViewStyle, FlatList, RefreshControl } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useNavigation } from "@react-navigation/native"
 
 import { Header } from "@/components/Header"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
+import { Card } from "@/components/Card"
 import { Button } from "@/components/Button"
 import { Icon } from "@/components/Icon"
+import { Badge } from "@/components/Badge"
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
+import { SectionHeader } from "@/components/SectionHeader"
 import { useAppTheme } from "@/theme/context"
+import { $styles } from "@/theme/styles"
 import type { ThemedStyle } from "@/theme/types"
-import type { NativeStackScreenProps } from "@react-navigation/native-stack"
-import type { AppStackParamList } from "@/navigators/navigationTypes"
+import type { AppStackScreenProps } from "@/navigators/navigationTypes"
 import { useSocket } from "@/services/socket/SocketContext"
 import { systemClientModule } from "@/services/socket/modules/system"
 import type { ProcessInfo } from "../../shared/types/system"
 
-type SystemControlScreenProps = NativeStackScreenProps<AppStackParamList, "SystemControl">
+type SystemControlScreenProps = AppStackScreenProps<"SystemControl">
 
 export const SystemControlScreen: FC<SystemControlScreenProps> = function SystemControlScreen() {
-  const { themed, theme } = useAppTheme()
-  const { t } = useTranslation()
   const navigation = useNavigation()
+  const { t } = useTranslation()
+  const { themed, theme } = useAppTheme()
   const { subscribeToModule, unsubscribeFromModule } = useSocket()
 
   const [processes, setProcesses] = useState<ProcessInfo[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [actionInProgress, setActionInProgress] = useState<string | null>(null)
 
   const [alertConfig, setAlertConfig] = useState<{
@@ -43,6 +47,7 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
     const unsub = systemClientModule.onProcesses((procs) => {
       setProcesses(procs)
       setLoading(false)
+      setRefreshing(false)
     })
 
     return () => {
@@ -53,6 +58,12 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
 
   const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: "OK" }]) => {
     setAlertConfig({ visible: true, title, message, buttons })
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    systemClientModule.requestProcessList()
+    setTimeout(() => setRefreshing(false), 1000)
   }
 
   const handleReboot = () => {
@@ -67,6 +78,10 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
           onPress: () => {
             setActionInProgress("reboot")
             systemClientModule.requestReboot()
+            setTimeout(() => {
+              setActionInProgress(null)
+              showAlert(t("common:success"), t("systemControl:rebooting"))
+            }, 2500)
           },
         },
       ]
@@ -85,6 +100,10 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
           onPress: () => {
             setActionInProgress("shutdown")
             systemClientModule.requestShutdown()
+            setTimeout(() => {
+              setActionInProgress(null)
+              showAlert(t("common:success"), t("systemControl:shuttingDown"))
+            }, 2500)
           },
         },
       ]
@@ -111,126 +130,124 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
   const renderProcessItem = ({ item }: { item: ProcessInfo }) => (
     <View style={themed($processItem)}>
       <View style={$processInfo}>
-        <Text weight="medium" size="sm" numberOfLines={1}>
+        <Text weight="semiBold" size="sm" color="text" numberOfLines={1}>
           {item.name}
         </Text>
-        <Text size="xs" color="dim" numberOfLines={1}>
+        <Text size="xs" color="textDim" numberOfLines={1}>
+          PID: {item.pid} • {item.user}
+        </Text>
+        <Text size="xs" color="textDim" numberOfLines={2} style={{ marginTop: 4 }}>
           {item.command}
         </Text>
       </View>
       <View style={$processStats}>
-        <View style={themed($statBadge)}>
-          <Text size="xs">{(item.cpu ?? 0).toFixed(1)}%</Text>
+        <View style={themed([$statBadge, { backgroundColor: theme.colors.success + "15" }])}>
+          <Text size="xs" weight="medium" color="success">
+            {(item.cpu ?? 0).toFixed(1)}%
+          </Text>
         </View>
-        <View style={themed($statBadge)}>
-          <Text size="xs">{(item.memory ?? 0).toFixed(1)}%</Text>
+        <View style={themed([$statBadge, { backgroundColor: theme.colors.warning + "15" }])}>
+          <Text size="xs" weight="medium" color="warning">
+            {(item.memory ?? 0).toFixed(1)}%
+          </Text>
         </View>
         <Button
           preset="reversed"
+          size="sm"
           onPress={() => handleKillProcess(item)}
           disabled={actionInProgress !== null}
+          style={{ marginLeft: 8 }}
         >
-          <Icon
-            font="Ionicons"
-            icon="close"
-            size={16}
-            color={theme.colors.error}
-          />
+          <Icon font="Ionicons" icon="close" size={16} color={theme.colors.error} />
         </Button>
       </View>
     </View>
   )
 
-  const renderHeader = () => (
-    <View>
-      <View style={themed($section)}>
-        <Text weight="bold" size="md" style={{ marginBottom: 12 }}>
-          {t("systemControl:actions")}
-        </Text>
-        <View style={$actionButtons}>
-          <Button
-            preset="reversed"
-            style={{ flex: 1, marginRight: 8 }}
-            onPress={handleReboot}
-            disabled={actionInProgress !== null}
-          >
-            <Icon
-              font="Ionicons"
-              icon="refresh"
-              size={20}
-              color={theme.colors.error}
-            />
-            <Text weight="medium" style={{ marginLeft: 8 }}>
-              {t("systemControl:reboot")}
-            </Text>
-          </Button>
-          <Button
-            preset="reversed"
-            style={{ flex: 1, marginLeft: 8 }}
-            onPress={handleShutdown}
-            disabled={actionInProgress !== null}
-          >
-            <Icon
-              font="Ionicons"
-              icon="power"
-              size={20}
-              color={theme.colors.error}
-            />
-            <Text weight="medium" style={{ marginLeft: 8 }}>
-              {t("systemControl:shutdown")}
-            </Text>
-          </Button>
-        </View>
-      </View>
-
-      <View style={themed($section)}>
-        <View style={$sectionHeader}>
-          <Text weight="bold" size="md">
-            {t("systemControl:processes")}
-          </Text>
-          <Button
-            preset="reversed"
-            onPress={() => {
-              setLoading(true)
-              systemClientModule.requestProcessList()
-            }}
-            disabled={loading || actionInProgress !== null}
-          >
-            <Icon font="Ionicons" icon="refresh" size={16} />
-          </Button>
-        </View>
-      </View>
-    </View>
-  )
-
   return (
-    <Screen preset="scroll">
-      <Header
-        titleTx="systemControl:title"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
+    <Screen
+      preset="scroll"
+      ScrollViewProps={{
+        refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
+      }}
+    >
+      <Header titleTx="systemControl:title" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+
+      {/* System Actions Card */}
+      <Card
+        headingTx="systemControl:actions"
+        style={themed($card)}
+        ContentComponent={
+          <View style={$actionButtons}>
+            <Button
+              preset="reversed"
+              style={{ flex: 1 }}
+              onPress={handleReboot}
+              disabled={actionInProgress !== null}
+            >
+              <Icon font="Ionicons" icon="refresh" size={20} color={theme.colors.error} />
+              <Text weight="medium" style={{ marginLeft: 8 }}>
+                {t("systemControl:reboot")}
+              </Text>
+            </Button>
+            <Button
+              preset="reversed"
+              style={{ flex: 1, marginLeft: theme.spacing.sm }}
+              onPress={handleShutdown}
+              disabled={actionInProgress !== null}
+            >
+              <Icon font="Ionicons" icon="power" size={20} color={theme.colors.error} />
+              <Text weight="medium" style={{ marginLeft: 8 }}>
+                {t("systemControl:shutdown")}
+              </Text>
+            </Button>
+          </View>
+        }
       />
 
-      {renderHeader()}
+      {/* Process List Card */}
+      <Card
+        style={themed($card)}
+        ContentComponent={
+          <View>
+            <SectionHeader
+              titleTx="systemControl:processes"
+              rightAction={
+                <Button
+                  preset="reversed"
+                  size="sm"
+                  onPress={() => {
+                    setLoading(true)
+                    systemClientModule.requestProcessList()
+                  }}
+                  disabled={loading || actionInProgress !== null}
+                >
+                  <Icon font="Ionicons" icon="refresh" size={16} />
+                </Button>
+              }
+            />
 
-      <View style={themed($processList)}>
-        {loading ? (
-          <View style={$centered}>
-            <Text color="dim">{t("systemControl:searchingProcesses")}</Text>
+            {loading ? (
+              <View style={themed($centered)}>
+                <Text color="textDim">{t("systemControl:searchingProcesses")}</Text>
+              </View>
+            ) : processes.length === 0 ? (
+              <View style={themed($centered)}>
+                <Text color="textDim">{t("systemControl:noProcesses")}</Text>
+              </View>
+            ) : (
+              <View style={{ marginTop: theme.spacing.sm }}>
+                {processes.map((process, index) => (
+                  <View key={process.pid}>
+                    {renderProcessItem({ item: process })}
+                    {index < processes.length - 1 && <View style={themed($separator)} />}
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
-        ) : processes.length === 0 ? (
-          <View style={$centered}>
-            <Text color="dim">{t("systemControl:noProcesses")}</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={processes}
-            keyExtractor={(item) => item.pid.toString()}
-            renderItem={renderProcessItem}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
+        }
+      />
 
       <AlertModal
         visible={alertConfig.visible}
@@ -243,36 +260,20 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
   )
 }
 
-const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingTop: spacing.lg,
-  paddingBottom: spacing.md,
+const $card: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.lg,
 })
-
-const $sectionHeader: ViewStyle = {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 12,
-}
 
 const $actionButtons: ViewStyle = {
   flexDirection: "row",
+  gap: 12,
 }
 
-const $processList: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingBottom: spacing.lg,
-  flex: 1,
-})
-
-const $processItem: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
+const $processItem: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
   paddingVertical: spacing.sm,
-  borderBottomWidth: 1,
-  borderBottomColor: colors.border,
 })
 
 const $processInfo: ViewStyle = {
@@ -283,19 +284,23 @@ const $processInfo: ViewStyle = {
 const $processStats: ViewStyle = {
   flexDirection: "row",
   alignItems: "center",
-  gap: 8,
 }
 
-const $statBadge: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  paddingHorizontal: spacing.xs,
-  paddingVertical: 2,
-  backgroundColor: colors.border,
-  borderRadius: 4,
-  minWidth: 40,
+const $statBadge: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingHorizontal: spacing.sm,
+  paddingVertical: 4,
+  borderRadius: 6,
+  minWidth: 50,
   alignItems: "center",
 })
 
-const $centered: ViewStyle = {
-  padding: 40,
+const $separator: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  height: 1,
+  backgroundColor: colors.border,
+  marginTop: 12,
+})
+
+const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingVertical: spacing.xl,
   alignItems: "center",
-}
+})
