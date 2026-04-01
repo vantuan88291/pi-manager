@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from "react"
-import { View, ViewStyle, FlatList, RefreshControl } from "react-native"
+import { View, ViewStyle, RefreshControl } from "react-native"
 import { useTranslation } from "react-i18next"
 import { useNavigation } from "@react-navigation/native"
 
@@ -9,18 +9,85 @@ import { Text } from "@/components/Text"
 import { Card } from "@/components/Card"
 import { Button } from "@/components/Button"
 import { Icon } from "@/components/Icon"
-import { Badge } from "@/components/Badge"
+import { ProgressBar } from "@/components/ProgressBar"
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
 import { SectionHeader } from "@/components/SectionHeader"
 import { useAppTheme } from "@/theme/context"
-import { $styles } from "@/theme/styles"
 import type { ThemedStyle } from "@/theme/types"
-import type { AppStackScreenProps } from "@/navigators/navigationTypes"
+import type { AppStackParamList } from "@/navigators/navigationTypes"
 import { useSocket } from "@/services/socket/SocketContext"
 import { systemClientModule } from "@/services/socket/modules/system"
 import type { ProcessInfo } from "../../shared/types/system"
 
-type SystemControlScreenProps = AppStackScreenProps<"SystemControl">
+type SystemControlScreenProps = import("@react-navigation/native").NativeStackScreenProps<AppStackParamList, "SystemControl">
+
+interface ProcessListItemProps {
+  process: ProcessInfo
+  onKill: (process: ProcessInfo) => void
+  disabled: boolean
+}
+
+const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }) => {
+  const { themed, theme } = useAppTheme()
+  const { t } = useTranslation()
+
+  const cpuColor = process.cpu > 70 ? theme.colors.error : process.cpu > 40 ? theme.colors.warning : theme.colors.success
+  const memColor = process.memory > 70 ? theme.colors.error : process.memory > 40 ? theme.colors.warning : theme.colors.success
+
+  return (
+    <View style={themed($processItem)}>
+      <View style={$processInfo}>
+        <View style={$processHeader}>
+          <Text weight="semiBold" size="md" color="text" numberOfLines={1}>
+            {process.name}
+          </Text>
+          <Button
+            preset="reversed"
+            size="sm"
+            onPress={() => onKill(process)}
+            disabled={disabled}
+          >
+            <Icon font="Ionicons" icon="close" size={16} color={theme.colors.error} />
+          </Button>
+        </View>
+        
+        <Text size="xs" color="textDim" numberOfLines={1} style={{ marginTop: 4 }}>
+          PID: {process.pid} • {process.user}
+        </Text>
+        
+        <Text size="xs" color="textDim" numberOfLines={2} style={{ marginTop: 6 }}>
+          {process.command}
+        </Text>
+
+        {/* CPU Progress Bar */}
+        <View style={themed($progressSection)}>
+          <View style={$progressLabel}>
+            <Text size="xs" weight="medium" color="text">CPU</Text>
+            <Text size="xs" weight="semiBold" color={cpuColor}>{(process.cpu ?? 0).toFixed(1)}%</Text>
+          </View>
+          <ProgressBar
+            progress={(process.cpu ?? 0) / 100}
+            color={cpuColor}
+            size="sm"
+          />
+        </View>
+
+        {/* Memory Progress Bar */}
+        <View style={themed($progressSection)}>
+          <View style={$progressLabel}>
+            <Text size="xs" weight="medium" color="text">RAM</Text>
+            <Text size="xs" weight="semiBold" color={memColor}>{(process.memory ?? 0).toFixed(1)}%</Text>
+          </View>
+          <ProgressBar
+            progress={(process.memory ?? 0) / 100}
+            color={memColor}
+            size="sm"
+          />
+        </View>
+      </View>
+    </View>
+  )
+}
 
 export const SystemControlScreen: FC<SystemControlScreenProps> = function SystemControlScreen() {
   const navigation = useNavigation()
@@ -127,43 +194,6 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
     )
   }
 
-  const renderProcessItem = ({ item }: { item: ProcessInfo }) => (
-    <View style={themed($processItem)}>
-      <View style={$processInfo}>
-        <Text weight="semiBold" size="sm" color="text" numberOfLines={1}>
-          {item.name}
-        </Text>
-        <Text size="xs" color="textDim" numberOfLines={1}>
-          PID: {item.pid} • {item.user}
-        </Text>
-        <Text size="xs" color="textDim" numberOfLines={2} style={{ marginTop: 4 }}>
-          {item.command}
-        </Text>
-      </View>
-      <View style={$processStats}>
-        <View style={themed([$statBadge, { backgroundColor: theme.colors.success + "15" }])}>
-          <Text size="xs" weight="medium" color="success">
-            {(item.cpu ?? 0).toFixed(1)}%
-          </Text>
-        </View>
-        <View style={themed([$statBadge, { backgroundColor: theme.colors.warning + "15" }])}>
-          <Text size="xs" weight="medium" color="warning">
-            {(item.memory ?? 0).toFixed(1)}%
-          </Text>
-        </View>
-        <Button
-          preset="reversed"
-          size="sm"
-          onPress={() => handleKillProcess(item)}
-          disabled={actionInProgress !== null}
-          style={{ marginLeft: 8 }}
-        >
-          <Icon font="Ionicons" icon="close" size={16} color={theme.colors.error} />
-        </Button>
-      </View>
-    </View>
-  )
-
   return (
     <Screen
       preset="scroll"
@@ -239,7 +269,11 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
               <View style={{ marginTop: theme.spacing.sm }}>
                 {processes.map((process, index) => (
                   <View key={process.pid}>
-                    {renderProcessItem({ item: process })}
+                    <ProcessListItem
+                      process={process}
+                      onKill={handleKillProcess}
+                      disabled={actionInProgress !== null}
+                    />
                     {index < processes.length - 1 && <View style={themed($separator)} />}
                   </View>
                 ))}
@@ -270,34 +304,34 @@ const $actionButtons: ViewStyle = {
 }
 
 const $processItem: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.md,
 })
 
 const $processInfo: ViewStyle = {
   flex: 1,
-  marginRight: 12,
 }
 
-const $processStats: ViewStyle = {
+const $processHeader: ViewStyle = {
   flexDirection: "row",
+  justifyContent: "space-between",
   alignItems: "center",
 }
 
-const $statBadge: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.sm,
-  paddingVertical: 4,
-  borderRadius: 6,
-  minWidth: 50,
-  alignItems: "center",
+const $progressSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginTop: spacing.sm,
+  gap: 6,
 })
 
-const $separator: ThemedStyle<ViewStyle> = ({ colors }) => ({
+const $progressLabel: ViewStyle = {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+}
+
+const $separator: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   height: 1,
   backgroundColor: colors.border,
-  marginTop: 12,
+  marginTop: spacing.md,
 })
 
 const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
