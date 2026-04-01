@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useCallback } from 'react'
-import { View, ViewStyle } from 'react-native'
+import { View, ViewStyle, ScrollView } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import CodeEditor from '@uiw/react-textarea-code-editor'
@@ -48,6 +48,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [debugLogs, setDebugLogs] = useState<string[]>([])
   
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -56,16 +57,24 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     buttons: AlertButton[]
   }>({ visible: false, title: '', buttons: [] })
 
+  // Helper to add debug log
+  const addLog = useCallback((msg: string) => {
+    console.log('[FileEditor]', msg)
+    setDebugLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`].slice(-10))
+  }, [])
+
   // Handle file read - stable callback
   const handleFileRead = useCallback((result: { success: boolean; data?: { content: string }; error?: string }) => {
-    console.log('[FileEditor] handleFileRead called:', result.success, result.data?.content?.length)
+    addLog(`handleFileRead: success=${result.success}, length=${result.data?.content?.length || 0}`)
     setLoading(false)
     
     if (result.success && result.data) {
       setContent(result.data.content)
       setError(null)
+      addLog('✅ File loaded successfully')
     } else {
       setError(result.error || 'Failed to read file')
+      addLog(`❌ Error: ${result.error}`)
       setAlertConfig({ 
         visible: true, 
         title: 'Error', 
@@ -73,12 +82,13 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         buttons: [{ text: 'OK' }]
       })
     }
-  }, [])
+  }, [addLog])
 
   // Handle file write - stable callback
   const handleFileWrite = useCallback((result: { success: boolean; error?: string }) => {
     setSaving(false)
     if (result.success) {
+      addLog('✅ File saved successfully')
       setAlertConfig({
         visible: true,
         title: 'Success',
@@ -86,6 +96,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         buttons: [{ text: 'OK', onPress: () => navigation.goBack() }]
       })
     } else {
+      addLog(`❌ Save error: ${result.error}`)
       setAlertConfig({
         visible: true,
         title: 'Error',
@@ -93,33 +104,36 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         buttons: [{ text: 'OK' }]
       })
     }
-  }, [navigation])
+  }, [navigation, addLog])
 
   // Register callbacks and load file - runs once per filePath
   useEffect(() => {
-    console.log('[FileEditor] useEffect - filePath:', filePath)
+    addLog(`=== Opening file: ${filePath} ===`)
+    addLog(`Language detected: ${language}`)
     
     // Register callbacks FIRST
     const unsubRead = fileManagerClientModule.onRead(handleFileRead)
     const unsubWrite = fileManagerClientModule.onWrite(handleFileWrite)
     
-    console.log('[FileEditor] callbacks registered, calling readFile...')
+    addLog('Callbacks registered')
     
     // THEN load file (callbacks are ready)
+    addLog('Calling readFile...')
     fileManagerClientModule.readFile(filePath)
     
     // Cleanup on unmount
     return () => {
-      console.log('[FileEditor] cleanup')
+      addLog('Cleanup - unsubscribing')
       unsubRead()
       unsubWrite()
       unsubscribeFromModule('file-manager')
     }
-  }, [filePath, handleFileRead, handleFileWrite, subscribeToModule, unsubscribeFromModule])
+  }, [filePath, handleFileRead, handleFileWrite, language, subscribeToModule, unsubscribeFromModule, addLog])
 
-  const hasChanges = content.length > 0 // Simple check
+  const hasChanges = content.length > 0
   
   const handleSave = () => {
+    addLog('Save button pressed')
     setSaving(true)
     fileManagerClientModule.writeFile(filePath, content)
   }
@@ -161,6 +175,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         {loading ? (
           <View style={$centered}>
             <Icon font="Ionicons" icon="hourglass" size={32} color={theme.colors.textDim} />
+            <Text color="textDim" style={{ marginTop: 16 }}>Loading file...</Text>
           </View>
         ) : error ? (
           <View style={$centered}>
@@ -174,7 +189,10 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
               value={content}
               language={language}
               placeholder="File content..."
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                setContent(e.target.value)
+                addLog(`Content changed: ${e.target.value.length} chars`)
+              }}
               padding={16}
               style={{
                 fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
@@ -186,6 +204,20 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
             />
           </View>
         )}
+
+        {/* Debug Logs Panel */}
+        <View style={themed($debugPanel)}>
+          <Text weight="semiBold" size="xs" color="textDim" style={{ marginBottom: 8 }}>
+            Debug Logs:
+          </Text>
+          <ScrollView style={$logScrollView} nestedScrollEnabled={true}>
+            {debugLogs.map((log, i) => (
+              <Text key={i} size="xs" color="textDim" style={{ marginBottom: 4 }}>
+                {log}
+              </Text>
+            ))}
+          </ScrollView>
+        </View>
       </View>
 
       <AlertModal
@@ -209,9 +241,21 @@ const $editorWrapper: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderWidth: 1,
   borderColor: colors.border,
   overflow: 'hidden',
+  marginBottom: spacing.md,
 })
 
 const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: 40,
   alignItems: 'center',
 })
+
+const $debugPanel: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.input,
+  borderRadius: 8,
+  padding: spacing.sm,
+  maxHeight: 150,
+})
+
+const $logScrollView: ViewStyle = {
+  maxHeight: 100,
+}
