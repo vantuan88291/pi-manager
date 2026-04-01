@@ -2,7 +2,7 @@ import { ExpoConfig, ConfigContext } from "@expo/config"
 
 /**
  * Use tsx/cjs here so we can use TypeScript for our Config Plugins
- * and not have to compile them to JavaScript. test
+ * and not  hhhhave to compile them to JavaScript.
  *
  * Sehttps://docs.expo.dev/config-plugins/plugins/#add-typescript-support-and-convert-to-dynamic-app-config
  */

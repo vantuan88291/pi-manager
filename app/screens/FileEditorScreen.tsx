@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useCallback, useRef } from 'react'
+import { FC, useState, useEffect, useCallback } from 'react'
 import { View, ViewStyle } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
@@ -6,6 +6,7 @@ import CodeEditor from '@uiw/react-textarea-code-editor'
 
 import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
+import { Text } from '@/components/Text'
 import { Icon } from '@/components/Icon'
 import { AlertModal, type AlertButton } from '@/components/AlertModal'
 import { useAppTheme } from '@/theme/context'
@@ -46,9 +47,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const hasChangesRef = useRef(false)
-  const originalContentRef = useRef('')
-  const fileLoadedRef = useRef(false)
+  const [error, setError] = useState<string | null>(null)
   
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -57,18 +56,16 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     buttons: AlertButton[]
   }>({ visible: false, title: '', buttons: [] })
 
-  // Stable callback for file read - won't change between renders
+  // Handle file read - stable callback
   const handleFileRead = useCallback((result: { success: boolean; data?: { content: string }; error?: string }) => {
-    if (fileLoadedRef.current) return // Prevent duplicate calls
-    
+    console.log('[FileEditor] handleFileRead called:', result.success, result.data?.content?.length)
     setLoading(false)
-    fileLoadedRef.current = true
     
     if (result.success && result.data) {
       setContent(result.data.content)
-      originalContentRef.current = result.data.content
-      hasChangesRef.current = false
+      setError(null)
     } else {
+      setError(result.error || 'Failed to read file')
       setAlertConfig({ 
         visible: true, 
         title: 'Error', 
@@ -78,12 +75,10 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     }
   }, [])
 
-  // Stable callback for file write
+  // Handle file write - stable callback
   const handleFileWrite = useCallback((result: { success: boolean; error?: string }) => {
     setSaving(false)
     if (result.success) {
-      originalContentRef.current = content
-      hasChangesRef.current = false
       setAlertConfig({
         visible: true,
         title: 'Success',
@@ -98,41 +93,39 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         buttons: [{ text: 'OK' }]
       })
     }
-  }, [content, navigation])
+  }, [navigation])
 
-  // Register callbacks ONCE on mount
+  // Register callbacks and load file - runs once per filePath
   useEffect(() => {
+    console.log('[FileEditor] useEffect - filePath:', filePath)
+    
+    // Register callbacks FIRST
     const unsubRead = fileManagerClientModule.onRead(handleFileRead)
     const unsubWrite = fileManagerClientModule.onWrite(handleFileWrite)
     
-    // Load file content
+    console.log('[FileEditor] callbacks registered, calling readFile...')
+    
+    // THEN load file (callbacks are ready)
     fileManagerClientModule.readFile(filePath)
     
+    // Cleanup on unmount
     return () => {
+      console.log('[FileEditor] cleanup')
       unsubRead()
       unsubWrite()
       unsubscribeFromModule('file-manager')
     }
   }, [filePath, handleFileRead, handleFileWrite, subscribeToModule, unsubscribeFromModule])
 
+  const hasChanges = content.length > 0 // Simple check
+  
   const handleSave = () => {
-    if (!hasChangesRef.current) {
-      navigation.goBack()
-      return
-    }
-    
     setSaving(true)
     fileManagerClientModule.writeFile(filePath, content)
   }
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = e.target.value
-    setContent(newContent)
-    hasChangesRef.current = newContent !== originalContentRef.current
-  }
-
   const handleBack = () => {
-    if (hasChangesRef.current) {
+    if (hasChanges && !loading) {
       setAlertConfig({
         visible: true,
         title: 'Unsaved Changes',
@@ -151,7 +144,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const editorBgColor = isDark ? '#1e293b' : '#f8fafc'
   const editorColor = isDark ? '#e2e8f0' : '#1e293b'
 
-  const hasChanges = hasChangesRef.current
   const saveButtonText = saving ? 'Saving...' : (hasChanges ? 'Save' : '')
 
   return (
@@ -162,7 +154,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         onLeftPress={handleBack}
         rightText={saveButtonText}
         onRightPress={handleSave}
-        disabled={saving || !hasChanges}
+        disabled={saving || loading}
       />
       
       <View style={themed($editorContainer)}>
@@ -170,13 +162,19 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           <View style={$centered}>
             <Icon font="Ionicons" icon="hourglass" size={32} color={theme.colors.textDim} />
           </View>
+        ) : error ? (
+          <View style={$centered}>
+            <Icon font="Ionicons" icon="alert-circle" size={32} color={theme.colors.error} />
+            <Text color="error" style={{ marginTop: 16 }}>{error}</Text>
+          </View>
         ) : (
           <View style={themed([$editorWrapper, { backgroundColor: editorBgColor }])}>
             <CodeEditor
+              key={`editor-${filePath}`}
               value={content}
               language={language}
               placeholder="File content..."
-              onChange={handleContentChange}
+              onChange={(e) => setContent(e.target.value)}
               padding={16}
               style={{
                 fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
@@ -213,7 +211,7 @@ const $editorWrapper: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   overflow: 'hidden',
 })
 
-const $centered: ViewStyle = {
+const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: 40,
   alignItems: 'center',
-}
+})
