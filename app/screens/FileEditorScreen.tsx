@@ -37,7 +37,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const navigation = useNavigation<FileEditorScreenNavProps>()
   const route = useRoute<RouteProps>()
   const { t } = useTranslation()
-  const { theme } = useAppTheme()
+  const { themed, theme } = useAppTheme()
   const { subscribeToModule, unsubscribeFromModule } = useSocket()
   
   const { filePath, fileName } = route.params
