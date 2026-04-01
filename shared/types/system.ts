@@ -44,3 +44,25 @@ export interface SystemInfo {
     serial: string
   }
 }
+
+export interface ProcessInfo {
+  pid: number
+  name: string
+  cpu: number
+  memory: number
+  user: string
+  command: string
+  started: number
+}
+
+export interface SystemAction {
+  action: "reboot" | "shutdown" | "restart-service"
+  serviceName?: string
+  confirmed: boolean
+}
+
+export interface SystemActionResponse {
+  success: boolean
+  message: string
+  action: string
+}

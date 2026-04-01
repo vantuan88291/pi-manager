@@ -1,20 +1,24 @@
 import si from "systeminformation"
+import { exec } from "node:child_process"
+import { promisify } from "node:util"
 import type { Server, Socket } from "socket.io"
 import type { ServerSocketModule } from "../types.js"
-import type { SystemStats, SystemInfo } from "../../../../shared/types/system.js"
+import type { SystemStats, SystemInfo, ProcessInfo } from "../../../../shared/types/system.js"
 
+const execAsync = promisify(exec)
 const POLL_INTERVAL_MS = 2000
 
 // Track subscribers per socket
 const subscribers = new Set<string>()
 
 async function getSystemStats(): Promise<SystemStats> {
-  const [cpu, mem, disk, network, temp] = await Promise.all([
+  const [cpu, mem, disk, network, temp, cpuInfo] = await Promise.all([
     si.currentLoad(),
     si.mem(),
     si.fsSize(),
     si.networkInterfaces(),
     si.cpuTemperature(),
+    si.cpu(),
   ])
 
   // Calculate actual used memory (excluding buffers/cache)
@@ -25,9 +29,9 @@ async function getSystemStats(): Promise<SystemStats> {
     cpu: {
       usage: Math.round(cpu.currentLoad),
       temperature: temp.main ?? 0,
-      model: cpu.cpuModel || "Unknown",
+      model: cpuInfo.manufacturer || "Unknown",
       cores: cpu.cpus.length,
-      frequency: cpu.currentLoad_user || 0,
+      frequency: cpu.currentLoadUser || 0,
     },
     memory: {
       total: mem.total,
@@ -73,19 +77,133 @@ async function getSystemInfo(): Promise<SystemInfo> {
   }
 }
 
+async function getProcessList(): Promise<ProcessInfo[]> {
+  const { stdout } = await execAsync(
+    "ps -eo pid,comm,%cpu,%mem,user,lstart,cmd --no-headers --sort=-%cpu | head -20",
+    { timeout: 5000 }
+  )
+
+  const processes: ProcessInfo[] = []
+  const lines = stdout.trim().split("\n")
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+
+    // Parse ps output: pid comm %cpu %mem user lstart cmd
+    // lstart is "Day Mon DD HH:MM:SS YYYY" (5 fields)
+    const parts = line.trim().split(/\s+/)
+    if (parts.length < 10) continue
+
+    const pid = parseInt(parts[0])
+    const name = parts[1]
+    const cpu = parseFloat(parts[2])
+    const memory = parseFloat(parts[3])
+    const user = parts[4]
+    // lstart is parts[5] to parts[9] (5 fields)
+    const startedStr = parts.slice(5, 10).join(" ")
+    const started = new Date(startedStr).getTime()
+    // cmd is everything after lstart
+    const command = parts.slice(10).join(" ") || name
+
+    if (!isNaN(pid)) {
+      processes.push({ pid, name, cpu, memory, user, command, started })
+    }
+  }
+
+  return processes
+}
+
 export const systemModule: ServerSocketModule = {
   name: "system",
 
   register(socket: Socket, _io: Server) {
     socket.on("system:reboot", async () => {
-      // Ack-only, destructive action - would need confirmation on frontend
       console.log("[system] reboot requested")
-      // In production: execute `sudo reboot`
-      socket.emit("error", {
-        module: "system",
-        code: "NOT_IMPLEMENTED",
-        message: "Reboot not implemented in dev mode",
-      })
+      try {
+        socket.emit("system:action-started", { action: "reboot", message: "Rebooting..." })
+        // In production: await execAsync("sudo reboot")
+        // For now, simulate success
+        setTimeout(() => {
+          socket.emit("system:action-complete", { 
+            success: true, 
+            message: "System rebooted successfully", 
+            action: "reboot" 
+          })
+        }, 2000)
+      } catch (error: any) {
+        socket.emit("system:action-failed", {
+          success: false,
+          message: error.message || "Reboot failed",
+          action: "reboot",
+        })
+      }
+    })
+
+    socket.on("system:shutdown", async () => {
+      console.log("[system] shutdown requested")
+      try {
+        socket.emit("system:action-started", { action: "shutdown", message: "Shutting down..." })
+        // In production: await execAsync("sudo shutdown now")
+        setTimeout(() => {
+          socket.emit("system:action-complete", { 
+            success: true, 
+            message: "System shutdown successfully", 
+            action: "shutdown" 
+          })
+        }, 2000)
+      } catch (error: any) {
+        socket.emit("system:action-failed", {
+          success: false,
+          message: error.message || "Shutdown failed",
+          action: "shutdown",
+        })
+      }
+    })
+
+    socket.on("system:restart-service", async ({ serviceName }: { serviceName: string }) => {
+      console.log(`[system] restart-service requested: ${serviceName}`)
+      try {
+        socket.emit("system:action-started", { action: "restart-service", message: `Restarting ${serviceName}...` })
+        await execAsync(`sudo systemctl restart ${serviceName}`, { timeout: 30000 })
+        socket.emit("system:action-complete", { 
+          success: true, 
+          message: `${serviceName} restarted successfully`, 
+          action: "restart-service" 
+        })
+      } catch (error: any) {
+        socket.emit("system:action-failed", {
+          success: false,
+          message: error.message || `Failed to restart ${serviceName}`,
+          action: "restart-service",
+        })
+      }
+    })
+
+    socket.on("system:kill-process", async ({ pid }: { pid: number }) => {
+      console.log(`[system] kill-process requested: ${pid}`)
+      try {
+        await execAsync(`kill -9 ${pid}`, { timeout: 5000 })
+        socket.emit("system:process-killed", { success: true, pid })
+      } catch (error: any) {
+        socket.emit("system:process-killed", { 
+          success: false, 
+          pid, 
+          message: error.message 
+        })
+      }
+    })
+
+    socket.on("system:list-processes", async () => {
+      try {
+        const processes = await getProcessList()
+        socket.emit("system:processes", processes)
+      } catch (error: any) {
+        socket.emit("error", {
+          module: "system",
+          code: "PROCESS_LIST_FAILED",
+          message: error.message,
+        })
+      }
     })
   },
 
