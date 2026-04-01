@@ -321,6 +321,8 @@ const vi: Translations = {
     actionFailed: "Thất bại",
     rebooting: "Đang khởi động lại...",
     shuttingDown: "Đang tắt nguồn...",
+    processKilled: "Đã kết thúc {{name}}",
+    killFailed: "Không thể kết thúc tiến trình",
   },
   reboot: {
     title: "Khởi động lại",

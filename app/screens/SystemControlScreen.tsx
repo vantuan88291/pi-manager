@@ -128,8 +128,21 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
       setRefreshing(false)
     })
 
+    // Listen for kill process results
+    const unsubKill = systemClientModule.onProcessKilled((result) => {
+      setActionInProgress(null)
+      if (result.success) {
+        showAlert(t("common:success"), t("systemControl:processKilled", { name: result.name || `PID ${result.pid}` }))
+      } else {
+        showAlert(t("common:error"), result.message || t("systemControl:killFailed"))
+      }
+      // Refresh process list after kill attempt
+      setTimeout(() => systemClientModule.requestProcessList(), 500)
+    })
+
     return () => {
       unsub()
+      unsubKill()
       unsubscribeFromModule("system")
     }
   }, [subscribeToModule, unsubscribeFromModule])
@@ -198,7 +211,8 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
           text: t("common:confirm"),
           style: "destructive",
           onPress: () => {
-            systemClientModule.requestKillProcess(process.pid)
+            setActionInProgress(`kill-${process.pid}`)
+            systemClientModule.requestKillProcess(process.pid, process.name)
           },
         },
       ]

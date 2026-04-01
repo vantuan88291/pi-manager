@@ -320,6 +320,8 @@ const en = {
     actionFailed: "Failed",
     rebooting: "Rebooting...",
     shuttingDown: "Shutting down...",
+    processKilled: "Process {{name}} terminated",
+    killFailed: "Failed to kill process",
   },
   reboot: {
     title: "Reboot",

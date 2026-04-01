@@ -6,6 +6,7 @@ type StatsCallback = (stats: SystemStats) => void
 type InfoCallback = (info: SystemInfo) => void
 type ProcessesCallback = (processes: ProcessInfo[]) => void
 type ActionCallback = (response: { success: boolean; message: string; action: string }) => void
+type ProcessKilledCallback = (result: { success: boolean; pid: number; message?: string; name?: string }) => void
 
 class SystemClientModule implements SocketModule {
   name = "system"
@@ -14,6 +15,8 @@ class SystemClientModule implements SocketModule {
   private infoCallbacks: Set<InfoCallback> = new Set()
   private processesCallbacks: Set<ProcessesCallback> = new Set()
   private actionCallbacks: Set<ActionCallback> = new Set()
+  private processKilledCallbacks: Set<ProcessKilledCallback> = new Set()
+  private processNames: Map<number, string> = new Map()
   private cachedStats: SystemStats | null = null
   private cachedInfo: SystemInfo | null = null
   private cachedProcesses: ProcessInfo[] | null = null
@@ -39,8 +42,10 @@ class SystemClientModule implements SocketModule {
       this.actionCallbacks.forEach((cb) => cb(response))
     })
     socket.on("system:process-killed", (response: { success: boolean; pid: number; message?: string }) => {
-      // Refresh process list after kill
-      this.requestProcessList()
+      const name = this.processNames.get(response.pid)
+      this.processKilledCallbacks.forEach((cb) => cb({ ...response, name }))
+      // Clear the name from map after kill attempt
+      this.processNames.delete(response.pid)
     })
   }
 
@@ -85,6 +90,11 @@ class SystemClientModule implements SocketModule {
     return () => this.actionCallbacks.delete(callback)
   }
 
+  onProcessKilled(callback: ProcessKilledCallback): () => void {
+    this.processKilledCallbacks.add(callback)
+    return () => this.processKilledCallbacks.delete(callback)
+  }
+
   getCachedStats(): SystemStats | null {
     return this.cachedStats
   }
@@ -109,7 +119,10 @@ class SystemClientModule implements SocketModule {
     this.socket?.emit("system:restart-service", { serviceName })
   }
 
-  requestKillProcess(pid: number): void {
+  requestKillProcess(pid: number, name?: string): void {
+    if (name) {
+      this.processNames.set(pid, name)
+    }
     this.socket?.emit("system:kill-process", { pid })
   }
 
