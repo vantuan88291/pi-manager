@@ -1,5 +1,5 @@
-import { FC, useState, useEffect, useMemo } from 'react'
-import { View, ViewStyle, FlatList, RefreshControl } from 'react-native'
+import { FC, useState, useEffect } from 'react'
+import { View, ViewStyle, RefreshControl } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
 
@@ -78,16 +78,16 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress }) => 
   const icon = getFileIcon(item)
   
   return (
-    <ListItem
-      onPress={() => onPress(item)}
-      onLongPress={onLongPress ? () => onLongPress(item) : undefined}
+    <View 
       style={themed($listItem)}
-      leftComponent={
+      onStartShouldSetResponder={() => true}
+      onResponderRelease={() => onPress(item)}
+      onLongPress={onLongPress ? () => onLongPress(item) : undefined}
+    >
+      <View style={$itemContent}>
         <View style={themed($iconBadge)}>
           <Icon font={icon.font} icon={icon.name} color={icon.color} size={24} />
         </View>
-      }
-      textComponent={
         <View style={$textContainer}>
           <Text weight="medium" size="sm" color="text" numberOfLines={1}>
             {item.name}
@@ -105,11 +105,9 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress }) => 
             )}
           </View>
         </View>
-      }
-      rightComponent={
         <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
-      }
-    />
+      </View>
+    </View>
   )
 }
 
@@ -142,13 +140,17 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   }>({ visible: false, item: null })
 
   useEffect(() => {
+    console.log('[FileManager] useEffect - currentPath:', currentPath)
     subscribeToModule('file-manager')
     
     const unsubList = fileManagerClientModule.onList((result) => {
+      console.log('[FileManager] onList callback - items:', result.items?.length, 'error:', result.error)
       if (result.error) {
+        console.error('[FileManager] Error:', result.error)
         setError(result.error)
       } else {
-        setItems(result.items)
+        console.log('[FileManager] Setting items:', result.items?.map(i => i.name).join(', '))
+        setItems(result.items || [])
         setError(null)
       }
       setLoading(false)
@@ -156,6 +158,7 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     })
     
     const unsubQuick = fileManagerClientModule.onQuickAccess((result) => {
+      console.log('[FileManager] Quick access paths:', result.paths?.length)
       setQuickAccessPaths(result.paths)
     })
     
@@ -180,9 +183,11 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     })
     
     // Request quick access paths
+    console.log('[FileManager] Requesting quick access...')
     fileManagerClientModule.requestQuickAccess()
     
     // List current directory immediately
+    console.log('[FileManager] Calling listDirectory:', currentPath)
     fileManagerClientModule.listDirectory(currentPath)
     
     return () => {
@@ -374,21 +379,22 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
           </View>
         ) : items.length === 0 ? (
           <Card style={themed($emptyCard)}>
-            <Text color="textDim">This folder is empty</Text>
+            <Text color="textDim">This folder is empty (items: {items.length})</Text>
           </Card>
         ) : (
-          <FlatList
-            data={items}
-            keyExtractor={(item) => item.path}
-            renderItem={({ item }) => (
-              <FileListItem
-                item={item}
-                onPress={handleNavigate}
-                onLongPress={handleLongPress}
-              />
-            )}
-            scrollEnabled={false}
-          />
+          <View>
+            {console.log('[FileManager] Rendering items:', items.length)}
+            {items.map((item, index) => (
+              <View key={item.path}>
+                <FileListItem
+                  item={item}
+                  onPress={handleNavigate}
+                  onLongPress={handleLongPress}
+                />
+                {index < items.length - 1 && <View style={themed($separator)} />}
+              </View>
+            ))}
+          </View>
         )}
       </View>
 
@@ -452,10 +458,17 @@ const $quickAccessList: ViewStyle = {
 }
 
 const $listItem: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
-  paddingVertical: spacing.sm,
+  paddingVertical: spacing.md,
+  paddingHorizontal: spacing.md,
   borderBottomWidth: 1,
   borderBottomColor: colors.border,
 })
+
+const $itemContent: ViewStyle = {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+}
 
 const $iconBadge: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   width: 40,
@@ -537,4 +550,10 @@ const $fileContent: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   borderRadius: 12,
   margin: spacing.md,
   maxHeight: 400,
+})
+
+const $separator: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  height: 1,
+  backgroundColor: colors.border,
+  marginHorizontal: spacing.md,
 })
