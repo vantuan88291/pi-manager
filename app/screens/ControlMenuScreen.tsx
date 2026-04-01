@@ -30,7 +30,7 @@ interface MenuItem {
   icon: { font: "Ionicons" | "MaterialCommunityIcons"; name: string; color: string; badgeBg: string }
   accentColor: string
   danger?: boolean
-  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage" | "CronJob" | "SystemControl"
+  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage" | "CronJob" | "SystemControl" | "FileManager"
   action?: () => void
 }
 
@@ -229,6 +229,14 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
       icon: { font: "Ionicons", name: "settings-outline", color: "#10B981", badgeBg: "#ECFDF5" }, 
       accentColor: "#10B981", 
       screen: "SystemControl" 
+    },
+    { 
+      id: "files", 
+      titleTx: "controlMenu:files", 
+      subtitle: t("controlMenu:subtitles.files"),
+      icon: { font: "Ionicons", name: "folder-open", color: "#F59E0B", badgeBg: "#FFFBEB" }, 
+      accentColor: "#F59E0B", 
+      screen: "FileManager" 
     },
   ]
 
