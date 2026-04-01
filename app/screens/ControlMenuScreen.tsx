@@ -11,23 +11,26 @@ import { featureColors } from "@/theme/featureColors"
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
 import type { MainTabScreenProps } from "@/navigators/navigationTypes"
 import type { ThemedStyle } from "@/theme/types"
+import type { TxKeyPath } from "@/i18n"
 import { useSocket } from "@/services/socket/SocketContext"
 import { wifiClientModule } from "@/services/socket/modules/wifi"
 import { bluetoothClientModule } from "@/services/socket/modules/bluetooth"
 import { audioClientModule } from "@/services/socket/modules/audio"
 import { storageClientModule } from "@/services/socket/modules/storage"
+import { systemClientModule } from "@/services/socket/modules/system"
 
 type ControlMenuScreenProps = MainTabScreenProps<"Control">
 
 interface MenuItem {
   id: string
-  titleTx: string
-  subtitleTx?: string
+  titleTx: TxKeyPath
+  subtitle?: string  // For dynamic strings
+  subtitleTx?: TxKeyPath  // For translation keys
   subtitleParams?: Record<string, string | number>
   icon: { font: "Ionicons" | "MaterialCommunityIcons"; name: string; color: string; badgeBg: string }
   accentColor: string
   danger?: boolean
-  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage" | "CronJob"
+  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage" | "CronJob" | "SystemControl"
   action?: () => void
 }
 
@@ -152,19 +155,9 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
         { 
           text: t("reboot:confirm"), 
           style: "destructive", 
-          onPress: async () => {
-            try {
-              const response = await fetch('http://192.168.50.134:3001/api/system/reboot', {
-                method: 'POST',
-              })
-              if (response.ok) {
-                showAlert(t("common:success"), t("reboot:rebooting"))
-              } else {
-                showAlert(t("common:error"), t("reboot:failed"))
-              }
-            } catch (error) {
-              showAlert(t("common:error"), t("reboot:failed"))
-            }
+          onPress: () => {
+            systemClientModule.requestReboot()
+            showAlert(t("common:success"), t("reboot:rebooting"))
           } 
         },
       ]
@@ -175,7 +168,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     { 
       id: "wifi", 
       titleTx: "controlMenu:wifi", 
-      subtitleTx: getWifiSubtitle(),
+      subtitle: getWifiSubtitle(),
       icon: { font: "Ionicons", name: "wifi", color: getWifiColors.accent, badgeBg: getWifiColors.badgeBg }, 
       accentColor: getWifiColors.accent, 
       screen: "Wifi" 
@@ -183,7 +176,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     { 
       id: "bluetooth", 
       titleTx: "controlMenu:bluetooth", 
-      subtitleTx: getBtSubtitle(),
+      subtitle: getBtSubtitle(),
       icon: { font: "Ionicons", name: "bluetooth", color: btColors.accent, badgeBg: btColors.badgeBg }, 
       accentColor: btColors.accent, 
       screen: "Bluetooth" 
@@ -191,7 +184,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     { 
       id: "audio", 
       titleTx: "controlMenu:audio", 
-      subtitleTx: getAudioSubtitle(),
+      subtitle: getAudioSubtitle(),
       icon: { font: "Ionicons", name: "volume-high", color: audioColors.accent, badgeBg: audioColors.badgeBg }, 
       accentColor: audioColors.accent, 
       screen: "Audio" 
@@ -199,7 +192,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     { 
       id: "camera", 
       titleTx: "controlMenu:camera", 
-      subtitleTx: t("controlMenu:subtitles.cameraOffline"),
+      subtitle: t("controlMenu:subtitles.cameraOffline"),
       icon: { font: "Ionicons", name: "camera", color: cameraColors.accent, badgeBg: cameraColors.badgeBg }, 
       accentColor: cameraColors.accent, 
       screen: "Camera" 
@@ -207,7 +200,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     { 
       id: "storage", 
       titleTx: "controlMenu:storage", 
-      subtitleTx: getStorageSubtitle(),
+      subtitle: getStorageSubtitle(),
       icon: { font: "MaterialCommunityIcons", name: "harddisk", color: storageColors.accent, badgeBg: storageColors.badgeBg }, 
       accentColor: storageColors.accent, 
       screen: "Storage" 
@@ -215,7 +208,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     { 
       id: "reboot", 
       titleTx: "controlMenu:reboot", 
-      subtitleTx: t("common:ok"),
+      subtitle: t("common:ok"),
       icon: { font: "Ionicons", name: "refresh", color: theme.colors.error, badgeBg: theme.isDark ? "#7F1D1D" : "#FEF2F2" }, 
       accentColor: theme.colors.error, 
       danger: true, 
@@ -228,6 +221,14 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
       icon: { font: "Ionicons", name: "time", color: "#8B5CF6", badgeBg: "#F5F3FF" }, 
       accentColor: "#8B5CF6", 
       screen: "CronJob" 
+    },
+    { 
+      id: "system", 
+      titleTx: "controlMenu:system", 
+      subtitle: t("controlMenu:subtitles.system"),
+      icon: { font: "Ionicons", name: "settings-outline", color: "#10B981", badgeBg: "#ECFDF5" }, 
+      accentColor: "#10B981", 
+      screen: "SystemControl" 
     },
   ]
 
@@ -248,6 +249,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
           <View key={item.id} style={themed($cardWrapper)}>
             <FeatureCard
               titleTx={item.titleTx}
+              subtitle={item.subtitle}
               subtitleTx={item.subtitleTx}
               subtitleParams={item.subtitleParams}
               icon={item.icon}
