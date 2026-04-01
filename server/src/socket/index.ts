@@ -8,6 +8,7 @@ import { bluetoothModule } from "./modules/bluetooth.js"
 import { audioModule } from "./modules/audio.js"
 import { storageModule } from "./modules/storage.js"
 import { cronjobModule } from "./modules/cronjob.js"
+import { fileManagerModule } from "./modules/file-manager.js"
 
 import type { ServerSocketModule } from "./types.js"
 
@@ -36,6 +37,7 @@ const modules: ServerSocketModule[] = [
   audioModule,
   storageModule,
   cronjobModule,
+  fileManagerModule,
 ]
 
 export function setupSocketServer(io: Server) {

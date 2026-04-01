@@ -130,6 +130,7 @@ const vi: Translations = {
     storage: "Lưu trữ",
     cronjob: "Cron Jobs",
     system: "Hệ thống",
+    files: "File Manager",
     reboot: "Khởi động lại",
     subtitles: {
       wifiDisconnected: "Chưa kết nối",
@@ -144,6 +145,7 @@ const vi: Translations = {
       storageWear: "Hao mòn: {{percent}}%",
       cronjob: "Quản lý tác vụ tự động",
       system: "Quản lý tiến trình & hệ thống",
+      files: "Duyệt & quản lý file",
     },
   },
   wifi: {
@@ -331,6 +333,17 @@ const vi: Translations = {
     cancel: "Hủy",
     rebooting: "Đang khởi động lại...",
     failed: "Không thể khởi động lại",
+  },
+  fileManager: {
+    title: "Quản lý file",
+    empty: "Thư mục rỗng",
+    loading: "Đang tải...",
+    error: "Lỗi",
+    deleteConfirm: "Xóa {{name}}?",
+    deleteWarning: "Hành động này không thể hoàn tác.",
+    deleted: "Đã xóa thành công",
+    deleteFailed: "Không thể xóa",
+    quickAccess: "Truy cập nhanh",
   },
 }
 

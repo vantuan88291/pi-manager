@@ -29,6 +29,7 @@ export type AppStackParamList = {
   CronJob: undefined
   CreateJob: undefined
   SystemControl: undefined
+  FileManager: undefined
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
 }

@@ -128,6 +128,7 @@ const en = {
     storage: "Storage",
     cronjob: "Cron Jobs",
     system: "System",
+    files: "File Manager",
     reboot: "Reboot",
     subtitles: {
       wifiDisconnected: "Disconnected",
@@ -142,6 +143,7 @@ const en = {
       storageWear: "Wear: {{percent}}%",
       cronjob: "Manage scheduled tasks",
       system: "Process & system management",
+      files: "Browse & manage files",
     },
   },
   wifi: {
@@ -330,6 +332,17 @@ const en = {
     cancel: "Cancel",
     rebooting: "Rebooting...",
     failed: "Failed to reboot",
+  },
+  fileManager: {
+    title: "File Manager",
+    empty: "This folder is empty",
+    loading: "Loading...",
+    error: "Error",
+    deleteConfirm: "Delete {{name}}?",
+    deleteWarning: "This action cannot be undone.",
+    deleted: "Deleted successfully",
+    deleteFailed: "Failed to delete",
+    quickAccess: "Quick Access",
   },
 }
 
