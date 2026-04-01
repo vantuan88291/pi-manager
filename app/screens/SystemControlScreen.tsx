@@ -199,17 +199,18 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
   return (
     <Screen
       preset="scroll"
-      style={themed($screen)}
       ScrollViewProps={{
         refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
       }}
     >
       <Header titleTx="systemControl:title" leftIcon="back" onLeftPress={() => navigation.goBack()} />
 
-      {/* System Actions Card */}
-      <Card
-        headingTx="systemControl:actions"
-        style={themed($card)}
+      {/* Content wrapper with padding */}
+      <View style={themed($contentWrapper)}>
+        {/* System Actions Card */}
+        <Card
+          headingTx="systemControl:actions"
+          style={themed($card)}
         ContentComponent={
           <View style={$actionButtons}>
             <Button
@@ -289,6 +290,8 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
         }
       />
 
+      </View>
+
       <AlertModal
         visible={alertConfig.visible}
         title={alertConfig.title}
@@ -300,7 +303,7 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
   )
 }
 
-const $screen: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+const $contentWrapper: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingHorizontal: spacing.md,
 })
 
