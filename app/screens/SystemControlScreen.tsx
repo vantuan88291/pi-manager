@@ -120,10 +120,10 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
       </View>
       <View style={$processStats}>
         <View style={themed($statBadge)}>
-          <Text size="xs">{item.cpu.toFixed(1)}%</Text>
+          <Text size="xs">{(item.cpu ?? 0).toFixed(1)}%</Text>
         </View>
         <View style={themed($statBadge)}>
-          <Text size="xs">{item.memory.toFixed(1)}%</Text>
+          <Text size="xs">{(item.memory ?? 0).toFixed(1)}%</Text>
         </View>
         <Button
           preset="reversed"
