@@ -6,6 +6,7 @@ import cors from "cors"
 import express from "express"
 import { Server } from "socket.io"
 import { setupSocketServer } from "./socket/index.js"
+import filesRouter from "./routes/files.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -42,6 +43,9 @@ app.use(express.json())
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() })
 })
+
+// File operations API
+app.use("/api/files", filesRouter)
 
 // System reboot endpoint (requires sudo)
 app.post("/api/system/reboot", async (_req, res) => {

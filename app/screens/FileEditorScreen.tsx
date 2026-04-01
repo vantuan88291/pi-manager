@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useCallback, useRef } from 'react'
+import { FC, useState, useEffect, useCallback } from 'react'
 import { View, ViewStyle, ScrollView } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
@@ -12,8 +12,6 @@ import { AlertModal, type AlertButton } from '@/components/AlertModal'
 import { useAppTheme } from '@/theme/context'
 import type { ThemedStyle } from '@/theme/types'
 import type { AppStackParamList } from '@/navigators/navigationTypes'
-import { useSocket } from '@/services/socket/SocketContext'
-import { fileManagerClientModule } from '@/services/socket/modules/file-manager'
 
 type FileEditorScreenRouteProps = import('@react-navigation/native').RouteProp<AppStackParamList, 'FileEditor'>
 type FileEditorScreenNavProps = import('@react-navigation/native').NativeStackNavigationProp<AppStackParamList, 'FileEditor'>
@@ -22,16 +20,16 @@ interface RouteProps {
   params: { filePath: string; fileName: string }
 }
 
-const getLanguageFromExtension = (filename: string): string => {
-  const ext = filename.split('.').pop()?.toLowerCase()
-  const languageMap: Record<string, string> = {
-    'js': 'javascript', 'jsx': 'javascript',
-    'ts': 'typescript', 'tsx': 'typescript',
-    'json': 'json', 'md': 'markdown', 'html': 'html', 'css': 'css',
-    'yaml': 'yaml', 'yml': 'yaml', 'xml': 'xml', 'py': 'python',
-    'sh': 'shell', 'bash': 'shell', 'env': 'shell', 'log': 'text', 'txt': 'text',
+interface FileReadResponse {
+  success: boolean
+  data?: {
+    path: string
+    content: string
+    size: number
+    modified: number
+    language: string
   }
-  return languageMap[ext || ''] || 'text'
+  error?: string
 }
 
 export const FileEditorScreen: FC = function FileEditorScreen() {
@@ -39,17 +37,14 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const route = useRoute<RouteProps>()
   const { t } = useTranslation()
   const { themed, theme } = useAppTheme()
-  const { state } = useSocket()
   
   const { filePath, fileName } = route.params
-  const language = getLanguageFromExtension(fileName)
   
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
-  const callbackRegisteredRef = useRef(false)
   
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -63,104 +58,109 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     setDebugLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`].slice(-10))
   }, [])
 
-  // Handle file read - stable callback
-  const handleFileRead = useCallback((result: { success: boolean; data?: { content: string }; error?: string }) => {
-    addLog(`handleFileRead called: success=${result.success}, length=${result.data?.content?.length || 0}`)
-    
-    if (result.success && result.data) {
-      setContent(result.data.content)
-      setError(null)
-      addLog('✅ File loaded successfully')
-    } else {
-      setError(result.error || 'Failed to read file')
-      addLog(`❌ Error: ${result.error}`)
-      setAlertConfig({ 
-        visible: true, 
-        title: 'Error', 
-        message: result.error || 'Failed to read file',
-        buttons: [{ text: 'OK' }]
-      })
-    }
-    
-    setLoading(false)
-  }, [addLog])
-
-  // Handle file write
-  const handleFileWrite = useCallback((result: { success: boolean; error?: string }) => {
-    setSaving(false)
-    if (result.success) {
-      addLog('✅ File saved successfully')
-      setAlertConfig({
-        visible: true,
-        title: 'Success',
-        message: 'File saved successfully!',
-        buttons: [{ text: 'OK', onPress: () => navigation.goBack() }]
-      })
-    } else {
-      addLog(`❌ Save error: ${result.error}`)
-      setAlertConfig({
-        visible: true,
-        title: 'Error',
-        message: result.error || 'Failed to save file',
-        buttons: [{ text: 'OK' }]
-      })
-    }
-  }, [navigation, addLog])
-
-  // Register callbacks and load file
+  // Load file content using REST API
   useEffect(() => {
-    addLog(`=== Opening file: ${filePath} ===`)
-    addLog(`Language: ${language}`)
-    addLog(`Socket status: ${state?.status}`)
+    let isMounted = true
     
-    // Reset state for new file
-    callbackRegisteredRef.current = false
-    setContent('')
-    setLoading(true)
-    setError(null)
-    
-    // Register callback ONCE
-    const unsubRead = fileManagerClientModule.onRead((result) => {
-      addLog('onRead callback triggered')
-      callbackRegisteredRef.current = true
-      handleFileRead(result)
-    })
-    
-    const unsubWrite = fileManagerClientModule.onWrite(handleFileWrite)
-    
-    addLog('Callbacks registered')
-    
-    // Small delay to ensure callback is ready
-    setTimeout(() => {
-      addLog('Calling readFile...')
-      fileManagerClientModule.readFile(filePath)
+    const loadFile = async () => {
+      addLog(`=== Opening file: ${fileName} ===`)
+      addLog(`Path: ${filePath}`)
       
-      // Timeout to detect if no response
-      const timeoutId = setTimeout(() => {
-        if (loading && !callbackRegisteredRef.current) {
-          addLog('⚠️ Timeout: No response from readFile')
-          addLog('Retrying...')
-          fileManagerClientModule.readFile(filePath)
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const response = await fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`)
+        const result: FileReadResponse = await response.json()
+        
+        if (!isMounted) return
+        
+        addLog(`API Response: success=${result.success}`)
+        
+        if (result.success && result.data) {
+          setContent(result.data.content)
+          addLog(`✅ File loaded: ${result.data.content.length} chars`)
+        } else {
+          setError(result.error || 'Failed to read file')
+          addLog(`❌ Error: ${result.error}`)
+          setAlertConfig({
+            visible: true,
+            title: 'Error',
+            message: result.error || 'Failed to read file',
+            buttons: [{ text: 'OK' }]
+          })
         }
-      }, 3000)
-      
-      return () => clearTimeout(timeoutId)
-    }, 100)
-    
-    // Cleanup
-    return () => {
-      addLog('Cleanup')
-      unsubRead()
-      unsubWrite()
+      } catch (err: any) {
+        if (!isMounted) return
+        setError(err.message || 'Network error')
+        addLog(`❌ Network error: ${err.message}`)
+        setAlertConfig({
+          visible: true,
+          title: 'Error',
+          message: err.message || 'Network error',
+          buttons: [{ text: 'OK' }]
+        })
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
     }
-  }, [filePath, language, state?.status, handleFileRead, handleFileWrite, addLog])
+    
+    loadFile()
+    
+    return () => {
+      isMounted = false
+      addLog('Cleanup')
+    }
+  }, [filePath, fileName, addLog])
 
   const hasChanges = content.length > 0
   
-  const handleSave = () => {
+  const handleSave = async () => {
     addLog('Save pressed')
     setSaving(true)
-    fileManagerClientModule.writeFile(filePath, content)
+    
+    try {
+      const response = await fetch('/api/files/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: filePath,
+          content,
+        }),
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        addLog('✅ File saved successfully')
+        setAlertConfig({
+          visible: true,
+          title: 'Success',
+          message: 'File saved successfully!',
+          buttons: [{ text: 'OK', onPress: () => navigation.goBack() }]
+        })
+      } else {
+        addLog(`❌ Save error: ${result.error}`)
+        setAlertConfig({
+          visible: true,
+          title: 'Error',
+          message: result.error || 'Failed to save file',
+          buttons: [{ text: 'OK' }]
+        })
+      }
+    } catch (err: any) {
+      addLog(`❌ Network error: ${err.message}`)
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: err.message || 'Network error',
+        buttons: [{ text: 'OK' }]
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleBack = () => {
@@ -201,9 +201,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           <View style={$centered}>
             <Icon font="Ionicons" icon="hourglass" size={32} color={theme.colors.textDim} />
             <Text color="textDim" style={{ marginTop: 16 }}>Loading file...</Text>
-            <Text color="textDim" size="xs" style={{ marginTop: 8 }}>
-              Socket: {state?.status === 'connected' ? 'Connected ✓' : state?.status || 'Connecting...'}
-            </Text>
           </View>
         ) : error ? (
           <View style={$centered}>
@@ -215,7 +212,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
             <CodeEditor
               key={`editor-${filePath}`}
               value={content}
-              language={language}
+              language="text"
               placeholder="File content..."
               onChange={(e) => setContent(e.target.value)}
               padding={16}
