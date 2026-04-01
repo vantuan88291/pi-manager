@@ -1,12 +1,11 @@
 import { FC, useState, useEffect, useCallback } from 'react'
-import { View, ViewStyle, ScrollView } from 'react-native'
+import { View, ViewStyle } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import CodeEditor from '@uiw/react-textarea-code-editor'
 
 import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
-import { Text } from '@/components/Text'
 import { Icon } from '@/components/Icon'
 import { AlertModal, type AlertButton } from '@/components/AlertModal'
 import { useAppTheme } from '@/theme/context'
@@ -44,7 +43,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const [language, setLanguage] = useState('text')
   
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -53,19 +52,11 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     buttons: AlertButton[]
   }>({ visible: false, title: '', buttons: [] })
 
-  const addLog = useCallback((msg: string) => {
-    console.log('[FileEditor]', msg)
-    setDebugLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`].slice(-10))
-  }, [])
-
   // Load file content using REST API
   useEffect(() => {
     let isMounted = true
     
     const loadFile = async () => {
-      addLog(`=== Opening file: ${fileName} ===`)
-      addLog(`Path: ${filePath}`)
-      
       try {
         setLoading(true)
         setError(null)
@@ -75,14 +66,11 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         
         if (!isMounted) return
         
-        addLog(`API Response: success=${result.success}`)
-        
         if (result.success && result.data) {
           setContent(result.data.content)
-          addLog(`✅ File loaded: ${result.data.content.length} chars`)
+          setLanguage(result.data.language)
         } else {
           setError(result.error || 'Failed to read file')
-          addLog(`❌ Error: ${result.error}`)
           setAlertConfig({
             visible: true,
             title: 'Error',
@@ -93,7 +81,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
       } catch (err: any) {
         if (!isMounted) return
         setError(err.message || 'Network error')
-        addLog(`❌ Network error: ${err.message}`)
         setAlertConfig({
           visible: true,
           title: 'Error',
@@ -111,14 +98,12 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     
     return () => {
       isMounted = false
-      addLog('Cleanup')
     }
-  }, [filePath, fileName, addLog])
+  }, [filePath])
 
   const hasChanges = content.length > 0
   
   const handleSave = async () => {
-    addLog('Save pressed')
     setSaving(true)
     
     try {
@@ -134,7 +119,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
       const result = await response.json()
       
       if (result.success) {
-        addLog('✅ File saved successfully')
         setAlertConfig({
           visible: true,
           title: 'Success',
@@ -142,7 +126,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           buttons: [{ text: 'OK', onPress: () => navigation.goBack() }]
         })
       } else {
-        addLog(`❌ Save error: ${result.error}`)
         setAlertConfig({
           visible: true,
           title: 'Error',
@@ -151,7 +134,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         })
       }
     } catch (err: any) {
-      addLog(`❌ Network error: ${err.message}`)
       setAlertConfig({
         visible: true,
         title: 'Error',
@@ -212,34 +194,23 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
             <CodeEditor
               key={`editor-${filePath}`}
               value={content}
-              language="text"
+              language={language}
               placeholder="File content..."
               onChange={(e) => setContent(e.target.value)}
               padding={16}
               style={{
                 fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
-                fontSize: 14,
+                fontSize: 13,
                 backgroundColor: 'transparent',
                 color: editorColor,
-                minHeight: 400,
+                minHeight: 500,
+                lineHeight: 20,
               }}
+              highlightLineNumbers={true}
+              showLineNumbers={true}
             />
           </View>
         )}
-
-        {/* Debug Logs Panel */}
-        <View style={themed($debugPanel)}>
-          <Text weight="semiBold" size="xs" color="textDim" style={{ marginBottom: 8 }}>
-            Debug Logs:
-          </Text>
-          <ScrollView style={$logScrollView} nestedScrollEnabled={true}>
-            {debugLogs.map((log, i) => (
-              <Text key={i} size="xs" color="textDim" style={{ marginBottom: 4 }}>
-                {log}
-              </Text>
-            ))}
-          </ScrollView>
-        </View>
       </View>
 
       <AlertModal
@@ -270,14 +241,3 @@ const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: 40,
   alignItems: 'center',
 })
-
-const $debugPanel: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.input,
-  borderRadius: 8,
-  padding: spacing.sm,
-  maxHeight: 200,
-})
-
-const $logScrollView: ViewStyle = {
-  maxHeight: 150,
-}
