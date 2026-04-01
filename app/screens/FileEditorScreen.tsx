@@ -1,8 +1,6 @@
-import { FC, useState, useEffect, useCallback } from 'react'
-import { View, ViewStyle } from 'react-native'
-import { useTranslation } from 'react-i18next'
+import { FC, useState, useEffect } from 'react'
+import { View, ViewStyle, TextInput, ScrollView } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
-import CodeEditor from '@uiw/react-textarea-code-editor'
 
 import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
@@ -190,26 +188,24 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
             <Text color="error" style={{ marginTop: 16 }}>{error}</Text>
           </View>
         ) : (
-          <View style={themed([$editorWrapper, { backgroundColor: editorBgColor }])}>
-            <CodeEditor
+          <ScrollView style={themed([$editorWrapper, { backgroundColor: editorBgColor }])} nestedScrollEnabled={true}>
+            <TextInput
               key={`editor-${filePath}`}
               value={content}
-              language={language}
+              onChangeText={setContent}
               placeholder="File content..."
-              onChange={(e) => setContent(e.target.value)}
-              padding={16}
+              placeholderTextColor={theme.colors.textDim}
+              multiline={true}
               style={{
                 fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
                 fontSize: 13,
-                backgroundColor: 'transparent',
                 color: editorColor,
                 minHeight: 500,
+                padding: 16,
                 lineHeight: 20,
               }}
-              highlightLineNumbers={true}
-              showLineNumbers={true}
             />
-          </View>
+          </ScrollView>
         )}
       </View>
 
