@@ -1,12 +1,11 @@
-import { FC, useState, useEffect, useCallback } from 'react'
-import { View, ViewStyle, ScrollView } from 'react-native'
+import { FC, useState, useEffect, useCallback, useRef } from 'react'
+import { View, ViewStyle } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import CodeEditor from '@uiw/react-textarea-code-editor'
 
 import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
-import { Button } from '@/components/Button'
 import { Icon } from '@/components/Icon'
 import { AlertModal, type AlertButton } from '@/components/AlertModal'
 import { useAppTheme } from '@/theme/context'
@@ -18,36 +17,18 @@ import { fileManagerClientModule } from '@/services/socket/modules/file-manager'
 type FileEditorScreenRouteProps = import('@react-navigation/native').RouteProp<AppStackParamList, 'FileEditor'>
 type FileEditorScreenNavProps = import('@react-navigation/native').NativeStackNavigationProp<AppStackParamList, 'FileEditor'>
 
-interface FileEditorScreenParams {
-  filePath: string
-  fileName: string
-}
-
 interface RouteProps {
-  params: FileEditorScreenParams
+  params: { filePath: string; fileName: string }
 }
 
 const getLanguageFromExtension = (filename: string): string => {
   const ext = filename.split('.').pop()?.toLowerCase()
   const languageMap: Record<string, string> = {
-    'js': 'javascript',
-    'jsx': 'javascript',
-    'ts': 'typescript',
-    'tsx': 'typescript',
-    'json': 'json',
-    'md': 'markdown',
-    'html': 'html',
-    'css': 'css',
-    'scss': 'scss',
-    'yaml': 'yaml',
-    'yml': 'yaml',
-    'xml': 'xml',
-    'py': 'python',
-    'sh': 'shell',
-    'bash': 'shell',
-    'env': 'shell',
-    'log': 'text',
-    'txt': 'text',
+    'js': 'javascript', 'jsx': 'javascript',
+    'ts': 'typescript', 'tsx': 'typescript',
+    'json': 'json', 'md': 'markdown', 'html': 'html', 'css': 'css',
+    'yaml': 'yaml', 'yml': 'yaml', 'xml': 'xml', 'py': 'python',
+    'sh': 'shell', 'bash': 'shell', 'env': 'shell', 'log': 'text', 'txt': 'text',
   }
   return languageMap[ext || ''] || 'text'
 }
@@ -56,7 +37,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const navigation = useNavigation<FileEditorScreenNavProps>()
   const route = useRoute<RouteProps>()
   const { t } = useTranslation()
-  const { themed, theme } = useAppTheme()
+  const { theme } = useAppTheme()
   const { subscribeToModule, unsubscribeFromModule } = useSocket()
   
   const { filePath, fileName } = route.params
@@ -65,9 +46,9 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [hasChanges, setHasChanges] = useState(false)
-  const [originalContent, setOriginalContent] = useState('')
-  const [fileLoaded, setFileLoaded] = useState(false)
+  const hasChangesRef = useRef(false)
+  const originalContentRef = useRef('')
+  const fileLoadedRef = useRef(false)
   
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -76,41 +57,51 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     buttons: AlertButton[]
   }>({ visible: false, title: '', buttons: [] })
 
-  // Handle file read response
+  // Stable callback for file read - won't change between renders
   const handleFileRead = useCallback((result: { success: boolean; data?: { content: string }; error?: string }) => {
+    if (fileLoadedRef.current) return // Prevent duplicate calls
+    
     setLoading(false)
+    fileLoadedRef.current = true
+    
     if (result.success && result.data) {
       setContent(result.data.content)
-      setOriginalContent(result.data.content)
-      setFileLoaded(true)
-      setHasChanges(false)
+      originalContentRef.current = result.data.content
+      hasChangesRef.current = false
     } else {
-      showAlert('Error', result.error || 'Failed to read file')
-      setFileLoaded(true)
+      setAlertConfig({ 
+        visible: true, 
+        title: 'Error', 
+        message: result.error || 'Failed to read file',
+        buttons: [{ text: 'OK' }]
+      })
     }
   }, [])
 
-  // Handle file write response
+  // Stable callback for file write
   const handleFileWrite = useCallback((result: { success: boolean; error?: string }) => {
     setSaving(false)
     if (result.success) {
-      setOriginalContent(content)
-      setHasChanges(false)
-      showAlert('Success', 'File saved successfully!', [
-        { 
-          text: 'OK', 
-          onPress: () => navigation.goBack() 
-        }
-      ])
+      originalContentRef.current = content
+      hasChangesRef.current = false
+      setAlertConfig({
+        visible: true,
+        title: 'Success',
+        message: 'File saved successfully!',
+        buttons: [{ text: 'OK', onPress: () => navigation.goBack() }]
+      })
     } else {
-      showAlert('Error', result.error || 'Failed to save file')
+      setAlertConfig({
+        visible: true,
+        title: 'Error',
+        message: result.error || 'Failed to save file',
+        buttons: [{ text: 'OK' }]
+      })
     }
   }, [content, navigation])
 
+  // Register callbacks ONCE on mount
   useEffect(() => {
-    subscribeToModule('file-manager')
-    
-    // Register callbacks
     const unsubRead = fileManagerClientModule.onRead(handleFileRead)
     const unsubWrite = fileManagerClientModule.onWrite(handleFileWrite)
     
@@ -122,14 +113,10 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
       unsubWrite()
       unsubscribeFromModule('file-manager')
     }
-  }, [filePath, subscribeToModule, unsubscribeFromModule, handleFileRead, handleFileWrite])
-
-  const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: 'OK' }]) => {
-    setAlertConfig({ visible: true, title, message, buttons })
-  }
+  }, [filePath, handleFileRead, handleFileWrite, subscribeToModule, unsubscribeFromModule])
 
   const handleSave = () => {
-    if (!hasChanges) {
+    if (!hasChangesRef.current) {
       navigation.goBack()
       return
     }
@@ -138,26 +125,23 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     fileManagerClientModule.writeFile(filePath, content)
   }
 
-  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value
     setContent(newContent)
-    setHasChanges(newContent !== originalContent)
-  }, [originalContent])
+    hasChangesRef.current = newContent !== originalContentRef.current
+  }
 
   const handleBack = () => {
-    if (hasChanges) {
-      showAlert(
-        'Unsaved Changes',
-        'You have unsaved changes. Discard them?',
-        [
+    if (hasChangesRef.current) {
+      setAlertConfig({
+        visible: true,
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. Discard them?',
+        buttons: [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Discard', 
-            style: 'destructive',
-            onPress: () => navigation.goBack()
-          }
+          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() }
         ]
-      )
+      })
     } else {
       navigation.goBack()
     }
@@ -167,13 +151,16 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const editorBgColor = isDark ? '#1e293b' : '#f8fafc'
   const editorColor = isDark ? '#e2e8f0' : '#1e293b'
 
+  const hasChanges = hasChangesRef.current
+  const saveButtonText = saving ? 'Saving...' : (hasChanges ? 'Save' : '')
+
   return (
     <Screen preset="scroll">
       <Header 
         titleTx="fileEditor:title" 
         leftIcon="back" 
         onLeftPress={handleBack}
-        rightText={saving ? t('fileEditor:saving') : hasChanges ? 'Save' : ''}
+        rightText={saveButtonText}
         onRightPress={handleSave}
         disabled={saving || !hasChanges}
       />
@@ -198,7 +185,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
                 color: editorColor,
                 minHeight: 400,
               }}
-              onPaste={() => console.log('paste')}
             />
           </View>
         )}
