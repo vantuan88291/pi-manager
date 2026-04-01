@@ -10,6 +10,7 @@ import { Card } from "@/components/Card"
 import { Button } from "@/components/Button"
 import { Icon } from "@/components/Icon"
 import { ProgressBar } from "@/components/ProgressBar"
+import { Badge } from "@/components/Badge"
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
 import { SectionHeader } from "@/components/SectionHeader"
 import { useAppTheme } from "@/theme/context"
@@ -33,15 +34,23 @@ const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }
 
   const cpuColor = process.cpu > 70 ? theme.colors.error : process.cpu > 40 ? theme.colors.warning : theme.colors.success
   const memColor = process.memory > 70 ? theme.colors.error : process.memory > 40 ? theme.colors.warning : theme.colors.success
+  
+  // Check if process is critical (shouldn't be killed)
+  const isCritical = process.name === 'node' || process.name === 'openclaw-gateway' || process.name === 'cloudflared'
 
   return (
     <View style={themed($processItem)}>
       <View style={$processInfo}>
         <View style={$processHeader}>
           <View style={$processName}>
-            <Text weight="semiBold" size="md" color="text" numberOfLines={1}>
-              {process.name}
-            </Text>
+            <View style={$processNameRow}>
+              <Text weight="semiBold" size="md" color="text" numberOfLines={1}>
+                {process.name}
+              </Text>
+              {isCritical && (
+                <Badge text="System" color={theme.colors.warning} size="sm" />
+              )}
+            </View>
             <Text size="xs" color="textDim" numberOfLines={1}>
               PID: {process.pid} • {process.user}
             </Text>
@@ -54,10 +63,10 @@ const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }
             preset="default"
             size="sm"
             onPress={() => onKill(process)}
-            disabled={disabled}
-            style={{ backgroundColor: theme.colors.error + "15" }}
+            disabled={disabled || isCritical}
+            style={[{ backgroundColor: isCritical ? theme.colors.border + "30" : theme.colors.error + "15" }, $killButton]}
           >
-            <Icon font="Ionicons" icon="close" size={16} color={theme.colors.error} />
+            <Icon font="Ionicons" icon="close" size={16} color={isCritical ? theme.colors.textDim : theme.colors.error} />
           </Button>
         </View>
 
@@ -340,6 +349,17 @@ const $processName: ViewStyle = {
   flex: 1,
   marginRight: 12,
 }
+
+const $processNameRow: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+  marginBottom: 4,
+}
+
+const $killButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginLeft: spacing.sm,
+})
 
 const $progressSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginTop: spacing.sm,

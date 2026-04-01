@@ -181,14 +181,29 @@ export const systemModule: ServerSocketModule = {
 
     socket.on("system:kill-process", async ({ pid }: { pid: number }) => {
       console.log(`[system] kill-process requested: ${pid}`)
-      try {
-        await execAsync(`kill -9 ${pid}`, { timeout: 5000 })
-        socket.emit("system:process-killed", { success: true, pid })
-      } catch (error: any) {
+      
+      // Prevent killing critical system processes
+      const currentPid = process.pid
+      if (pid === currentPid || pid === 1 || pid <= 10) {
         socket.emit("system:process-killed", { 
           success: false, 
           pid, 
-          message: error.message 
+          message: "Cannot kill critical system process" 
+        })
+        return
+      }
+      
+      try {
+        const { stdout, stderr } = await execAsync(`kill -9 ${pid}`, { timeout: 5000 })
+        console.log(`[system] process ${pid} killed successfully`)
+        socket.emit("system:process-killed", { success: true, pid, message: "Process terminated" })
+      } catch (error: any) {
+        console.error(`[system] kill-process failed: ${error.message}`)
+        socket.emit("system:process-killed", { 
+          success: false, 
+          pid, 
+          message: error.message || "Permission denied or process not found",
+          stderr: error.stderr
         })
       }
     })
