@@ -1,7 +1,7 @@
 import { FC, useState, useEffect } from 'react'
 import { View, ViewStyle, RefreshControl } from 'react-native'
-import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 
 import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
@@ -122,9 +122,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [quickAccessPaths, setQuickAccessPaths] = useState<QuickAccessPath[]>([])
-  const [viewingFile, setViewingFile] = useState<FileInfo | null>(null)
-  const [fileContent, setFileContent] = useState<string>('')
-  const [fileLoading, setFileLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
   const [alertConfig, setAlertConfig] = useState<{
@@ -216,11 +213,11 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       setLoading(true)
       fileManagerClientModule.listDirectory(item.path)
     } else {
-      // View file
-      setFileLoading(true)
-      setFileContent('')
-      setViewingFile(item)
-      fileManagerClientModule.readFile(item.path)
+      // Navigate to file editor
+      navigation.navigate('FileEditor', {
+        filePath: item.path,
+        fileName: item.name,
+      })
     }
   }
 
@@ -323,40 +320,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     </View>
   )
 
-  const renderFileViewer = () => {
-    if (!viewingFile) return null
-    
-    return (
-      <View style={themed($fileViewer)}>
-        <View style={$fileViewerHeader}>
-          <View style={$fileViewerTitle}>
-            <Text weight="semiBold" size="md">{viewingFile.name}</Text>
-            <Text size="xs" color="textDim">{formatFileSize(viewingFile.size)}</Text>
-          </View>
-          <Button
-            preset="default"
-            size="sm"
-            onPress={() => setViewingFile(null)}
-          >
-            <Icon font="Ionicons" icon="close" size={16} />
-          </Button>
-        </View>
-        
-        {fileLoading ? (
-          <View style={$centered}>
-            <Text color="textDim">Loading...</Text>
-          </View>
-        ) : (
-          <View style={themed($fileContent)}>
-            <Text size="xs" font="mono" color="text" numberOfLines={0}>
-              {fileContent}
-            </Text>
-          </View>
-        )}
-      </View>
-    )
-  }
-
   return (
     <Screen
       preset="scroll"
@@ -397,13 +360,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
           </View>
         )}
       </View>
-
-      {/* File Viewer Modal */}
-      {viewingFile && (
-        <View style={themed($modalOverlay)}>
-          {renderFileViewer()}
-        </View>
-      )}
 
       {/* Action Menu Modal */}
       <AlertModal
@@ -505,51 +461,6 @@ const $emptyCard: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.xl,
   alignItems: 'center',
-})
-
-const $modalOverlay: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: colors.background + 'E6',
-  zIndex: 1000,
-})
-
-const $fileViewer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: colors.surface,
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  maxHeight: '80%',
-  borderWidth: 1,
-  borderColor: colors.border,
-  borderTopWidth: 0,
-})
-
-const $fileViewerHeader: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: spacing.md,
-  borderBottomWidth: 1,
-  borderBottomColor: colors.border,
-})
-
-const $fileViewerTitle: ViewStyle = {
-  gap: 4,
-}
-
-const $fileContent: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
-  padding: spacing.md,
-  backgroundColor: colors.input,
-  borderRadius: 12,
-  margin: spacing.md,
-  maxHeight: 400,
 })
 
 const $separator: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
