@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react'
+import { FC, useState, useEffect, useCallback } from 'react'
 import { View, ViewStyle, ScrollView } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
@@ -67,6 +67,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [originalContent, setOriginalContent] = useState('')
+  const [fileLoaded, setFileLoaded] = useState(false)
   
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -75,46 +76,53 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     buttons: AlertButton[]
   }>({ visible: false, title: '', buttons: [] })
 
+  // Handle file read response
+  const handleFileRead = useCallback((result: { success: boolean; data?: { content: string }; error?: string }) => {
+    setLoading(false)
+    if (result.success && result.data) {
+      setContent(result.data.content)
+      setOriginalContent(result.data.content)
+      setFileLoaded(true)
+      setHasChanges(false)
+    } else {
+      showAlert('Error', result.error || 'Failed to read file')
+      setFileLoaded(true)
+    }
+  }, [])
+
+  // Handle file write response
+  const handleFileWrite = useCallback((result: { success: boolean; error?: string }) => {
+    setSaving(false)
+    if (result.success) {
+      setOriginalContent(content)
+      setHasChanges(false)
+      showAlert('Success', 'File saved successfully!', [
+        { 
+          text: 'OK', 
+          onPress: () => navigation.goBack() 
+        }
+      ])
+    } else {
+      showAlert('Error', result.error || 'Failed to save file')
+    }
+  }, [content, navigation])
+
   useEffect(() => {
     subscribeToModule('file-manager')
     
-    const unsubWrite = fileManagerClientModule.onWrite((result) => {
-      setSaving(false)
-      if (result.success) {
-        setOriginalContent(content)
-        setHasChanges(false)
-        showAlert('Success', 'File saved successfully!', [
-          { 
-            text: 'OK', 
-            onPress: () => navigation.goBack() 
-          }
-        ])
-      } else {
-        showAlert('Error', result.error || 'Failed to save file')
-      }
-    })
+    // Register callbacks
+    const unsubRead = fileManagerClientModule.onRead(handleFileRead)
+    const unsubWrite = fileManagerClientModule.onWrite(handleFileWrite)
     
-    const unsubRead = fileManagerClientModule.onRead((result) => {
-      setLoading(false)
-      if (result.success && result.data) {
-        setContent(result.data.content)
-        setOriginalContent(result.data.content)
-      } else {
-        showAlert('Error', result.error || 'Failed to read file')
-      }
-    })
-    
-    // Load file content after callbacks are registered
-    setTimeout(() => {
-      fileManagerClientModule.readFile(filePath)
-    }, 100)
+    // Load file content
+    fileManagerClientModule.readFile(filePath)
     
     return () => {
       unsubRead()
       unsubWrite()
       unsubscribeFromModule('file-manager')
     }
-  }, [filePath, subscribeToModule, unsubscribeFromModule, navigation, content])
+  }, [filePath, subscribeToModule, unsubscribeFromModule, handleFileRead, handleFileWrite])
 
   const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: 'OK' }]) => {
     setAlertConfig({ visible: true, title, message, buttons })
@@ -130,10 +138,11 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     fileManagerClientModule.writeFile(filePath, content)
   }
 
-  const handleContentChange = (newContent: string) => {
+  const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value
     setContent(newContent)
     setHasChanges(newContent !== originalContent)
-  }
+  }, [originalContent])
 
   const handleBack = () => {
     if (hasChanges) {
@@ -180,7 +189,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
               value={content}
               language={language}
               placeholder="File content..."
-              onChange={(e) => handleContentChange(e.target.value)}
+              onChange={handleContentChange}
               padding={16}
               style={{
                 fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
