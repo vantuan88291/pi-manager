@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useCallback } from 'react'
+import { FC, useState, useEffect, useCallback, useRef } from 'react'
 import { View, ViewStyle, ScrollView } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
@@ -39,7 +39,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const route = useRoute<RouteProps>()
   const { t } = useTranslation()
   const { themed, theme } = useAppTheme()
-  const { subscribeToModule, unsubscribeFromModule } = useSocket()
+  const { socket } = useSocket()
   
   const { filePath, fileName } = route.params
   const language = getLanguageFromExtension(fileName)
@@ -49,6 +49,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [debugLogs, setDebugLogs] = useState<string[]>([])
+  const callbackRegisteredRef = useRef(false)
   
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -57,7 +58,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     buttons: AlertButton[]
   }>({ visible: false, title: '', buttons: [] })
 
-  // Helper to add debug log
   const addLog = useCallback((msg: string) => {
     console.log('[FileEditor]', msg)
     setDebugLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`].slice(-10))
@@ -65,8 +65,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
 
   // Handle file read - stable callback
   const handleFileRead = useCallback((result: { success: boolean; data?: { content: string }; error?: string }) => {
-    addLog(`handleFileRead: success=${result.success}, length=${result.data?.content?.length || 0}`)
-    setLoading(false)
+    addLog(`handleFileRead called: success=${result.success}, length=${result.data?.content?.length || 0}`)
     
     if (result.success && result.data) {
       setContent(result.data.content)
@@ -82,9 +81,11 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         buttons: [{ text: 'OK' }]
       })
     }
+    
+    setLoading(false)
   }, [addLog])
 
-  // Handle file write - stable callback
+  // Handle file write
   const handleFileWrite = useCallback((result: { success: boolean; error?: string }) => {
     setSaving(false)
     if (result.success) {
@@ -106,34 +107,58 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     }
   }, [navigation, addLog])
 
-  // Register callbacks and load file - runs once per filePath
+  // Register callbacks and load file
   useEffect(() => {
     addLog(`=== Opening file: ${filePath} ===`)
-    addLog(`Language detected: ${language}`)
+    addLog(`Language: ${language}`)
+    addLog(`Socket connected: ${socket?.connected}`)
     
-    // Register callbacks FIRST
-    const unsubRead = fileManagerClientModule.onRead(handleFileRead)
+    // Reset state for new file
+    callbackRegisteredRef.current = false
+    setContent('')
+    setLoading(true)
+    setError(null)
+    
+    // Register callback ONCE
+    const unsubRead = fileManagerClientModule.onRead((result) => {
+      addLog('onRead callback triggered')
+      callbackRegisteredRef.current = true
+      handleFileRead(result)
+    })
+    
     const unsubWrite = fileManagerClientModule.onWrite(handleFileWrite)
     
     addLog('Callbacks registered')
     
-    // THEN load file (callbacks are ready)
-    addLog('Calling readFile...')
-    fileManagerClientModule.readFile(filePath)
+    // Small delay to ensure callback is ready
+    setTimeout(() => {
+      addLog('Calling readFile...')
+      fileManagerClientModule.readFile(filePath)
+      
+      // Timeout to detect if no response
+      const timeoutId = setTimeout(() => {
+        if (loading && !callbackRegisteredRef.current) {
+          addLog('⚠️ Timeout: No response from readFile')
+          addLog('Retrying...')
+          fileManagerClientModule.readFile(filePath)
+        }
+      }, 3000)
+      
+      return () => clearTimeout(timeoutId)
+    }, 100)
     
-    // Cleanup on unmount
+    // Cleanup
     return () => {
-      addLog('Cleanup - unsubscribing')
+      addLog('Cleanup')
       unsubRead()
       unsubWrite()
-      unsubscribeFromModule('file-manager')
     }
-  }, [filePath, handleFileRead, handleFileWrite, language, subscribeToModule, unsubscribeFromModule, addLog])
+  }, [filePath, language, socket?.connected, handleFileRead, handleFileWrite, loading, addLog])
 
   const hasChanges = content.length > 0
   
   const handleSave = () => {
-    addLog('Save button pressed')
+    addLog('Save pressed')
     setSaving(true)
     fileManagerClientModule.writeFile(filePath, content)
   }
@@ -176,6 +201,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           <View style={$centered}>
             <Icon font="Ionicons" icon="hourglass" size={32} color={theme.colors.textDim} />
             <Text color="textDim" style={{ marginTop: 16 }}>Loading file...</Text>
+            <Text color="textDim" size="xs" style={{ marginTop: 8 }}>Socket: {socket?.connected ? 'Connected' : 'Disconnected'}</Text>
           </View>
         ) : error ? (
           <View style={$centered}>
@@ -189,10 +215,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
               value={content}
               language={language}
               placeholder="File content..."
-              onChange={(e) => {
-                setContent(e.target.value)
-                addLog(`Content changed: ${e.target.value.length} chars`)
-              }}
+              onChange={(e) => setContent(e.target.value)}
               padding={16}
               style={{
                 fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
@@ -253,9 +276,9 @@ const $debugPanel: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   backgroundColor: colors.input,
   borderRadius: 8,
   padding: spacing.sm,
-  maxHeight: 150,
+  maxHeight: 200,
 })
 
 const $logScrollView: ViewStyle = {
-  maxHeight: 100,
+  maxHeight: 150,
 }
