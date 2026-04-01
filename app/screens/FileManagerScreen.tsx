@@ -182,10 +182,11 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     // Request quick access paths
     fileManagerClientModule.requestQuickAccess()
     
-    // List current directory
+    // List current directory immediately
     fileManagerClientModule.listDirectory(currentPath)
     
     return () => {
+      console.log('[FileManager] cleanup')
       unsubList()
       unsubQuick()
       unsubRead()

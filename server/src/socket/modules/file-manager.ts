@@ -213,7 +213,10 @@ export const fileManagerModule: ServerSocketModule = {
     // List directory contents
     socket.on('file:list', async ({ path: dirPath }: { path: string }) => {
       console.log(`[file-manager] listing: ${dirPath}`)
+      console.log(`[file-manager] allowed roots: ${ALLOWED_ROOTS.join(', ')}`)
+      console.log(`[file-manager] path allowed: ${isPathAllowed(dirPath)}`)
       const result = await listDirectory(dirPath)
+      console.log(`[file-manager] result: ${result.items.length} items, error: ${result.error || 'none'}`)
       socket.emit('file:list-result', result)
     })
 
