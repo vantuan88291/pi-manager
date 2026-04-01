@@ -78,16 +78,6 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   useEffect(() => {
     subscribeToModule('file-manager')
     
-    const unsubRead = fileManagerClientModule.onRead((result) => {
-      setLoading(false)
-      if (result.success && result.data) {
-        setContent(result.data.content)
-        setOriginalContent(result.data.content)
-      } else {
-        showAlert('Error', result.error || 'Failed to read file')
-      }
-    })
-    
     const unsubWrite = fileManagerClientModule.onWrite((result) => {
       setSaving(false)
       if (result.success) {
@@ -104,15 +94,27 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
       }
     })
     
-    // Load file content
-    fileManagerClientModule.readFile(filePath)
+    const unsubRead = fileManagerClientModule.onRead((result) => {
+      setLoading(false)
+      if (result.success && result.data) {
+        setContent(result.data.content)
+        setOriginalContent(result.data.content)
+      } else {
+        showAlert('Error', result.error || 'Failed to read file')
+      }
+    })
+    
+    // Load file content after callbacks are registered
+    setTimeout(() => {
+      fileManagerClientModule.readFile(filePath)
+    }, 100)
     
     return () => {
       unsubRead()
       unsubWrite()
       unsubscribeFromModule('file-manager')
     }
-  }, [filePath, subscribeToModule, unsubscribeFromModule, navigation])
+  }, [filePath, subscribeToModule, unsubscribeFromModule, navigation, content])
 
   const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: 'OK' }]) => {
     setAlertConfig({ visible: true, title, message, buttons })
@@ -162,8 +164,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         titleTx="fileEditor:title" 
         leftIcon="back" 
         onLeftPress={handleBack}
-        rightIcon="save"
-        rightIconColor={hasChanges ? theme.colors.tint : theme.colors.textDim}
+        rightText={saving ? t('fileEditor:saving') : hasChanges ? 'Save' : ''}
         onRightPress={handleSave}
         disabled={saving || !hasChanges}
       />

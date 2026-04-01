@@ -341,9 +341,14 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
             <Text color="textDim">Loading...</Text>
           </View>
         ) : items.length === 0 ? (
-          <Card style={themed($emptyCard)}>
-            <Text color="textDim">This folder is empty (items: {items.length})</Text>
-          </Card>
+          <Card style={themed($emptyCard)} ContentComponent={
+            <View style={$emptyContent}>
+              <Icon font="Ionicons" icon="folder-open" size={48} color={theme.colors.textDim} />
+              <Text weight="medium" size="md" color="textDim" style={{ marginTop: 16 }}>
+                This folder is empty
+              </Text>
+            </View>
+          } />
         ) : (
           <View>
             {console.log('[FileManager] Rendering items:', items.length)}
@@ -457,6 +462,11 @@ const $emptyCard: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: spacing.xl,
   alignItems: 'center',
 })
+
+const $emptyContent: ViewStyle = {
+  padding: 40,
+  alignItems: 'center',
+}
 
 const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.xl,
