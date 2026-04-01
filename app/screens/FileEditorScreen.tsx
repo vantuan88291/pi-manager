@@ -1,11 +1,11 @@
 import { FC, useState, useEffect } from 'react'
-import { View, ViewStyle } from 'react-native'
+import { View, ViewStyle, TextInput, ScrollView } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
-import CodeEditor from '@uiw/react-textarea-code-editor'
 
 import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
+import { Text } from '@/components/Text'
 import { Icon } from '@/components/Icon'
 import { AlertModal, type AlertButton } from '@/components/AlertModal'
 import { useAppTheme } from '@/theme/context'
@@ -26,7 +26,6 @@ interface FileReadResponse {
     content: string
     size: number
     modified: number
-    language: string
   }
   error?: string
 }
@@ -188,22 +187,26 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
             <Text color="error" style={{ marginTop: 16 }}>{error}</Text>
           </View>
         ) : (
-          <View style={themed([$editorWrapper, { backgroundColor: editorBgColor }])}>
-            <CodeEditor
-              key={`editor-${filePath}`}
+          <ScrollView 
+            style={themed([$editorWrapper, { backgroundColor: editorBgColor }])}
+            nestedScrollEnabled={true}
+          >
+            <TextInput
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              padding={16}
+              onChangeText={setContent}
+              placeholder="File content..."
+              placeholderTextColor={theme.colors.textDim}
+              multiline={true}
               style={{
                 fontFamily: 'ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace',
                 fontSize: 13,
-                backgroundColor: 'transparent',
                 color: editorColor,
                 minHeight: 500,
-                lineHeight: 1.5,
+                padding: 16,
+                lineHeight: 20,
               }}
             />
-          </View>
+          </ScrollView>
         )}
       </View>
 
