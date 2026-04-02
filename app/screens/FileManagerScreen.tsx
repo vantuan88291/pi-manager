@@ -1,6 +1,6 @@
-import { FC, useState, useEffect } from 'react'
+import { FC, useState, useEffect, useCallback } from 'react'
 import { View, ViewStyle, RefreshControl, ScrollView, Pressable } from 'react-native'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 
 import { Header } from '@/components/Header'
@@ -13,6 +13,7 @@ import { ListItem } from '@/components/ListItem'
 import { AlertModal, type AlertButton } from '@/components/AlertModal'
 import { SectionHeader } from '@/components/SectionHeader'
 import { Badge } from '@/components/Badge'
+import { TextField } from '@/components/TextField'
 import { useAppTheme } from '@/theme/context'
 import type { ThemedStyle } from '@/theme/types'
 import type { AppStackParamList } from '@/navigators/navigationTypes'
@@ -108,13 +109,19 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress, onDel
           </View>
         </View>
         <View style={$listActions}>
-          {onDelete && (
-            <Pressable
-              onPress={() => onDelete(item)}
-              style={themed($deleteButton)}
-            >
-              <Icon font="Ionicons" icon="trash" size={18} color={theme.colors.error} />
-            </Pressable>
+          {item.isSystem ? (
+            // System file/folder - show lock icon, no delete
+            <Icon font="Ionicons" icon="lock-closed" size={20} color={theme.colors.tint} />
+          ) : (
+            // Regular file/folder - show delete button
+            onDelete && (
+              <Pressable
+                onPress={() => onDelete(item)}
+                style={themed($deleteButton)}
+              >
+                <Icon font="Ionicons" icon="trash" size={18} color={theme.colors.error} />
+              </Pressable>
+            )
           )}
           <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
         </View>
@@ -148,17 +155,17 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     item: FileInfo | null
   }>({ visible: false, item: null })
 
+  const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [createType, setCreateType] = useState<'folder' | 'file'>('folder')
+  const [newItemName, setNewItemName] = useState('')
+
   useEffect(() => {
-    console.log('[FileManager] useEffect - currentPath:', currentPath)
     subscribeToModule('file-manager')
     
     const unsubList = fileManagerClientModule.onList((result) => {
-      console.log('[FileManager] onList callback - items:', result.items?.length, 'error:', result.error)
       if (result.error) {
-        console.error('[FileManager] Error:', result.error)
         setError(result.error)
       } else {
-        console.log('[FileManager] Setting items:', result.items?.map(i => i.name).join(', '))
         setItems(result.items || [])
         setError(null)
       }
@@ -190,6 +197,17 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       unsubscribeFromModule('file-manager')
     }
   }, [subscribeToModule, unsubscribeFromModule, currentPath])
+
+  // Refresh list when screen comes into focus (e.g., after editing a file)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[FileManager] screen focused - refreshing current path:', currentPath)
+      // Only refresh if we already have data (not on first load)
+      if (!loading) {
+        fileManagerClientModule.listDirectory(currentPath)
+      }
+    }, [currentPath, loading])
+  )
 
   const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: 'OK' }]) => {
     setAlertConfig({ visible: true, title, message, buttons })
@@ -234,6 +252,41 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
         },
       ]
     )
+  }
+
+  const handleCreate = (type: 'folder' | 'file') => {
+    setCreateType(type)
+    setNewItemName('')
+    setCreateModalVisible(true)
+  }
+
+  const handleCreateConfirm = async () => {
+    if (!newItemName.trim()) return
+    
+    const newPath = `${currentPath}/${newItemName.trim()}`
+    
+    try {
+      if (createType === 'folder') {
+        // Create folder via API
+        await fetch('/api/files/create-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: newPath }),
+        })
+      } else {
+        // Create empty file via API
+        await fetch('/api/files/write', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: newPath, content: '' }),
+        })
+      }
+      
+      setCreateModalVisible(false)
+      handleRefresh()
+    } catch (error: any) {
+      showAlert('Error', error.message || `Failed to create ${createType}`)
+    }
   }
 
   const handleGoUp = () => {
@@ -303,14 +356,32 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       <SectionHeader
         title="Files"
         rightAction={
-          <Button
-            preset="default"
-            size="sm"
-            onPress={handleRefresh}
-            disabled={loading}
-          >
-            <Icon font="Ionicons" icon="refresh" size={16} />
-          </Button>
+          <View style={$headerActions}>
+            <Button
+              preset="default"
+              size="sm"
+              onPress={() => handleCreate('folder')}
+              style={{ marginRight: 4 }}
+            >
+              <Icon font="Ionicons" icon="folder" size={18} />
+            </Button>
+            <Button
+              preset="default"
+              size="sm"
+              onPress={() => handleCreate('file')}
+              style={{ marginRight: 4 }}
+            >
+              <Icon font="Ionicons" icon="document" size={18} />
+            </Button>
+            <Button
+              preset="default"
+              size="sm"
+              onPress={handleRefresh}
+              disabled={loading}
+            >
+              <Icon font="Ionicons" icon="refresh" size={16} />
+            </Button>
+          </View>
         }
       />
     </View>
@@ -380,6 +451,32 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
       />
+
+      {/* Create Folder/File Modal */}
+      <AlertModal
+        visible={createModalVisible}
+        title={createType === 'folder' ? 'New Folder' : 'New File'}
+        message={`Enter ${createType} name:`}
+        buttons={[
+          { text: t('common:cancel'), style: 'cancel', onPress: () => setCreateModalVisible(false) },
+          {
+            text: t('common:ok'),
+            style: 'default',
+            onPress: handleCreateConfirm,
+          },
+        ]}
+        onClose={() => setCreateModalVisible(false)}
+      >
+        <View style={themed($inputContainer)}>
+          <TextField
+            value={newItemName}
+            onChangeText={setNewItemName}
+            placeholder={`Enter ${createType} name...`}
+            autoFocus
+            onSubmitEditing={handleCreateConfirm}
+          />
+        </View>
+      </AlertModal>
     </Screen>
   )
 }
@@ -482,4 +579,14 @@ const $separator: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   height: 1,
   backgroundColor: colors.border,
   marginHorizontal: spacing.md,
+})
+
+const $headerActions: ViewStyle = {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 4,
+}
+
+const $inputContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingVertical: spacing.md,
 })

@@ -11,8 +11,8 @@ interface SectionHeaderProps {
   title?: string
   /** Section title translation key */
   titleTx?: TxKeyPath
-  /** Optional right action button */
-  rightAction?: {
+  /** Optional right action button or custom content */
+  rightAction?: ReactNode | {
     label?: string
     labelTx?: TxKeyPath
     onPress: () => void
@@ -33,9 +33,13 @@ export const SectionHeader: FC<SectionHeaderProps> = ({
     <View style={[themed($container), style]}>
       <Text text={title} tx={titleTx} size="md" weight="semiBold" style={themed($title)} />
       {rightAction && (
-        <Pressable onPress={rightAction.onPress} style={$action}>
-          <Text text={rightAction.label} tx={rightAction.labelTx} size="sm" color="tint" />
-        </Pressable>
+        typeof rightAction === 'object' && 'onPress' in rightAction ? (
+          <Pressable onPress={rightAction.onPress} style={$action}>
+            <Text text={rightAction.label} tx={rightAction.labelTx} size="sm" color="tint" />
+          </Pressable>
+        ) : (
+          rightAction
+        )
       )}
     </View>
   )
