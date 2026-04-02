@@ -350,8 +350,8 @@ const vi: Translations = {
     saving: "Đang lưu...",
     saved: "Đã lưu thành công",
     saveFailed: "Không thể lưu file",
-    unsavedChanges: "Có thay đổi chưa lưu",
-    discardChanges: "Hủy thay đổi?",
+    unsavedChanges: "Thay đổi chưa lưu",
+    discardChanges: "Bạn có thay đổi chưa lưu. Hủy chúng?",
   },
 }
 

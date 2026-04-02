@@ -349,8 +349,8 @@ const en = {
     saving: "Saving...",
     saved: "Saved successfully",
     saveFailed: "Failed to save file",
-    unsavedChanges: "Unsaved changes",
-    discardChanges: "Discard changes?",
+    unsavedChanges: "Unsaved Changes",
+    discardChanges: "You have unsaved changes. Discard them?",
   },
 }
 
