@@ -18,9 +18,36 @@ const ALLOWED_ROOTS = [
   process.env.HOME || '/home/vantuan88291',
 ]
 
+// Protected system paths that shouldn't be deleted
+const PROTECTED_PATHS = [
+  '/bin', '/sbin', '/usr', '/lib', '/lib64',
+  '/proc', '/sys', '/dev', '/run', '/boot',
+  '/etc/ssh', '/etc/network', '/etc/hosts', '/etc/resolv.conf',
+  '/var', '/home', '/root',
+]
+
 function isPathAllowed(filePath: string): boolean {
   const resolved = path.resolve(filePath)
   return ALLOWED_ROOTS.some(root => resolved.startsWith(root))
+}
+
+function isSystemPath(filePath: string): boolean {
+  const resolved = path.resolve(filePath)
+  
+  // Check if path is exactly a protected path or inside protected directory
+  if (PROTECTED_PATHS.some(protectedPath => 
+    resolved === protectedPath || resolved.startsWith(protectedPath + '/')
+  )) {
+    return true
+  }
+  
+  // Also protect user's home directory and its contents
+  const userHome = process.env.HOME || '/home/vantuan88291'
+  if (resolved === userHome || resolved.startsWith(userHome + '/')) {
+    return true
+  }
+  
+  return false
 }
 
 function getFileType(filename: string): 'file' | 'directory' {
@@ -84,6 +111,7 @@ async function listDirectory(dirPath: string): Promise<DirectoryListResponse> {
       if (!isPathAllowed(fullPath)) continue
 
       const stats = await getFileStats(fullPath)
+      const isSystem = isSystemPath(fullPath)
       
       items.push({
         name: entry.name,
@@ -93,6 +121,7 @@ async function listDirectory(dirPath: string): Promise<DirectoryListResponse> {
         modified: stats.modified || Date.now(),
         permissions: stats.permissions || '644',
         isHidden: stats.isHidden || false,
+        isSystem,
         extension: entry.isFile() ? getFileExtension(entry.name) : undefined,
         mimeType: entry.isFile() ? getMimeType(entry.name) : undefined,
       })

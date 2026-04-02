@@ -109,21 +109,19 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress, onDel
           </View>
         </View>
         <View style={$listActions}>
-          {/* Debug: show isSystem value */}
-          <Text size="xs" color={item.isSystem ? "success" : "error"} style={{ marginRight: 8 }}>
-            {item.isSystem ? '🔒' : '🗑️'}
-          </Text>
-          
-          {onDelete && !item.isSystem && (
-            <Pressable
-              onPress={() => onDelete(item)}
-              style={themed($deleteButton)}
-            >
-              <Icon font="Ionicons" icon="trash" size={18} color={theme.colors.error} />
-            </Pressable>
-          )}
-          {item.isSystem && (
-            <Icon font="Ionicons" icon="lock-closed" size={16} color={theme.colors.tint} />
+          {item.isSystem ? (
+            // System file/folder - show lock icon, no delete
+            <Icon font="Ionicons" icon="lock-closed" size={20} color={theme.colors.tint} />
+          ) : (
+            // Regular file/folder - show delete button
+            onDelete && (
+              <Pressable
+                onPress={() => onDelete(item)}
+                style={themed($deleteButton)}
+              >
+                <Icon font="Ionicons" icon="trash" size={18} color={theme.colors.error} />
+              </Pressable>
+            )
           )}
           <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
         </View>
@@ -171,7 +169,10 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
         console.error('[FileManager] Error:', result.error)
         setError(result.error)
       } else {
-        console.log('[FileManager] Setting items:', result.items?.map(i => i.name).join(', '))
+        console.log('[FileManager] Setting items:', result.items?.map(i => ({ 
+          name: i.name, 
+          isSystem: i.isSystem 
+        })))
         setItems(result.items || [])
         setError(null)
       }
