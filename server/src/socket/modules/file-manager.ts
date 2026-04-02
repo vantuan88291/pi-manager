@@ -35,22 +35,17 @@ function isSystemPath(filePath: string): boolean {
   const resolved = path.resolve(filePath)
   const userHome = path.resolve(process.env.HOME || '/home/vantuan88291')
   
-  console.log('[file-manager] isSystemPath check:', { filePath, resolved, userHome })
-  
   // Check PROTECTED_PATHS - but only EXACT match, NOT children
   // Example: /home is protected, but /home/vantuan88291 is NOT
   if (PROTECTED_PATHS.some(protectedPath => resolved === protectedPath)) {
-    console.log('[file-manager] isSystemPath: EXACT protected path - LOCK')
     return true
   }
   
   // Only protect user's home directory itself, NOT its contents
   if (resolved === userHome) {
-    console.log('[file-manager] isSystemPath: EXACT user home - LOCK')
     return true
   }
   
-  console.log('[file-manager] isSystemPath: ALLOW DELETE')
   return false
 }
 
@@ -245,17 +240,12 @@ export const fileManagerModule: ServerSocketModule = {
   register(socket: Socket, _io: Server) {
     // List directory contents
     socket.on('file:list', async ({ path: dirPath }: { path: string }) => {
-      console.log(`[file-manager] listing: ${dirPath}`)
-      console.log(`[file-manager] allowed roots: ${ALLOWED_ROOTS.join(', ')}`)
-      console.log(`[file-manager] path allowed: ${isPathAllowed(dirPath)}`)
       const result = await listDirectory(dirPath)
-      console.log(`[file-manager] result: ${result.items.length} items, error: ${result.error || 'none'}`)
       socket.emit('file:list-result', result)
     })
 
     // Read file content
     socket.on('file:read', async ({ path: filePath }: { path: string }) => {
-      console.log(`[file-manager] reading: ${filePath}`)
       try {
         const content = await readFileContent(filePath)
         socket.emit('file:read-result', { success: true, data: content })
@@ -269,7 +259,6 @@ export const fileManagerModule: ServerSocketModule = {
 
     // Write file content
     socket.on('file:write', async ({ path: filePath, content }: { path: string; content: string }) => {
-      console.log(`[file-manager] writing: ${filePath}`)
       try {
         await writeFileContent(filePath, content)
         socket.emit('file:write-result', { success: true, message: 'File saved' })
@@ -283,7 +272,6 @@ export const fileManagerModule: ServerSocketModule = {
 
     // Delete file or folder
     socket.on('file:delete', async ({ path: itemPath }: { path: string }) => {
-      console.log(`[file-manager] deleting: ${itemPath}`)
       try {
         await deleteFileOrFolder(itemPath)
         socket.emit('file:delete-result', { success: true, message: 'Deleted successfully' })
@@ -298,7 +286,6 @@ export const fileManagerModule: ServerSocketModule = {
     // Create folder
     socket.on('file:create-folder', async ({ path: parentPath, name }: { path: string; name: string }) => {
       const folderPath = path.join(parentPath, name)
-      console.log(`[file-manager] creating folder: ${folderPath}`)
       try {
         await createFolder(folderPath)
         socket.emit('file:create-folder-result', { success: true, message: 'Folder created' })
@@ -313,7 +300,6 @@ export const fileManagerModule: ServerSocketModule = {
     // Rename file/folder
     socket.on('file:rename', async ({ oldPath, newName }: { oldPath: string; newName: string }) => {
       const newPath = path.join(path.dirname(oldPath), newName)
-      console.log(`[file-manager] renaming: ${oldPath} -> ${newPath}`)
       try {
         await renameItem(oldPath, newPath)
         socket.emit('file:rename-result', { success: true, message: 'Renamed successfully' })
@@ -340,8 +326,6 @@ export const fileManagerModule: ServerSocketModule = {
   },
 
   onSubscribe(socket: Socket) {
-    console.log(`[file-manager] subscriber added: ${socket.id}`)
-    // Send quick access paths on subscribe
     socket.emit('file:quick-access', {
       paths: [
         { label: 'Home', path: process.env.HOME || '/home/vantuan88291' },
@@ -353,7 +337,5 @@ export const fileManagerModule: ServerSocketModule = {
     })
   },
 
-  onUnsubscribe(socket: Socket) {
-    console.log(`[file-manager] subscriber removed: ${socket.id}`)
-  },
+  onUnsubscribe(socket: Socket) {},
 }

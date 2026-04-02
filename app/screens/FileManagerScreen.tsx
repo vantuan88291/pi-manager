@@ -160,19 +160,12 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   const [newItemName, setNewItemName] = useState('')
 
   useEffect(() => {
-    console.log('[FileManager] useEffect - currentPath:', currentPath)
     subscribeToModule('file-manager')
     
     const unsubList = fileManagerClientModule.onList((result) => {
-      console.log('[FileManager] onList callback - items:', result.items?.length, 'error:', result.error)
       if (result.error) {
-        console.error('[FileManager] Error:', result.error)
         setError(result.error)
       } else {
-        console.log('[FileManager] Setting items:', result.items?.map(i => ({ 
-          name: i.name, 
-          isSystem: i.isSystem 
-        })))
         setItems(result.items || [])
         setError(null)
       }
