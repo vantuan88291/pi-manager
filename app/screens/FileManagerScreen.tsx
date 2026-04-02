@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from 'react'
-import { View, ViewStyle, RefreshControl } from 'react-native'
+import { View, ViewStyle, RefreshControl, ScrollView } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 
@@ -273,11 +273,16 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
         >
           <Icon font="Ionicons" icon="arrow-up" size={16} />
         </Button>
-        <View style={$breadcrumbText}>
-          <Text size="sm" color="textDim" numberOfLines={1}>
+        <ScrollView 
+          horizontal={true} 
+          showsHorizontalScrollIndicator={false}
+          style={$breadcrumbScroll}
+          contentContainerStyle={$breadcrumbScrollContent}
+        >
+          <Text size="sm" color="textDim">
             {currentPath}
           </Text>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Quick Access */}
@@ -405,8 +410,12 @@ const $breadcrumb: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderColor: colors.border,
 })
 
-const $breadcrumbText: ViewStyle = {
+const $breadcrumbScroll: ViewStyle = {
   flex: 1,
+}
+
+const $breadcrumbScrollContent: ViewStyle = {
+  flexGrow: 1,
 }
 
 const $quickAccess: ThemedStyle<ViewStyle> = ({ spacing }) => ({
