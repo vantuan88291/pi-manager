@@ -255,27 +255,27 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     
     const newPath = `${currentPath}/${newItemName.trim()}`
     
-    if (createType === 'folder') {
-      // Create folder via API
-      try {
+    try {
+      if (createType === 'folder') {
+        // Create folder via API
         await fetch('/api/files/create-folder', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path: newPath }),
         })
-        setCreateModalVisible(false)
-        handleRefresh()
-      } catch (error: any) {
-        showAlert('Error', error.message || 'Failed to create folder')
+      } else {
+        // Create empty file via API
+        await fetch('/api/files/write', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: newPath, content: '' }),
+        })
       }
-    } else {
-      // Navigate to editor with new file path
+      
       setCreateModalVisible(false)
-      navigation.navigate('FileEditor', {
-        filePath: newPath,
-        fileName: newItemName.trim(),
-        isNewFile: true,
-      })
+      handleRefresh()
+    } catch (error: any) {
+      showAlert('Error', error.message || `Failed to create ${createType}`)
     }
   }
 
