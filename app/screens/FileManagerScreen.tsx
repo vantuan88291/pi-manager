@@ -13,6 +13,7 @@ import { ListItem } from '@/components/ListItem'
 import { AlertModal, type AlertButton } from '@/components/AlertModal'
 import { SectionHeader } from '@/components/SectionHeader'
 import { Badge } from '@/components/Badge'
+import { TextField } from '@/components/TextField'
 import { useAppTheme } from '@/theme/context'
 import type { ThemedStyle } from '@/theme/types'
 import type { AppStackParamList } from '@/navigators/navigationTypes'
@@ -108,13 +109,16 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress, onDel
           </View>
         </View>
         <View style={$listActions}>
-          {onDelete && (
+          {onDelete && !item.isSystem && (
             <Pressable
               onPress={() => onDelete(item)}
               style={themed($deleteButton)}
             >
               <Icon font="Ionicons" icon="trash" size={18} color={theme.colors.error} />
             </Pressable>
+          )}
+          {item.isSystem && (
+            <Icon font="Ionicons" icon="lock-closed" size={16} color={theme.colors.textDim} />
           )}
           <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
         </View>
@@ -147,6 +151,10 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     visible: boolean
     item: FileInfo | null
   }>({ visible: false, item: null })
+
+  const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [createType, setCreateType] = useState<'folder' | 'file'>('folder')
+  const [newItemName, setNewItemName] = useState('')
 
   useEffect(() => {
     console.log('[FileManager] useEffect - currentPath:', currentPath)
@@ -236,6 +244,41 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     )
   }
 
+  const handleCreate = (type: 'folder' | 'file') => {
+    setCreateType(type)
+    setNewItemName('')
+    setCreateModalVisible(true)
+  }
+
+  const handleCreateConfirm = async () => {
+    if (!newItemName.trim()) return
+    
+    const newPath = `${currentPath}/${newItemName.trim()}`
+    
+    if (createType === 'folder') {
+      // Create folder via API
+      try {
+        await fetch('/api/files/create-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: newPath }),
+        })
+        setCreateModalVisible(false)
+        handleRefresh()
+      } catch (error: any) {
+        showAlert('Error', error.message || 'Failed to create folder')
+      }
+    } else {
+      // Navigate to editor with new file path
+      setCreateModalVisible(false)
+      navigation.navigate('FileEditor', {
+        filePath: newPath,
+        fileName: newItemName.trim(),
+        isNewFile: true,
+      })
+    }
+  }
+
   const handleGoUp = () => {
     const parent = currentPath.substring(0, currentPath.lastIndexOf('/'))
     if (parent) {
@@ -303,14 +346,34 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       <SectionHeader
         title="Files"
         rightAction={
-          <Button
-            preset="default"
-            size="sm"
-            onPress={handleRefresh}
-            disabled={loading}
-          >
-            <Icon font="Ionicons" icon="refresh" size={16} />
-          </Button>
+          <View style={$headerActions}>
+            <Button
+              preset="default"
+              size="sm"
+              onPress={() => handleCreate('folder')}
+              style={{ marginRight: 8 }}
+            >
+              <Icon font="Ionicons" icon="folder-add" size={16} />
+              <Text size="xs" weight="medium" style={{ marginLeft: 4 }}>New Folder</Text>
+            </Button>
+            <Button
+              preset="default"
+              size="sm"
+              onPress={() => handleCreate('file')}
+              style={{ marginRight: 8 }}
+            >
+              <Icon font="Ionicons" icon="document-add" size={16} />
+              <Text size="xs" weight="medium" style={{ marginLeft: 4 }}>New File</Text>
+            </Button>
+            <Button
+              preset="default"
+              size="sm"
+              onPress={handleRefresh}
+              disabled={loading}
+            >
+              <Icon font="Ionicons" icon="refresh" size={16} />
+            </Button>
+          </View>
         }
       />
     </View>
@@ -380,6 +443,32 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
         buttons={alertConfig.buttons}
         onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
       />
+
+      {/* Create Folder/File Modal */}
+      <AlertModal
+        visible={createModalVisible}
+        title={createType === 'folder' ? 'New Folder' : 'New File'}
+        message={`Enter ${createType} name:`}
+        buttons={[
+          { text: t('common:cancel'), style: 'cancel', onPress: () => setCreateModalVisible(false) },
+          {
+            text: t('common:ok'),
+            style: 'default',
+            onPress: handleCreateConfirm,
+          },
+        ]}
+        onClose={() => setCreateModalVisible(false)}
+      >
+        <View style={themed($inputContainer)}>
+          <TextField
+            value={newItemName}
+            onChangeText={setNewItemName}
+            placeholder={`Enter ${createType} name...`}
+            autoFocus
+            onSubmitEditing={handleCreateConfirm}
+          />
+        </View>
+      </AlertModal>
     </Screen>
   )
 }
@@ -482,4 +571,14 @@ const $separator: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   height: 1,
   backgroundColor: colors.border,
   marginHorizontal: spacing.md,
+})
+
+const $headerActions: ViewStyle = {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+}
+
+const $inputContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingVertical: spacing.md,
 })

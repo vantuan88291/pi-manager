@@ -18,7 +18,7 @@ type FileEditorScreenRouteProps = import('@react-navigation/native').RouteProp<A
 type FileEditorScreenNavProps = import('@react-navigation/native').NativeStackNavigationProp<AppStackParamList, 'FileEditor'>
 
 interface RouteProps {
-  params: { filePath: string; fileName: string }
+  params: { filePath: string; fileName: string; isNewFile?: boolean }
 }
 
 export const FileEditorScreen: FC = function FileEditorScreen() {

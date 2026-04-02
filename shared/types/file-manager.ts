@@ -8,6 +8,7 @@ export interface FileInfo {
   modified: number  // Unix timestamp
   permissions: string
   isHidden: boolean
+  isSystem: boolean  // System file/folder that shouldn't be deleted
   extension?: string
   mimeType?: string
 }

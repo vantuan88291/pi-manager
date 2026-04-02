@@ -14,9 +14,25 @@ const ALLOWED_ROOTS = [
   process.env.HOME || '/home/vantuan88291',
 ]
 
+// Protected system paths that shouldn't be deleted
+const PROTECTED_PATHS = [
+  '/bin', '/sbin', '/usr', '/lib', '/lib64',
+  '/proc', '/sys', '/dev', '/run', '/boot',
+  '/etc/ssh', '/etc/network', '/etc/hosts', '/etc/resolv.conf',
+  '/var', '/home', '/root',
+]
+
 function isPathAllowed(filePath: string): boolean {
   const resolved = path.resolve(filePath)
   return ALLOWED_ROOTS.some(root => resolved.startsWith(root))
+}
+
+function isSystemPath(filePath: string): boolean {
+  const resolved = path.resolve(filePath)
+  // Check if path is exactly a protected path or inside protected directory
+  return PROTECTED_PATHS.some(protectedPath => 
+    resolved === protectedPath || resolved.startsWith(protectedPath + '/')
+  )
 }
 
 function getLanguageFromExtension(filename: string): string {
@@ -126,12 +142,15 @@ router.get('/list', async (req, res) => {
       if (!isPathAllowed(fullPath)) continue
       
       const stats = await fs.stat(fullPath)
+      const isSystem = isSystemPath(fullPath)
+      
       items.push({
         name: entry.name,
         path: fullPath,
         type: entry.isDirectory() ? 'directory' : 'file',
         size: stats.size,
         modified: stats.mtimeMs,
+        isSystem,
       })
     }
     
@@ -171,12 +190,11 @@ router.delete('/delete', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
     }
     
-    // Prevent deleting important directories
-    const protectedPaths = ['/home', '/etc', '/var', '/tmp', '/opt']
-    if (protectedPaths.some(p => filePath === p || filePath === process.env.HOME)) {
+    // Prevent deleting system files/folders
+    if (isSystemPath(filePath)) {
       return res.status(403).json({ 
         success: false, 
-        error: 'Cannot delete protected system directory' 
+        error: 'Cannot delete system file or folder' 
       })
     }
     
@@ -191,6 +209,34 @@ router.delete('/delete', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to delete',
+    })
+  }
+})
+
+// Create folder
+router.post('/create-folder', async (req, res) => {
+  try {
+    const { path: folderPath } = req.body
+    
+    if (!folderPath) {
+      return res.status(400).json({ success: false, error: 'Path is required' })
+    }
+    
+    if (!isPathAllowed(folderPath)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
+    }
+    
+    await fs.mkdir(folderPath, { recursive: true })
+    
+    res.json({
+      success: true,
+      message: 'Folder created successfully',
+    })
+  } catch (error: any) {
+    console.error('[files] create-folder error:', error.message)
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create folder',
     })
   }
 })
