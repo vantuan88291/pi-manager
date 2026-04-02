@@ -15,8 +15,12 @@ interface UseFileEditorReturn {
   hasChanges: boolean
   isMediaFile: boolean
   mediaType: 'image' | 'video' | 'audio' | null
+  language: string
   handleSave: () => Promise<void>
+  handleBack: (onDiscard: () => void) => void
   setContent: (content: string) => void
+  setShowDiscardModal: (show: boolean) => void
+  showDiscardModal: boolean
 }
 
 // Media file extensions that should be previewed, not edited
@@ -50,6 +54,34 @@ function getMediaType(filename: string): 'image' | 'video' | 'audio' | null {
 }
 
 /**
+ * Get language from file extension for syntax highlighting
+ */
+function getLanguageFromExtension(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  const languageMap: Record<string, string> = {
+    js: 'javascript',
+    jsx: 'javascript',
+    ts: 'typescript',
+    tsx: 'typescript',
+    json: 'json',
+    md: 'markdown',
+    html: 'html',
+    css: 'css',
+    scss: 'scss',
+    yaml: 'yaml',
+    yml: 'yaml',
+    xml: 'xml',
+    py: 'python',
+    sh: 'shell',
+    bash: 'shell',
+    env: 'shell',
+    log: 'text',
+    txt: 'text',
+  }
+  return languageMap[ext || ''] || 'text'
+}
+
+/**
  * Custom hook for file editor logic
  * Handles file read/write operations via REST API
  * Manages unsaved changes state
@@ -61,10 +93,12 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showDiscardModal, setShowDiscardModal] = useState(false)
 
   // Check if file is media
   const fileIsMedia = useMemo(() => isMediaFile(fileName), [fileName])
   const mediaType = useMemo(() => getMediaType(fileName), [fileName])
+  const language = useMemo(() => getLanguageFromExtension(fileName), [fileName])
 
   // Load file content on mount
   useEffect(() => {
@@ -134,6 +168,18 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     }
   }, [filePath, content])
 
+  // Handle back navigation with unsaved changes check
+  const handleBack = useCallback(
+    (onDiscard: () => void) => {
+      if (hasChanges) {
+        setShowDiscardModal(true)
+      } else {
+        onDiscard()
+      }
+    },
+    [hasChanges]
+  )
+
   return {
     content,
     originalContent,
@@ -143,7 +189,11 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     hasChanges,
     isMediaFile: fileIsMedia,
     mediaType,
+    language,
     handleSave,
+    handleBack,
     setContent,
+    setShowDiscardModal,
+    showDiscardModal,
   }
 }

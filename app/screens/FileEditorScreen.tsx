@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { View, ViewStyle, Image, Alert } from 'react-native'
+import { View, ViewStyle, Image } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import CodeEditor from '@uiw/react-textarea-code-editor'
@@ -8,6 +8,7 @@ import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { Icon } from '@/components/Icon'
+import { AlertModal, type AlertButton } from '@/components/AlertModal'
 import { useFileEditor } from '@/hooks/useFileEditor'
 import { useAppTheme } from '@/theme/context'
 import type { ThemedStyle } from '@/theme/types'
@@ -29,8 +30,21 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const { filePath, fileName } = route.params
 
   // Use custom hook for file editor logic
-  const { content, loading, saving, error, hasChanges, isMediaFile, mediaType, handleSave, setContent } =
-    useFileEditor({ filePath, fileName })
+  const {
+    content,
+    loading,
+    saving,
+    error,
+    hasChanges,
+    isMediaFile,
+    mediaType,
+    language,
+    handleSave,
+    setContent,
+    handleBack,
+    showDiscardModal,
+    setShowDiscardModal,
+  } = useFileEditor({ filePath, fileName })
 
   const isDark = theme.isDark
   const editorBgColor = isDark ? '#1e293b' : '#f8fafc'
@@ -39,22 +53,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const saveButtonText = saving ? t('fileEditor:saving') : hasChanges ? t('common:save') : ''
 
   const handleBackPress = () => {
-    if (hasChanges) {
-      Alert.alert(
-        t('fileEditor:unsavedChanges'),
-        t('fileEditor:discardChanges'),
-        [
-          { text: t('common:cancel'), style: 'cancel' },
-          {
-            text: t('common:delete'),
-            style: 'destructive',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      )
-    } else {
-      navigation.goBack()
-    }
+    handleBack(() => navigation.goBack())
   }
 
   const handleSavePress = () => {
@@ -65,6 +64,20 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
 
     handleSave()
   }
+
+  const handleDiscardConfirm = () => {
+    setShowDiscardModal(false)
+    navigation.goBack()
+  }
+
+  const discardModalButtons: AlertButton[] = [
+    { text: t('common:cancel'), onPress: () => setShowDiscardModal(false) },
+    {
+      text: t('common:delete'),
+      style: 'destructive',
+      onPress: handleDiscardConfirm,
+    },
+  ]
 
   // Render media preview
   if (isMediaFile && mediaType) {
@@ -78,29 +91,50 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
 
         <View style={themed($mediaContainer)}>
           {mediaType === 'image' && (
-            <Image
-              source={{ uri: `/api/files/read?path=${encodeURIComponent(filePath)}` }}
-              style={$mediaPreview}
-              resizeMode="contain"
-            />
+            <View style={$mediaPlaceholder}>
+              <Icon font="Ionicons" icon="image" size={64} color={theme.colors.tint} />
+              <Text weight="semiBold" color="text" style={{ marginTop: 16 }}>
+                {fileName}
+              </Text>
+              <Text color="textDim" size="sm" style={{ marginTop: 8 }}>
+                Image preview
+              </Text>
+            </View>
           )}
           
           {mediaType === 'video' && (
             <View style={$mediaPlaceholder}>
-              <Icon font="Ionicons" icon="videocam" size={64} color={theme.colors.textDim} />
-              <Text color="textDim" style={{ marginTop: 16 }}>Video preview not available</Text>
-              <Text color="textDim" size="sm" style={{ marginTop: 8 }}>{fileName}</Text>
+              <Icon font="Ionicons" icon="videocam" size={64} color={theme.colors.warning} />
+              <Text weight="semiBold" color="text" style={{ marginTop: 16 }}>
+                {fileName}
+              </Text>
+              <Text color="textDim" size="sm" style={{ marginTop: 8 }}>
+                Video preview not available
+              </Text>
             </View>
           )}
           
           {mediaType === 'audio' && (
             <View style={$mediaPlaceholder}>
-              <Icon font="Ionicons" icon="musical-notes" size={64} color={theme.colors.textDim} />
-              <Text color="textDim" style={{ marginTop: 16 }}>Audio preview not available</Text>
-              <Text color="textDim" size="sm" style={{ marginTop: 8 }}>{fileName}</Text>
+              <Icon font="Ionicons" icon="musical-notes" size={64} color={theme.colors.success} />
+              <Text weight="semiBold" color="text" style={{ marginTop: 16 }}>
+                {fileName}
+              </Text>
+              <Text color="textDim" size="sm" style={{ marginTop: 8 }}>
+                Audio preview not available
+              </Text>
             </View>
           )}
         </View>
+
+        {/* Discard changes modal */}
+        <AlertModal
+          visible={showDiscardModal}
+          title={t('fileEditor:unsavedChanges')}
+          message={t('fileEditor:discardChanges')}
+          buttons={discardModalButtons}
+          onClose={() => setShowDiscardModal(false)}
+        />
       </Screen>
     )
   }
@@ -130,7 +164,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           <View style={themed([$editorWrapper, { backgroundColor: editorBgColor }])}>
             <CodeEditor
               value={content}
-              language={getLanguageFromExtension(fileName)}
+              language={language}
               onChange={(e) => setContent(e.target.value)}
               padding={16}
               style={{
@@ -145,36 +179,17 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           </View>
         )}
       </View>
+
+      {/* Discard changes modal */}
+      <AlertModal
+        visible={showDiscardModal}
+        title={t('fileEditor:unsavedChanges')}
+        message={t('fileEditor:discardChanges')}
+        buttons={discardModalButtons}
+        onClose={() => setShowDiscardModal(false)}
+      />
     </Screen>
   )
-}
-
-/**
- * Get language from file extension for syntax highlighting
- */
-function getLanguageFromExtension(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase()
-  const languageMap: Record<string, string> = {
-    js: 'javascript',
-    jsx: 'javascript',
-    ts: 'typescript',
-    tsx: 'typescript',
-    json: 'json',
-    md: 'markdown',
-    html: 'html',
-    css: 'css',
-    scss: 'scss',
-    yaml: 'yaml',
-    yml: 'yaml',
-    xml: 'xml',
-    py: 'python',
-    sh: 'shell',
-    bash: 'shell',
-    env: 'shell',
-    log: 'text',
-    txt: 'text',
-  }
-  return languageMap[ext || ''] || 'text'
 }
 
 const $editorContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -201,12 +216,6 @@ const $mediaContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: 'center',
   justifyContent: 'center',
 })
-
-const $mediaPreview: ViewStyle = {
-  width: '100%',
-  height: 400,
-  borderRadius: 12,
-}
 
 const $mediaPlaceholder: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: spacing.xl,
