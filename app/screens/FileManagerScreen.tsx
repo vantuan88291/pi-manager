@@ -352,9 +352,8 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
               size="sm"
               onPress={() => handleCreate('folder')}
               style={{ marginRight: 4 }}
-              txOptions={{ text: '+' }}
             >
-              <Icon font="Ionicons" icon="folder-add" size={18} />
+              <Icon font="Ionicons" icon="folder" size={18} />
             </Button>
             <Button
               preset="default"
@@ -362,7 +361,7 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
               onPress={() => handleCreate('file')}
               style={{ marginRight: 4 }}
             >
-              <Icon font="Ionicons" icon="document-add" size={18} />
+              <Icon font="Ionicons" icon="document" size={18} />
             </Button>
             <Button
               preset="default"

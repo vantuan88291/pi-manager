@@ -20,6 +20,7 @@ const PROTECTED_PATHS = [
   '/proc', '/sys', '/dev', '/run', '/boot',
   '/etc/ssh', '/etc/network', '/etc/hosts', '/etc/resolv.conf',
   '/var', '/home', '/root',
+  '/home/vantuan88291',  // User's home directory
 ]
 
 function isPathAllowed(filePath: string): boolean {
