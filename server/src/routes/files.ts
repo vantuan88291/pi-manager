@@ -30,10 +30,21 @@ function isPathAllowed(filePath: string): boolean {
 
 function isSystemPath(filePath: string): boolean {
   const resolved = path.resolve(filePath)
+  
   // Check if path is exactly a protected path or inside protected directory
-  return PROTECTED_PATHS.some(protectedPath => 
+  if (PROTECTED_PATHS.some(protectedPath => 
     resolved === protectedPath || resolved.startsWith(protectedPath + '/')
-  )
+  )) {
+    return true
+  }
+  
+  // Also protect user's home directory and its contents
+  const userHome = process.env.HOME || '/home/vantuan88291'
+  if (resolved === userHome || resolved.startsWith(userHome + '/')) {
+    return true
+  }
+  
+  return false
 }
 
 function getLanguageFromExtension(filename: string): string {

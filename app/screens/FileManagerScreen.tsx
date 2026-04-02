@@ -1,6 +1,6 @@
-import { FC, useState, useEffect } from 'react'
+import { FC, useState, useEffect, useCallback } from 'react'
 import { View, ViewStyle, RefreshControl, ScrollView, Pressable } from 'react-native'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 
 import { Header } from '@/components/Header'
@@ -198,6 +198,14 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       unsubscribeFromModule('file-manager')
     }
   }, [subscribeToModule, unsubscribeFromModule, currentPath])
+
+  // Refresh list when screen comes into focus (e.g., after editing a file)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[FileManager] screen focused - refreshing list')
+      handleRefresh()
+    }, [])
+  )
 
   const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: 'OK' }]) => {
     setAlertConfig({ visible: true, title, message, buttons })
