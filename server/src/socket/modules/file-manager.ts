@@ -41,13 +41,13 @@ function isSystemPath(filePath: string): boolean {
     return true
   }
   
-  // Also protect user's home directory and its contents
+  // Only protect user's home directory itself, NOT its contents
   const userHome = process.env.HOME || '/home/vantuan88291'
-  if (resolved === userHome || resolved.startsWith(userHome + '/')) {
-    return true
+  if (resolved === userHome) {
+    return true  // Protect /home/vantuan88291 itself
   }
   
-  return false
+  return false  // Allow deleting contents inside user home
 }
 
 function getFileType(filename: string): 'file' | 'directory' {
