@@ -42,13 +42,11 @@ export const AlertModal: FC<AlertModalProps> = ({
         textStyle: { color: theme.colors.error },
       }
     }
-    if (button.style === "cancel") {
-      return {
-        preset: "default" as const,
-        textStyle: { color: theme.colors.text },
-      }
+    // Default or cancel style - both should look the same
+    return {
+      preset: "default" as const,
+      textStyle: { color: theme.colors.text },
     }
-    return { preset: "primary" as const }
   }
 
   return (
@@ -64,7 +62,7 @@ export const AlertModal: FC<AlertModalProps> = ({
               txOptions={{ text: button.text }}
               text={button.text}
               onPress={() => handleButtonPress(button)}
-              style={themed([$button, button.style === "cancel" && $cancelButton])}
+              style={themed([$button, button.style !== "destructive" && $cancelButton])}
               {...getButtonStyle(button)}
             />
           ))}
@@ -87,6 +85,7 @@ const $buttonContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.md,
   marginTop: spacing.lg,
+  justifyContent: buttons.length === 1 ? "center" : "flex-end",
 })
 
 const $button: ThemedStyle<ViewStyle> = ({ spacing }) => ({

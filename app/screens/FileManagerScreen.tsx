@@ -72,9 +72,10 @@ interface FileListItemProps {
   item: FileInfo
   onPress: (item: FileInfo) => void
   onLongPress?: (item: FileInfo) => void
+  onDelete?: (item: FileInfo) => void
 }
 
-const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress }) => {
+const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress, onDelete }) => {
   const { themed, theme } = useAppTheme()
   const icon = getFileIcon(item)
   
@@ -106,7 +107,17 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress }) => 
             )}
           </View>
         </View>
-        <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
+        <View style={$listActions}>
+          {onDelete && (
+            <Pressable
+              onPress={() => onDelete(item)}
+              style={themed($deleteButton)}
+            >
+              <Icon font="Ionicons" icon="trash" size={18} color={theme.colors.error} />
+            </Pressable>
+          )}
+          <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
+        </View>
       </View>
     </View>
   )
@@ -208,20 +219,17 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     setActionMenu({ visible: true, item })
   }
 
-  const handleDelete = () => {
-    if (!actionMenu.item) return
-    
+  const handleDelete = (item: FileInfo) => {
     showAlert(
-      `Delete ${actionMenu.item.name}?`,
-      'This action cannot be undone.',
+      t('fileManager:deleteConfirm', { name: item.name }),
+      t('fileManager:deleteWarning'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common:delete'),
           style: 'destructive',
           onPress: () => {
-            fileManagerClientModule.deleteFileOrFolder(actionMenu.item!.path)
-            setActionMenu({ visible: false, item: null })
+            fileManagerClientModule.deleteFileOrFolder(item.path)
           },
         },
       ]
@@ -346,6 +354,7 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
                   item={item}
                   onPress={handleNavigate}
                   onLongPress={handleLongPress}
+                  onDelete={handleDelete}
                 />
                 {index < items.length - 1 && <View style={themed($separator)} />}
               </View>
@@ -415,6 +424,16 @@ const $listItem: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   paddingHorizontal: spacing.md,
   borderBottomWidth: 1,
   borderBottomColor: colors.border,
+})
+
+const $listActions: ViewStyle = {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+}
+
+const $deleteButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  padding: spacing.sm,
 })
 
 const $itemContent: ViewStyle = {

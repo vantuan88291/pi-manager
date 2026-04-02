@@ -344,6 +344,12 @@ const en = {
     deleteFailed: "Failed to delete",
     quickAccess: "Quick Access",
   },
+  common: {
+    cancel: "Cancel",
+    delete: "Delete",
+    save: "Save",
+    ok: "OK",
+  },
   fileEditor: {
     title: "Edit File",
     saving: "Saving...",
