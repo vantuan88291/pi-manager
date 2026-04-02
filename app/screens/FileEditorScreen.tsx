@@ -39,6 +39,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const { filePath, fileName } = route.params
   
   const [content, setContent] = useState('')
+  const [originalContent, setOriginalContent] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,6 +67,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
         
         if (result.success && result.data) {
           setContent(result.data.content)
+          setOriginalContent(result.data.content)
         } else {
           setError(result.error || 'Failed to read file')
           setAlertConfig({
@@ -98,7 +100,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     }
   }, [filePath])
 
-  const hasChanges = content.length > 0
+  const hasChanges = content !== originalContent
   
   const handleSave = async () => {
     setSaving(true)
@@ -116,6 +118,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
       const result = await response.json()
       
       if (result.success) {
+        setOriginalContent(content)
         setAlertConfig({
           visible: true,
           title: 'Success',
