@@ -155,21 +155,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       setRefreshing(false)
     })
     
-    const unsubQuick = fileManagerClientModule.onQuickAccess((result) => {
-      console.log('[FileManager] Quick access paths:', result.paths?.length)
-      setQuickAccessPaths(result.paths)
-    })
-    
-    const unsubRead = fileManagerClientModule.onRead((result) => {
-      setFileLoading(false)
-      if (result.success && result.data) {
-        setFileContent(result.data.content)
-      } else {
-        setError(result.error || 'Failed to read file')
-        setViewingFile(null)
-      }
-    })
-    
     const unsubDelete = fileManagerClientModule.onDelete((result) => {
       if (result.success) {
         // Refresh current directory
@@ -191,9 +176,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     return () => {
       console.log('[FileManager] cleanup')
       unsubList()
-      unsubQuick()
-      unsubRead()
-      unsubDelete()
       unsubscribeFromModule('file-manager')
     }
   }, [subscribeToModule, unsubscribeFromModule, currentPath])
