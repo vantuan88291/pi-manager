@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useCallback } from 'react'
+import { FC, useState, useEffect, useCallback, useRef } from 'react'
 import { View, ViewStyle, RefreshControl, ScrollView, Pressable } from 'react-native'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
@@ -158,8 +158,7 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [createType, setCreateType] = useState<'folder' | 'file'>('folder')
   const [newItemName, setNewItemName] = useState('')
-  const [uploadModalVisible, setUploadModalVisible] = useState(false)
-  const [uploadFileName, setUploadFileName] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     subscribeToModule('file-manager')
@@ -290,27 +289,35 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   }
 
   const handleUpload = () => {
-    setUploadFileName('')
-    setUploadModalVisible(true)
+    // Trigger hidden file input
+    fileInputRef.current?.click()
   }
 
-  const handleUploadConfirm = async () => {
-    if (!uploadFileName.trim()) return
-    
-    // Create file with empty content, user can edit later
-    const newPath = `${currentPath}/${uploadFileName.trim()}`
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
     
     try {
+      // Read file content
+      const content = await file.text()
+      
+      // Upload to server
+      const newPath = `${currentPath}/${file.name}`
       await fetch('/api/files/write', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: newPath, content: '' }),
+        body: JSON.stringify({ path: newPath, content }),
       })
       
-      setUploadModalVisible(false)
       handleRefresh()
+      showAlert(t('common:success'), t('fileManager:uploadSuccess', { name: file.name }))
     } catch (error: any) {
-      showAlert('Error', error.message || 'Failed to create file')
+      showAlert(t('common:error'), error.message || t('fileManager:uploadFailed'))
+    }
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -503,31 +510,13 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
         </View>
       </AlertModal>
 
-      {/* Upload File Modal */}
-      <AlertModal
-        visible={uploadModalVisible}
-        title={t('fileManager:upload')}
-        message={t('fileManager:uploadFileName')}
-        buttons={[
-          { text: t('common:cancel'), style: 'cancel', onPress: () => setUploadModalVisible(false) },
-          {
-            text: t('common:ok'),
-            style: 'default',
-            onPress: handleUploadConfirm,
-          },
-        ]}
-        onClose={() => setUploadModalVisible(false)}
-      >
-        <View style={themed($inputContainer)}>
-          <TextField
-            value={uploadFileName}
-            onChangeText={setUploadFileName}
-            placeholder={t('fileManager:uploadFileNamePlaceholder')}
-            autoFocus
-            onSubmitEditing={handleUploadConfirm}
-          />
-        </View>
-      </AlertModal>
+      {/* Hidden file input for upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
     </Screen>
   )
 }
