@@ -351,6 +351,7 @@ const en = {
     saveFailed: "Failed to save file",
     unsavedChanges: "Unsaved Changes",
     discardChanges: "You have unsaved changes. Discard them?",
+    discard: "Discard",
     mediaPreview: "Preview",
     videoNotAvailable: "Video preview not available",
     audioNotAvailable: "Audio preview not available",

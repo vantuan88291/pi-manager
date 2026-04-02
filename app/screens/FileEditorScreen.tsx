@@ -71,9 +71,13 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   }
 
   const discardModalButtons: AlertButton[] = [
-    { text: t('common:cancel'), onPress: () => setShowDiscardModal(false) },
+    { 
+      text: t('common:cancel'), 
+      style: 'cancel',
+      onPress: () => setShowDiscardModal(false) 
+    },
     {
-      text: t('common:delete'),
+      text: t('fileEditor:discard'),
       style: 'destructive',
       onPress: handleDiscardConfirm,
     },
@@ -91,9 +95,9 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
 
         <View style={themed($mediaContainer)}>
           {mediaType === 'image' && (
-            <View style={$mediaPlaceholder}>
-              <Icon font="Ionicons" icon="image" size={64} color={theme.colors.tint} />
-              <Text weight="semiBold" color="text" style={{ marginTop: 16 }}>
+            <View style={$mediaContent}>
+              <Icon font="Ionicons" icon="image" size={80} color={theme.colors.tint} />
+              <Text weight="semiBold" size="lg" color="text" style={{ marginTop: 16 }}>
                 {fileName}
               </Text>
               <Text color="textDim" size="sm" style={{ marginTop: 8 }}>
@@ -103,9 +107,9 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           )}
           
           {mediaType === 'video' && (
-            <View style={$mediaPlaceholder}>
-              <Icon font="Ionicons" icon="videocam" size={64} color={theme.colors.warning} />
-              <Text weight="semiBold" color="text" style={{ marginTop: 16 }}>
+            <View style={$mediaContent}>
+              <Icon font="Ionicons" icon="videocam" size={80} color={theme.colors.warning} />
+              <Text weight="semiBold" size="lg" color="text" style={{ marginTop: 16 }}>
                 {fileName}
               </Text>
               <Text color="textDim" size="sm" style={{ marginTop: 8 }}>
@@ -115,9 +119,9 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           )}
           
           {mediaType === 'audio' && (
-            <View style={$mediaPlaceholder}>
-              <Icon font="Ionicons" icon="musical-notes" size={64} color={theme.colors.success} />
-              <Text weight="semiBold" color="text" style={{ marginTop: 16 }}>
+            <View style={$mediaContent}>
+              <Icon font="Ionicons" icon="musical-notes" size={80} color={theme.colors.success} />
+              <Text weight="semiBold" size="lg" color="text" style={{ marginTop: 16 }}>
                 {fileName}
               </Text>
               <Text color="textDim" size="sm" style={{ marginTop: 8 }}>
@@ -212,12 +216,13 @@ const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 
 const $mediaContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
-  padding: spacing.md,
+  padding: spacing.xl,
   alignItems: 'center',
   justifyContent: 'center',
 })
 
-const $mediaPlaceholder: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  padding: spacing.xl,
+const $mediaContent: ViewStyle = {
+  flex: 1,
   alignItems: 'center',
-})
+  justifyContent: 'center',
+}
