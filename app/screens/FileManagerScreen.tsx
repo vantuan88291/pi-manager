@@ -1,7 +1,7 @@
 import { FC, useState, useEffect } from 'react'
-import { View, ViewStyle, RefreshControl } from 'react-native'
-import { useTranslation } from 'react-i18next'
+import { View, ViewStyle, RefreshControl, ScrollView } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 
 import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
@@ -18,7 +18,8 @@ import type { ThemedStyle } from '@/theme/types'
 import type { AppStackParamList } from '@/navigators/navigationTypes'
 import { useSocket } from '@/services/socket/SocketContext'
 import { fileManagerClientModule } from '@/services/socket/modules/file-manager'
-import type { FileInfo, QuickAccessPath } from '@/shared/types/file-manager'
+import type { FileInfo, QuickAccessPath } from '../../shared/types/file-manager'
+import { QUICK_ACCESS_PATHS } from '../../shared/types/file-manager'
 
 type FileManagerScreenProps = import('@react-navigation/native').NativeStackScreenProps<AppStackParamList, 'FileManager'>
 
@@ -121,10 +122,7 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   const [items, setItems] = useState<FileInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [quickAccessPaths, setQuickAccessPaths] = useState<QuickAccessPath[]>([])
-  const [viewingFile, setViewingFile] = useState<FileInfo | null>(null)
-  const [fileContent, setFileContent] = useState<string>('')
-  const [fileLoading, setFileLoading] = useState(false)
+  const [quickAccessPaths] = useState<QuickAccessPath[]>(QUICK_ACCESS_PATHS)
   const [error, setError] = useState<string | null>(null)
   
   const [alertConfig, setAlertConfig] = useState<{
@@ -157,21 +155,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       setRefreshing(false)
     })
     
-    const unsubQuick = fileManagerClientModule.onQuickAccess((result) => {
-      console.log('[FileManager] Quick access paths:', result.paths?.length)
-      setQuickAccessPaths(result.paths)
-    })
-    
-    const unsubRead = fileManagerClientModule.onRead((result) => {
-      setFileLoading(false)
-      if (result.success && result.data) {
-        setFileContent(result.data.content)
-      } else {
-        setError(result.error || 'Failed to read file')
-        setViewingFile(null)
-      }
-    })
-    
     const unsubDelete = fileManagerClientModule.onDelete((result) => {
       if (result.success) {
         // Refresh current directory
@@ -193,9 +176,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     return () => {
       console.log('[FileManager] cleanup')
       unsubList()
-      unsubQuick()
-      unsubRead()
-      unsubDelete()
       unsubscribeFromModule('file-manager')
     }
   }, [subscribeToModule, unsubscribeFromModule, currentPath])
@@ -216,11 +196,11 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       setLoading(true)
       fileManagerClientModule.listDirectory(item.path)
     } else {
-      // View file
-      setFileLoading(true)
-      setFileContent('')
-      setViewingFile(item)
-      fileManagerClientModule.readFile(item.path)
+      // Navigate to file editor
+      navigation.navigate('FileEditor', {
+        filePath: item.path,
+        fileName: item.name,
+      })
     }
   }
 
@@ -276,11 +256,16 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
         >
           <Icon font="Ionicons" icon="arrow-up" size={16} />
         </Button>
-        <View style={$breadcrumbText}>
-          <Text size="sm" color="textDim" numberOfLines={1}>
+        <ScrollView 
+          horizontal={true} 
+          showsHorizontalScrollIndicator={false}
+          style={$breadcrumbScroll}
+          contentContainerStyle={$breadcrumbScrollContent}
+        >
+          <Text size="sm" color="textDim">
             {currentPath}
           </Text>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Quick Access */}
@@ -323,40 +308,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     </View>
   )
 
-  const renderFileViewer = () => {
-    if (!viewingFile) return null
-    
-    return (
-      <View style={themed($fileViewer)}>
-        <View style={$fileViewerHeader}>
-          <View style={$fileViewerTitle}>
-            <Text weight="semiBold" size="md">{viewingFile.name}</Text>
-            <Text size="xs" color="textDim">{formatFileSize(viewingFile.size)}</Text>
-          </View>
-          <Button
-            preset="default"
-            size="sm"
-            onPress={() => setViewingFile(null)}
-          >
-            <Icon font="Ionicons" icon="close" size={16} />
-          </Button>
-        </View>
-        
-        {fileLoading ? (
-          <View style={$centered}>
-            <Text color="textDim">Loading...</Text>
-          </View>
-        ) : (
-          <View style={themed($fileContent)}>
-            <Text size="xs" font="mono" color="text" numberOfLines={0}>
-              {fileContent}
-            </Text>
-          </View>
-        )}
-      </View>
-    )
-  }
-
   return (
     <Screen
       preset="scroll"
@@ -378,9 +329,14 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
             <Text color="textDim">Loading...</Text>
           </View>
         ) : items.length === 0 ? (
-          <Card style={themed($emptyCard)}>
-            <Text color="textDim">This folder is empty (items: {items.length})</Text>
-          </Card>
+          <Card style={themed($emptyCard)} ContentComponent={
+            <View style={$emptyContent}>
+              <Icon font="Ionicons" icon="folder-open" size={48} color={theme.colors.textDim} />
+              <Text weight="medium" size="md" color="textDim" style={{ marginTop: 16 }}>
+                This folder is empty
+              </Text>
+            </View>
+          } />
         ) : (
           <View>
             {console.log('[FileManager] Rendering items:', items.length)}
@@ -397,13 +353,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
           </View>
         )}
       </View>
-
-      {/* File Viewer Modal */}
-      {viewingFile && (
-        <View style={themed($modalOverlay)}>
-          {renderFileViewer()}
-        </View>
-      )}
 
       {/* Action Menu Modal */}
       <AlertModal
@@ -444,8 +393,12 @@ const $breadcrumb: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderColor: colors.border,
 })
 
-const $breadcrumbText: ViewStyle = {
+const $breadcrumbScroll: ViewStyle = {
   flex: 1,
+}
+
+const $breadcrumbScrollContent: ViewStyle = {
+  flexGrow: 1,
 }
 
 const $quickAccess: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -502,54 +455,14 @@ const $emptyCard: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   alignItems: 'center',
 })
 
+const $emptyContent: ViewStyle = {
+  padding: 40,
+  alignItems: 'center',
+}
+
 const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.xl,
   alignItems: 'center',
-})
-
-const $modalOverlay: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: colors.background + 'E6',
-  zIndex: 1000,
-})
-
-const $fileViewer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: colors.surface,
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  maxHeight: '80%',
-  borderWidth: 1,
-  borderColor: colors.border,
-  borderTopWidth: 0,
-})
-
-const $fileViewerHeader: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: spacing.md,
-  borderBottomWidth: 1,
-  borderBottomColor: colors.border,
-})
-
-const $fileViewerTitle: ViewStyle = {
-  gap: 4,
-}
-
-const $fileContent: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
-  padding: spacing.md,
-  backgroundColor: colors.input,
-  borderRadius: 12,
-  margin: spacing.md,
-  maxHeight: 400,
 })
 
 const $separator: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({

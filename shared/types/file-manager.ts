@@ -53,6 +53,7 @@ export const QUICK_ACCESS_PATHS = [
   { label: 'Logs', path: '/var/log' },
   { label: 'Config', path: '/etc' },
   { label: 'Temp', path: '/tmp' },
+  { label: 'Code', path: '/home/vantuan88291/.openclaw/workspace/code' },
   { label: 'Pi Manager', path: '/home/vantuan88291/.openclaw/workspace/code/reactnative/pi-manager' },
 ] as const
 

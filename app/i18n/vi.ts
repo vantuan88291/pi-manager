@@ -345,6 +345,18 @@ const vi: Translations = {
     deleteFailed: "Không thể xóa",
     quickAccess: "Truy cập nhanh",
   },
+  fileEditor: {
+    title: "Chỉnh sửa file",
+    saving: "Đang lưu...",
+    saved: "Đã lưu thành công",
+    saveFailed: "Không thể lưu file",
+    unsavedChanges: "Thay đổi chưa lưu",
+    discardChanges: "Bạn có thay đổi chưa lưu. Hủy chúng?",
+    discard: "Hủy",
+    mediaPreview: "Xem trước",
+    videoNotAvailable: "Video preview không khả dụng",
+    audioNotAvailable: "Audio preview không khả dụng",
+  },
 }
 
 export default vi

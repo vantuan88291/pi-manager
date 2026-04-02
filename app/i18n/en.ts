@@ -344,6 +344,18 @@ const en = {
     deleteFailed: "Failed to delete",
     quickAccess: "Quick Access",
   },
+  fileEditor: {
+    title: "Edit File",
+    saving: "Saving...",
+    saved: "Saved successfully",
+    saveFailed: "Failed to save file",
+    unsavedChanges: "Unsaved Changes",
+    discardChanges: "You have unsaved changes. Discard them?",
+    discard: "Discard",
+    mediaPreview: "Preview",
+    videoNotAvailable: "Video preview not available",
+    audioNotAvailable: "Audio preview not available",
+  },
 }
 
 export default en
