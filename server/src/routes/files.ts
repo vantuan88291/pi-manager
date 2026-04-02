@@ -30,20 +30,25 @@ function isPathAllowed(filePath: string): boolean {
 
 function isSystemPath(filePath: string): boolean {
   const resolved = path.resolve(filePath)
+  const userHome = process.env.HOME || '/home/vantuan88291'
+  
+  console.log('[files] isSystemPath check:', { resolved, userHome, HOME: process.env.HOME })
   
   // Check if path is exactly a protected path or inside protected directory
   if (PROTECTED_PATHS.some(protectedPath => 
     resolved === protectedPath || resolved.startsWith(protectedPath + '/')
   )) {
+    console.log('[files] isSystemPath: PROTECTED_PATHS match')
     return true
   }
   
   // Also protect user's home directory and its contents
-  const userHome = process.env.HOME || '/home/vantuan88291'
   if (resolved === userHome || resolved.startsWith(userHome + '/')) {
+    console.log('[files] isSystemPath: user home match')
     return true
   }
   
+  console.log('[files] isSystemPath: NOT system')
   return false
 }
 
