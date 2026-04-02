@@ -420,15 +420,15 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   )
 
   return (
-    <Screen
-      preset="scroll"
-      ScrollViewProps={{
-        refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
-      }}
-    >
+    <Screen preset="fixed">
       <Header titleTx="fileManager:title" leftIcon="back" onLeftPress={() => navigation.goBack()} />
       
-      <View style={themed($contentWrapper)}>
+      <ScrollView
+        style={themed($contentWrapper)}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         {renderHeader()}
         
         {error ? (
@@ -448,7 +448,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
           </View>
         ) : (
           <View>
-            {console.log('[FileManager] Rendering items:', items.length)}
             {items.map((item, index) => (
               <View key={item.path}>
                 <FileListItem
@@ -462,7 +461,7 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
             ))}
           </View>
         )}
-      </View>
+      </ScrollView>
 
       {/* Action Menu Modal */}
       <AlertModal
