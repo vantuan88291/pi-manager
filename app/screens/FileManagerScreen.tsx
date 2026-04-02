@@ -18,7 +18,8 @@ import type { ThemedStyle } from '@/theme/types'
 import type { AppStackParamList } from '@/navigators/navigationTypes'
 import { useSocket } from '@/services/socket/SocketContext'
 import { fileManagerClientModule } from '@/services/socket/modules/file-manager'
-import type { FileInfo, QuickAccessPath } from '@/shared/types/file-manager'
+import type { FileInfo, QuickAccessPath } from '../../shared/types/file-manager'
+import { QUICK_ACCESS_PATHS } from '../../shared/types/file-manager'
 
 type FileManagerScreenProps = import('@react-navigation/native').NativeStackScreenProps<AppStackParamList, 'FileManager'>
 
@@ -121,7 +122,7 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   const [items, setItems] = useState<FileInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [quickAccessPaths, setQuickAccessPaths] = useState<QuickAccessPath[]>([])
+  const [quickAccessPaths] = useState<QuickAccessPath[]>(QUICK_ACCESS_PATHS)
   const [error, setError] = useState<string | null>(null)
   
   const [alertConfig, setAlertConfig] = useState<{
