@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from 'react'
-import { View, ViewStyle, RefreshControl, ScrollView } from 'react-native'
+import { View, ViewStyle, RefreshControl, ScrollView, Pressable } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 
