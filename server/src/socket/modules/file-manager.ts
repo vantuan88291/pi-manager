@@ -33,21 +33,25 @@ function isPathAllowed(filePath: string): boolean {
 
 function isSystemPath(filePath: string): boolean {
   const resolved = path.resolve(filePath)
+  const userHome = path.resolve(process.env.HOME || '/home/vantuan88291')
   
-  // Check if path is exactly a protected path or inside protected directory
-  if (PROTECTED_PATHS.some(protectedPath => 
-    resolved === protectedPath || resolved.startsWith(protectedPath + '/')
-  )) {
+  console.log('[file-manager] isSystemPath check:', { filePath, resolved, userHome })
+  
+  // Check PROTECTED_PATHS - but only EXACT match, NOT children
+  // Example: /home is protected, but /home/vantuan88291 is NOT
+  if (PROTECTED_PATHS.some(protectedPath => resolved === protectedPath)) {
+    console.log('[file-manager] isSystemPath: EXACT protected path - LOCK')
     return true
   }
   
   // Only protect user's home directory itself, NOT its contents
-  const userHome = process.env.HOME || '/home/vantuan88291'
   if (resolved === userHome) {
-    return true  // Protect /home/vantuan88291 itself
+    console.log('[file-manager] isSystemPath: EXACT user home - LOCK')
+    return true
   }
   
-  return false  // Allow deleting contents inside user home
+  console.log('[file-manager] isSystemPath: ALLOW DELETE')
+  return false
 }
 
 function getFileType(filename: string): 'file' | 'directory' {

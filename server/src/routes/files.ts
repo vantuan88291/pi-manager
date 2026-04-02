@@ -32,19 +32,17 @@ function isSystemPath(filePath: string): boolean {
   const resolved = path.resolve(filePath)
   const userHome = process.env.HOME || '/home/vantuan88291'
   
-  // Check if path is exactly a protected path or inside protected directory
-  if (PROTECTED_PATHS.some(protectedPath => 
-    resolved === protectedPath || resolved.startsWith(protectedPath + '/')
-  )) {
+  // Check PROTECTED_PATHS - but only EXACT match, NOT children
+  if (PROTECTED_PATHS.some(protectedPath => resolved === protectedPath)) {
     return true
   }
   
   // Only protect user's home directory itself, NOT its contents
   if (resolved === userHome) {
-    return true  // Protect /home/vantuan88291 itself
+    return true
   }
   
-  return false  // Allow deleting contents inside user home
+  return false
 }
 
 function getLanguageFromExtension(filename: string): string {
