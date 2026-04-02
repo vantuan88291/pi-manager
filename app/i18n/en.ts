@@ -343,6 +343,9 @@ const en = {
     deleted: "Deleted successfully",
     deleteFailed: "Failed to delete",
     quickAccess: "Quick Access",
+    upload: "Upload File",
+    uploadFileName: "Enter file name:",
+    uploadFileNamePlaceholder: "Enter file name (e.g., test.txt)...",
   },
   common: {
     cancel: "Cancel",

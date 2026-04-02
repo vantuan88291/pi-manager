@@ -344,6 +344,9 @@ const vi: Translations = {
     deleted: "Đã xóa thành công",
     deleteFailed: "Không thể xóa",
     quickAccess: "Truy cập nhanh",
+    upload: "Upload File",
+    uploadFileName: "Nhập tên file:",
+    uploadFileNamePlaceholder: "Nhập tên file (vd: test.txt)...",
   },
   common: {
     cancel: "Hủy",

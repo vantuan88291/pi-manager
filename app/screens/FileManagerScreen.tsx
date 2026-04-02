@@ -158,6 +158,8 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [createType, setCreateType] = useState<'folder' | 'file'>('folder')
   const [newItemName, setNewItemName] = useState('')
+  const [uploadModalVisible, setUploadModalVisible] = useState(false)
+  const [uploadFileName, setUploadFileName] = useState('')
 
   useEffect(() => {
     subscribeToModule('file-manager')
@@ -267,14 +269,12 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     
     try {
       if (createType === 'folder') {
-        // Create folder via API
         await fetch('/api/files/create-folder', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path: newPath }),
         })
       } else {
-        // Create empty file via API
         await fetch('/api/files/write', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -286,6 +286,31 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       handleRefresh()
     } catch (error: any) {
       showAlert('Error', error.message || `Failed to create ${createType}`)
+    }
+  }
+
+  const handleUpload = () => {
+    setUploadFileName('')
+    setUploadModalVisible(true)
+  }
+
+  const handleUploadConfirm = async () => {
+    if (!uploadFileName.trim()) return
+    
+    // Create file with empty content, user can edit later
+    const newPath = `${currentPath}/${uploadFileName.trim()}`
+    
+    try {
+      await fetch('/api/files/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: newPath, content: '' }),
+      })
+      
+      setUploadModalVisible(false)
+      handleRefresh()
+    } catch (error: any) {
+      showAlert('Error', error.message || 'Failed to create file')
     }
   }
 
@@ -376,10 +401,10 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
             <Button
               preset="default"
               size="sm"
-              onPress={handleRefresh}
-              disabled={loading}
+              onPress={handleUpload}
+              style={{ marginRight: 4 }}
             >
-              <Icon font="Ionicons" icon="refresh" size={16} />
+              <Icon font="Ionicons" icon="cloud-upload" size={18} />
             </Button>
           </View>
         }
@@ -474,6 +499,32 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
             placeholder={`Enter ${createType} name...`}
             autoFocus
             onSubmitEditing={handleCreateConfirm}
+          />
+        </View>
+      </AlertModal>
+
+      {/* Upload File Modal */}
+      <AlertModal
+        visible={uploadModalVisible}
+        title={t('fileManager:upload')}
+        message={t('fileManager:uploadFileName')}
+        buttons={[
+          { text: t('common:cancel'), style: 'cancel', onPress: () => setUploadModalVisible(false) },
+          {
+            text: t('common:ok'),
+            style: 'default',
+            onPress: handleUploadConfirm,
+          },
+        ]}
+        onClose={() => setUploadModalVisible(false)}
+      >
+        <View style={themed($inputContainer)}>
+          <TextField
+            value={uploadFileName}
+            onChangeText={setUploadFileName}
+            placeholder={t('fileManager:uploadFileNamePlaceholder')}
+            autoFocus
+            onSubmitEditing={handleUploadConfirm}
           />
         </View>
       </AlertModal>
