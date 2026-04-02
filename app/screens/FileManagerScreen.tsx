@@ -202,9 +202,12 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   // Refresh list when screen comes into focus (e.g., after editing a file)
   useFocusEffect(
     useCallback(() => {
-      console.log('[FileManager] screen focused - refreshing list')
-      handleRefresh()
-    }, [])
+      console.log('[FileManager] screen focused - refreshing current path:', currentPath)
+      // Only refresh if we already have data (not on first load)
+      if (!loading) {
+        fileManagerClientModule.listDirectory(currentPath)
+      }
+    }, [currentPath, loading])
   )
 
   const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: 'OK' }]) => {
