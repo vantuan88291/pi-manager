@@ -49,13 +49,15 @@ export const AlertModal: FC<AlertModalProps> = ({
     }
   }
 
+  const isSingleButton = buttons.length === 1
+
   return (
     <ActionModal
       visible={visible}
       onClose={onClose}
       title={title}
       bottomComponent={
-        <View style={themed($buttonContainer)}>
+        <View style={themed([$buttonContainer, isSingleButton && $buttonContainerCenter])}>
           {buttons.map((button, index) => (
             <Button
               key={index}
@@ -85,8 +87,12 @@ const $buttonContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.md,
   marginTop: spacing.lg,
-  justifyContent: buttons.length === 1 ? "center" : "flex-end",
+  justifyContent: "flex-end",
 })
+
+const $buttonContainerCenter: ViewStyle = {
+  justifyContent: "center",
+}
 
 const $button: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
