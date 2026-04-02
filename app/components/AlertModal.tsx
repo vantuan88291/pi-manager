@@ -1,4 +1,4 @@
-import { FC } from "react"
+import { FC, ReactNode } from "react"
 import { View, ViewStyle, Pressable } from "react-native"
 
 import { useAppTheme } from "@/theme/context"
@@ -19,6 +19,7 @@ interface AlertModalProps {
   message?: string
   buttons: AlertButton[]
   onClose: () => void
+  children?: ReactNode
 }
 
 export const AlertModal: FC<AlertModalProps> = ({
@@ -27,6 +28,7 @@ export const AlertModal: FC<AlertModalProps> = ({
   message,
   buttons,
   onClose,
+  children,
 }) => {
   const { theme, themed } = useAppTheme()
 
@@ -79,6 +81,7 @@ export const AlertModal: FC<AlertModalProps> = ({
           style={themed($message)}
         />
       )}
+      {children}
     </ActionModal>
   )
 }
