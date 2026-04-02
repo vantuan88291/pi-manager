@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { FileReadResponse } from '@/shared/types/file-manager'
 
 interface UseFileEditorParams {
@@ -13,15 +13,47 @@ interface UseFileEditorReturn {
   saving: boolean
   error: string | null
   hasChanges: boolean
+  isMediaFile: boolean
+  mediaType: 'image' | 'video' | 'audio' | null
   handleSave: () => Promise<void>
-  handleBack: (onDiscard: () => void) => void
   setContent: (content: string) => void
+}
+
+// Media file extensions that should be previewed, not edited
+const MEDIA_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'mp4', 'webm', 'avi', 'mov', 'mp3', 'wav', 'ogg', 'flac']
+
+/**
+ * Check if file is a media file based on extension
+ */
+function isMediaFile(filename: string): boolean {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  return ext ? MEDIA_EXTENSIONS.includes(ext) : false
+}
+
+/**
+ * Get media type for preview
+ */
+function getMediaType(filename: string): 'image' | 'video' | 'audio' | null {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (!ext) return null
+  
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext)) {
+    return 'image'
+  }
+  if (['mp4', 'webm', 'avi', 'mov'].includes(ext)) {
+    return 'video'
+  }
+  if (['mp3', 'wav', 'ogg', 'flac'].includes(ext)) {
+    return 'audio'
+  }
+  return null
 }
 
 /**
  * Custom hook for file editor logic
  * Handles file read/write operations via REST API
  * Manages unsaved changes state
+ * Detects media files for preview mode
  */
 export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseFileEditorReturn {
   const [content, setContent] = useState('')
@@ -29,6 +61,10 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Check if file is media
+  const fileIsMedia = useMemo(() => isMediaFile(fileName), [fileName])
+  const mediaType = useMemo(() => getMediaType(fileName), [fileName])
 
   // Load file content on mount
   useEffect(() => {
@@ -98,19 +134,6 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     }
   }, [filePath, content])
 
-  // Handle back navigation with unsaved changes check
-  const handleBack = useCallback(
-    (onDiscard: () => void) => {
-      if (hasChanges) {
-        // Show confirmation dialog (handled by parent component)
-        onDiscard()
-      } else {
-        onDiscard()
-      }
-    },
-    [hasChanges]
-  )
-
   return {
     content,
     originalContent,
@@ -118,8 +141,9 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     saving,
     error,
     hasChanges,
+    isMediaFile: fileIsMedia,
+    mediaType,
     handleSave,
-    handleBack,
     setContent,
   }
 }

@@ -352,6 +352,9 @@ const vi: Translations = {
     saveFailed: "Không thể lưu file",
     unsavedChanges: "Thay đổi chưa lưu",
     discardChanges: "Bạn có thay đổi chưa lưu. Hủy chúng?",
+    mediaPreview: "Xem trước",
+    videoNotAvailable: "Video preview không khả dụng",
+    audioNotAvailable: "Audio preview không khả dụng",
   },
 }
 

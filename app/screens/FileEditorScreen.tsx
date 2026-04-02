@@ -1,11 +1,12 @@
 import { FC } from 'react'
-import { View, ViewStyle, Alert } from 'react-native'
+import { View, ViewStyle, Image, Alert } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import CodeEditor from '@uiw/react-textarea-code-editor'
 
 import { Header } from '@/components/Header'
 import { Screen } from '@/components/Screen'
+import { Text } from '@/components/Text'
 import { Icon } from '@/components/Icon'
 import { useFileEditor } from '@/hooks/useFileEditor'
 import { useAppTheme } from '@/theme/context'
@@ -28,7 +29,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const { filePath, fileName } = route.params
 
   // Use custom hook for file editor logic
-  const { content, loading, saving, error, hasChanges, handleSave, handleBack, setContent } =
+  const { content, loading, saving, error, hasChanges, isMediaFile, mediaType, handleSave, setContent } =
     useFileEditor({ filePath, fileName })
 
   const isDark = theme.isDark
@@ -65,6 +66,46 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     handleSave()
   }
 
+  // Render media preview
+  if (isMediaFile && mediaType) {
+    return (
+      <Screen preset="scroll">
+        <Header
+          titleTx="fileEditor:title"
+          leftIcon="back"
+          onLeftPress={handleBackPress}
+        />
+
+        <View style={themed($mediaContainer)}>
+          {mediaType === 'image' && (
+            <Image
+              source={{ uri: `/api/files/read?path=${encodeURIComponent(filePath)}` }}
+              style={$mediaPreview}
+              resizeMode="contain"
+            />
+          )}
+          
+          {mediaType === 'video' && (
+            <View style={$mediaPlaceholder}>
+              <Icon font="Ionicons" icon="videocam" size={64} color={theme.colors.textDim} />
+              <Text color="textDim" style={{ marginTop: 16 }}>Video preview not available</Text>
+              <Text color="textDim" size="sm" style={{ marginTop: 8 }}>{fileName}</Text>
+            </View>
+          )}
+          
+          {mediaType === 'audio' && (
+            <View style={$mediaPlaceholder}>
+              <Icon font="Ionicons" icon="musical-notes" size={64} color={theme.colors.textDim} />
+              <Text color="textDim" style={{ marginTop: 16 }}>Audio preview not available</Text>
+              <Text color="textDim" size="sm" style={{ marginTop: 8 }}>{fileName}</Text>
+            </View>
+          )}
+        </View>
+      </Screen>
+    )
+  }
+
+  // Render text editor
   return (
     <Screen preset="scroll">
       <Header
@@ -151,5 +192,23 @@ const $editorWrapper: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 
 const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: 40,
+  alignItems: 'center',
+})
+
+const $mediaContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flex: 1,
+  padding: spacing.md,
+  alignItems: 'center',
+  justifyContent: 'center',
+})
+
+const $mediaPreview: ViewStyle = {
+  width: '100%',
+  height: 400,
+  borderRadius: 12,
+}
+
+const $mediaPlaceholder: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  padding: spacing.xl,
   alignItems: 'center',
 })
