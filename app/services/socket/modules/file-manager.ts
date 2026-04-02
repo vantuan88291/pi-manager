@@ -114,7 +114,12 @@ class FileManagerClientModule implements SocketModule {
 
   // Actions
   listDirectory(dirPath: string): void {
-    this.socket?.emit('file:list', { path: dirPath })
+    console.log('[file-manager] listing directory:', dirPath, 'at', Date.now())
+    // Add timestamp to force fresh data (cache busting)
+    this.socket?.emit('file:list', { 
+      path: dirPath,
+      _t: Date.now()  // Cache busting timestamp
+    })
   }
 
   readFile(filePath: string): void {

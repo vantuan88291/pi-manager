@@ -179,6 +179,7 @@ router.get('/list', async (req, res) => {
     
     res.json({
       success: true,
+      timestamp: Date.now(),
       data: {
         path: dirPath,
         items,

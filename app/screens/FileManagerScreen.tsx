@@ -109,6 +109,11 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress, onDel
           </View>
         </View>
         <View style={$listActions}>
+          {/* Debug: show isSystem value */}
+          <Text size="xs" color={item.isSystem ? "success" : "error"} style={{ marginRight: 8 }}>
+            {item.isSystem ? '🔒' : '🗑️'}
+          </Text>
+          
           {onDelete && !item.isSystem && (
             <Pressable
               onPress={() => onDelete(item)}
@@ -118,7 +123,7 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress, onDel
             </Pressable>
           )}
           {item.isSystem && (
-            <Icon font="Ionicons" icon="lock-closed" size={16} color={theme.colors.textDim} />
+            <Icon font="Ionicons" icon="lock-closed" size={16} color={theme.colors.tint} />
           )}
           <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
         </View>
