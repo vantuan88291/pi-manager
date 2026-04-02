@@ -351,19 +351,18 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
               preset="default"
               size="sm"
               onPress={() => handleCreate('folder')}
-              style={{ marginRight: 8 }}
+              style={{ marginRight: 4 }}
+              txOptions={{ text: '+' }}
             >
-              <Icon font="Ionicons" icon="folder-add" size={16} />
-              <Text size="xs" weight="medium" style={{ marginLeft: 4 }}>New Folder</Text>
+              <Icon font="Ionicons" icon="folder-add" size={18} />
             </Button>
             <Button
               preset="default"
               size="sm"
               onPress={() => handleCreate('file')}
-              style={{ marginRight: 8 }}
+              style={{ marginRight: 4 }}
             >
-              <Icon font="Ionicons" icon="document-add" size={16} />
-              <Text size="xs" weight="medium" style={{ marginLeft: 4 }}>New File</Text>
+              <Icon font="Ionicons" icon="document-add" size={18} />
             </Button>
             <Button
               preset="default"
@@ -576,7 +575,7 @@ const $separator: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 const $headerActions: ViewStyle = {
   flexDirection: 'row',
   alignItems: 'center',
-  gap: 8,
+  gap: 4,
 }
 
 const $inputContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
