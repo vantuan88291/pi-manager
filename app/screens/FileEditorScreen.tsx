@@ -157,8 +157,9 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
 
       <View style={themed($editorContainer)}>
         {loading ? (
-          <View style={$centered}>
-            <Icon font="Ionicons" icon="hourglass" size={32} color={theme.colors.textDim} />
+          <View style={$loadingContainer}>
+            <Icon font="Ionicons" icon="hourglass" size={48} color={theme.colors.tint} />
+            <Text color="textDim" style={{ marginTop: 16 }}>Loading...</Text>
           </View>
         ) : error ? (
           <View style={$centered}>
@@ -207,6 +208,13 @@ const $editorWrapper: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderColor: colors.border,
   overflow: 'hidden',
   marginBottom: spacing.md,
+})
+
+const $loadingContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flex: 1,
+  minHeight: 400,
+  alignItems: 'center',
+  justifyContent: 'center',
 })
 
 const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({

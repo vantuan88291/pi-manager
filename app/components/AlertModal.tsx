@@ -42,14 +42,14 @@ export const AlertModal: FC<AlertModalProps> = ({
         textStyle: { color: theme.colors.error },
       }
     }
-    if (button.style === "cancel") {
-      return {
-        preset: "default" as const,
-        textStyle: { color: theme.colors.text },
-      }
+    // Default or cancel style - both should look the same
+    return {
+      preset: "default" as const,
+      textStyle: { color: theme.colors.text },
     }
-    return { preset: "primary" as const }
   }
+
+  const isSingleButton = buttons.length === 1
 
   return (
     <ActionModal
@@ -57,14 +57,14 @@ export const AlertModal: FC<AlertModalProps> = ({
       onClose={onClose}
       title={title}
       bottomComponent={
-        <View style={themed($buttonContainer)}>
+        <View style={themed([$buttonContainer, isSingleButton && $buttonContainerCenter])}>
           {buttons.map((button, index) => (
             <Button
               key={index}
               txOptions={{ text: button.text }}
               text={button.text}
               onPress={() => handleButtonPress(button)}
-              style={themed([$button, button.style === "cancel" && $cancelButton])}
+              style={themed([$button, button.style !== "destructive" && $cancelButton])}
               {...getButtonStyle(button)}
             />
           ))}
@@ -87,7 +87,12 @@ const $buttonContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   gap: spacing.md,
   marginTop: spacing.lg,
+  justifyContent: "flex-end",
 })
+
+const $buttonContainerCenter: ViewStyle = {
+  justifyContent: "center",
+}
 
 const $button: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,

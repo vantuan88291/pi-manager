@@ -345,6 +345,12 @@ const vi: Translations = {
     deleteFailed: "Không thể xóa",
     quickAccess: "Truy cập nhanh",
   },
+  common: {
+    cancel: "Hủy",
+    delete: "Xóa",
+    save: "Lưu",
+    ok: "OK",
+  },
   fileEditor: {
     title: "Chỉnh sửa file",
     saving: "Đang lưu...",

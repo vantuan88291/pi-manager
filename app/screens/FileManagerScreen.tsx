@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from 'react'
-import { View, ViewStyle, RefreshControl, ScrollView } from 'react-native'
+import { View, ViewStyle, RefreshControl, ScrollView, Pressable } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 
@@ -72,9 +72,10 @@ interface FileListItemProps {
   item: FileInfo
   onPress: (item: FileInfo) => void
   onLongPress?: (item: FileInfo) => void
+  onDelete?: (item: FileInfo) => void
 }
 
-const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress }) => {
+const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress, onDelete }) => {
   const { themed, theme } = useAppTheme()
   const icon = getFileIcon(item)
   
@@ -106,7 +107,17 @@ const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress }) => 
             )}
           </View>
         </View>
-        <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
+        <View style={$listActions}>
+          {onDelete && (
+            <Pressable
+              onPress={() => onDelete(item)}
+              style={themed($deleteButton)}
+            >
+              <Icon font="Ionicons" icon="trash" size={18} color={theme.colors.error} />
+            </Pressable>
+          )}
+          <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
+        </View>
       </View>
     </View>
   )
@@ -208,20 +219,17 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
     setActionMenu({ visible: true, item })
   }
 
-  const handleDelete = () => {
-    if (!actionMenu.item) return
-    
+  const handleDelete = (item: FileInfo) => {
     showAlert(
-      `Delete ${actionMenu.item.name}?`,
-      'This action cannot be undone.',
+      t('fileManager:deleteConfirm', { name: item.name }),
+      t('fileManager:deleteWarning'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common:delete'),
           style: 'destructive',
           onPress: () => {
-            fileManagerClientModule.deleteFileOrFolder(actionMenu.item!.path)
-            setActionMenu({ visible: false, item: null })
+            fileManagerClientModule.deleteFileOrFolder(item.path)
           },
         },
       ]
@@ -329,14 +337,12 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
             <Text color="textDim">Loading...</Text>
           </View>
         ) : items.length === 0 ? (
-          <Card style={themed($emptyCard)} ContentComponent={
-            <View style={$emptyContent}>
-              <Icon font="Ionicons" icon="folder-open" size={48} color={theme.colors.textDim} />
-              <Text weight="medium" size="md" color="textDim" style={{ marginTop: 16 }}>
-                This folder is empty
-              </Text>
-            </View>
-          } />
+          <View style={themed($emptyState)}>
+            <Icon font="Ionicons" icon="folder-open" size={64} color={theme.colors.textDim} />
+            <Text weight="semiBold" size="md" color="textDim" style={{ marginTop: 16 }}>
+              This folder is empty
+            </Text>
+          </View>
         ) : (
           <View>
             {console.log('[FileManager] Rendering items:', items.length)}
@@ -346,6 +352,7 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
                   item={item}
                   onPress={handleNavigate}
                   onLongPress={handleLongPress}
+                  onDelete={handleDelete}
                 />
                 {index < items.length - 1 && <View style={themed($separator)} />}
               </View>
@@ -417,6 +424,16 @@ const $listItem: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
   borderBottomColor: colors.border,
 })
 
+const $listActions: ViewStyle = {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 12,
+}
+
+const $deleteButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  padding: spacing.sm,
+})
+
 const $itemContent: ViewStyle = {
   flexDirection: 'row',
   alignItems: 'center',
@@ -450,15 +467,11 @@ const $errorCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   padding: spacing.md,
 })
 
-const $emptyCard: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  padding: spacing.xl,
+const $emptyState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingVertical: spacing.xl * 2,
   alignItems: 'center',
+  justifyContent: 'center',
 })
-
-const $emptyContent: ViewStyle = {
-  padding: 40,
-  alignItems: 'center',
-}
 
 const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingVertical: spacing.xl,
