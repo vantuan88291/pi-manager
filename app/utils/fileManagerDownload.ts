@@ -1,3 +1,5 @@
+import { postJsonApi } from "@/services/api"
+import { getTelegramWebApp, isTelegramMiniApp } from "@/services/telegram"
 import { socketManager } from "@/services/socket/SocketManager"
 import { getBackendBaseUrl } from "@/utils/backendBaseUrl"
 
@@ -11,9 +13,16 @@ async function readDownloadErrorMessage(res: Response): Promise<string> {
   }
 }
 
+type DownloadUrlPayload = {
+  success: true
+  path: string
+  exp: number
+  sig: string
+}
+
 /**
- * Download from Pi `GET /api/files/download` with session token.
- * Web-only: triggers a browser file save (blob + temporary `<a download>`).
+ * In Telegram Mini App, blob + `<a download>` opens inline in the WebView.
+ * Use `WebApp.downloadFile({ url, file_name })` (Bot API 8.0+) with a short-lived signed HTTPS URL.
  */
 export async function downloadFileFromPiServer(filePath: string, displayName: string): Promise<void> {
   if (typeof document === "undefined") {
@@ -21,9 +30,40 @@ export async function downloadFileFromPiServer(filePath: string, displayName: st
   }
 
   const base = getBackendBaseUrl().replace(/\/$/, "")
-  const token = socketManager.getSessionToken()
+  const safeName = displayName.replace(/[/\\]/g, "_")
+
+  const tg = getTelegramWebApp()
+  if (isTelegramMiniApp() && tg) {
+    const token = socketManager.getSessionToken()
+    if (!token) {
+      throw new Error("Not signed in")
+    }
+
+    const data = await postJsonApi<DownloadUrlPayload>("/api/files/download-url", {
+      path: filePath,
+    })
+
+    const params = new URLSearchParams({
+      path: data.path,
+      exp: String(data.exp),
+      sig: data.sig,
+    })
+    const signedUrl = `${base}/api/files/download?${params.toString()}`
+
+    if (typeof tg.downloadFile === "function") {
+      tg.downloadFile({ url: signedUrl, file_name: safeName })
+      return
+    }
+
+    if (typeof tg.openLink === "function") {
+      tg.openLink(signedUrl)
+      return
+    }
+  }
+
   const url = `${base}/api/files/download?path=${encodeURIComponent(filePath)}`
   const headers: Record<string, string> = {}
+  const token = socketManager.getSessionToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
   const res = await fetch(url, { headers })
@@ -35,7 +75,7 @@ export async function downloadFileFromPiServer(filePath: string, displayName: st
   const objectUrl = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = objectUrl
-  a.download = displayName.replace(/[/\\]/g, "_")
+  a.download = safeName
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

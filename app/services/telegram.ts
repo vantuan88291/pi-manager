@@ -21,6 +21,13 @@ interface TelegramWebApp {
   ready(): void // tell Telegram the app is ready
   expand(): void // expand to full height
   close(): void // close the Mini App
+  /** Bot API 8.0+ — native save dialog; `url` must be HTTPS with attachment + CORS per Telegram docs */
+  downloadFile?(
+    params: { url: string; file_name: string },
+    callback?: (accepted: boolean) => void,
+  ): void
+  /** Opens URL in external browser (user gesture). */
+  openLink?(url: string, options?: { try_instant_view?: boolean }): void
   MainButton: {
     text: string
     show(): void

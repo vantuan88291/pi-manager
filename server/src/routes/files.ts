@@ -4,6 +4,8 @@ import fs from 'fs/promises'
 import path from 'path'
 import multer from 'multer'
 
+import { signFileDownload } from '../auth/fileDownloadSignature.js'
+
 const router = express.Router()
 
 const MAX_FILE_READ_BYTES = Math.min(
@@ -79,6 +81,15 @@ function isSystemPath(filePath: string): boolean {
   }
   
   return false
+}
+
+/** Telegram WebApp.downloadFile fetches this URL from web.telegram.org — needs CORS on the response. */
+function setTelegramDownloadCors(req: Request, res: Response) {
+  const origin = req.headers.origin
+  if (origin === 'https://web.telegram.org' || origin === 'https://webk.telegram.org') {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+  }
 }
 
 function isSafeBasename(name: string): boolean {
@@ -264,6 +275,42 @@ router.post('/upload', parseFileUpload, async (req, res) => {
   }
 })
 
+// Short-lived signed URL for Telegram WebApp.downloadFile (no Bearer on that fetch)
+router.post('/download-url', async (req, res) => {
+  try {
+    const filePath = (req.body as { path?: string }).path
+
+    if (!filePath) {
+      return res.status(400).json({ success: false, error: 'Path is required' })
+    }
+
+    if (!isPathAllowed(filePath)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
+    }
+
+    const stats = await fs.stat(filePath)
+    if (!stats.isFile()) {
+      return res.status(400).json({ success: false, error: 'Path is not a file' })
+    }
+
+    const expSec = Math.floor(Date.now() / 1000) + 120
+    const sig = signFileDownload(filePath, expSec)
+
+    res.json({
+      success: true,
+      path: filePath,
+      exp: expSec,
+      sig,
+    })
+  } catch (error: any) {
+    console.error('[files] download-url error:', error.message)
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create download link',
+    })
+  }
+})
+
 // Download file (binary stream; errors as JSON before headers are sent)
 router.get('/download', async (req, res) => {
   try {
@@ -292,6 +339,7 @@ router.get('/download', async (req, res) => {
 
     const baseName = path.basename(filePath)
     const asciiName = baseName.replace(/[^\x20-\x7E]/g, '_') || 'download'
+    setTelegramDownloadCors(req, res)
     res.setHeader('Content-Type', 'application/octet-stream')
     res.setHeader('Content-Length', String(stats.size))
     res.setHeader(
