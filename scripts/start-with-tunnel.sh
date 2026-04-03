@@ -96,6 +96,25 @@ echo "   - ALLOWED_ORIGINS=$TUNNEL_URL,..."
 echo "   - ADMIN_TELEGRAM_ID=${TELEGRAM_ID:0:5}..."
 echo ""
 
+# Root .env: EXPO_PUBLIC_SOCKET_URL must match this tunnel before expo export (baked into web bundle).
+echo "✍️  Syncing EXPO_PUBLIC_SOCKET_URL in root .env → $TUNNEL_URL"
+if [ -f "$ENV_FILE" ]; then
+  if grep -qE '^EXPO_PUBLIC_SOCKET_URL=' "$ENV_FILE"; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s|^EXPO_PUBLIC_SOCKET_URL=.*|EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL|" "$ENV_FILE"
+    else
+      sed -i "s|^EXPO_PUBLIC_SOCKET_URL=.*|EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL|" "$ENV_FILE"
+    fi
+  else
+    echo "EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL" >> "$ENV_FILE"
+  fi
+  echo "✅ Root .env updated (EXPO_PUBLIC_SOCKET_URL)"
+else
+  echo "EXPO_PUBLIC_SOCKET_URL=$TUNNEL_URL" > "$ENV_FILE"
+  echo "✅ Created $ENV_FILE with EXPO_PUBLIC_SOCKET_URL"
+fi
+echo ""
+
 # Step 4: Build frontend (clear cache to ensure fresh build)
 echo "📦 Step 4/6: Building frontend..."
 cd "$PROJECT_ROOT"
