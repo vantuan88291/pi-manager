@@ -65,7 +65,6 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       <FileManagerModals
         actionMenu={fm.actionMenu}
         onCloseActionMenu={fm.closeActionMenu}
-        onActionMenuDownload={fm.handleActionMenuDownload}
         onActionMenuRename={fm.handleActionMenuRename}
         onActionMenuMove={fm.handleActionMenuMove}
         onActionMenuDelete={fm.handleActionMenuDelete}

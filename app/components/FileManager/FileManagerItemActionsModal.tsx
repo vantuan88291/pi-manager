@@ -14,7 +14,6 @@ export interface FileManagerItemActionsModalProps {
   visible: boolean
   item: FileInfo | null
   onClose: () => void
-  onDownloadPress: () => void
   onRenamePress: () => void
   onMovePress: () => void
   onDeletePress: () => void
@@ -24,7 +23,6 @@ export const FileManagerItemActionsModal: FC<FileManagerItemActionsModalProps> =
   visible,
   item,
   onClose,
-  onDownloadPress,
   onRenamePress,
   onMovePress,
   onDeletePress,
@@ -49,14 +47,6 @@ export const FileManagerItemActionsModal: FC<FileManagerItemActionsModalProps> =
       }
     >
       <View style={themed($actions)}>
-        {item.type === "file" && (
-          <Pressable
-            onPress={onDownloadPress}
-            style={({ pressed }) => themed([$actionRow, pressed && $actionRowPressed])}
-          >
-            <Text tx="fileManager:download" size="md" color="text" />
-          </Pressable>
-        )}
         <Pressable
           onPress={onRenamePress}
           style={({ pressed }) => themed([$actionRow, pressed && $actionRowPressed])}

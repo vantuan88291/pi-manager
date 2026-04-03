@@ -1,10 +1,7 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
-import { createReadStream } from 'node:fs'
 import fs from 'fs/promises'
 import path from 'path'
 import multer from 'multer'
-
-import { signFileDownload } from '../auth/fileDownloadSignature.js'
 
 const router = express.Router()
 
@@ -14,11 +11,6 @@ const MAX_FILE_READ_BYTES = Math.min(
 )
 
 const MAX_UPLOAD_MB = Math.min(Math.max(Number(process.env.MAX_UPLOAD_MB) || 512, 1), 2048)
-
-const MAX_DOWNLOAD_BYTES = Math.min(
-  Math.max(Number(process.env.MAX_DOWNLOAD_MB) || 512, 1),
-  2048,
-) * 1024 * 1024
 
 const uploadParser = multer({
   storage: multer.memoryStorage(),
@@ -81,15 +73,6 @@ function isSystemPath(filePath: string): boolean {
   }
   
   return false
-}
-
-/** Telegram WebApp.downloadFile fetches this URL from web.telegram.org — needs CORS on the response. */
-function setTelegramDownloadCors(req: Request, res: Response) {
-  const origin = req.headers.origin
-  if (origin === 'https://web.telegram.org' || origin === 'https://webk.telegram.org') {
-    res.setHeader('Access-Control-Allow-Origin', origin)
-    res.setHeader('Vary', 'Origin')
-  }
 }
 
 function isSafeBasename(name: string): boolean {
@@ -272,99 +255,6 @@ router.post('/upload', parseFileUpload, async (req, res) => {
       success: false,
       error: error.message || 'Failed to upload',
     })
-  }
-})
-
-// Short-lived signed URL for Telegram WebApp.downloadFile (no Bearer on that fetch)
-router.post('/download-url', async (req, res) => {
-  try {
-    const filePath = (req.body as { path?: string }).path
-
-    if (!filePath) {
-      return res.status(400).json({ success: false, error: 'Path is required' })
-    }
-
-    if (!isPathAllowed(filePath)) {
-      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
-    }
-
-    const stats = await fs.stat(filePath)
-    if (!stats.isFile()) {
-      return res.status(400).json({ success: false, error: 'Path is not a file' })
-    }
-
-    const expSec = Math.floor(Date.now() / 1000) + 120
-    const sig = signFileDownload(filePath, expSec)
-
-    res.json({
-      success: true,
-      path: filePath,
-      exp: expSec,
-      sig,
-    })
-  } catch (error: any) {
-    console.error('[files] download-url error:', error.message)
-    res.status(500).json({
-      success: false,
-      error: error.message || 'Failed to create download link',
-    })
-  }
-})
-
-// Download file (binary stream; errors as JSON before headers are sent)
-router.get('/download', async (req, res) => {
-  try {
-    const filePath = req.query.path as string
-
-    if (!filePath) {
-      return res.status(400).json({ success: false, error: 'Path is required' })
-    }
-
-    if (!isPathAllowed(filePath)) {
-      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
-    }
-
-    const stats = await fs.stat(filePath)
-    if (!stats.isFile()) {
-      return res.status(400).json({ success: false, error: 'Path is not a file' })
-    }
-
-    if (stats.size > MAX_DOWNLOAD_BYTES) {
-      const maxMb = Math.round(MAX_DOWNLOAD_BYTES / (1024 * 1024))
-      return res.status(413).json({
-        success: false,
-        error: `File too large to download (max ${maxMb} MB). Set MAX_DOWNLOAD_MB in server env to raise the limit.`,
-      })
-    }
-
-    const baseName = path.basename(filePath)
-    const asciiName = baseName.replace(/[^\x20-\x7E]/g, '_') || 'download'
-    setTelegramDownloadCors(req, res)
-    res.setHeader('Content-Type', 'application/octet-stream')
-    res.setHeader('Content-Length', String(stats.size))
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${asciiName.replace(/"/g, '\\"')}"; filename*=UTF-8''${encodeURIComponent(baseName)}`,
-    )
-
-    const stream = createReadStream(filePath)
-    stream.on('error', (err) => {
-      console.error('[files] download stream error:', err.message)
-      if (!res.headersSent) {
-        res.status(500).json({ success: false, error: err.message || 'Read failed' })
-      } else {
-        res.end()
-      }
-    })
-    stream.pipe(res)
-  } catch (error: any) {
-    console.error('[files] download error:', error.message)
-    if (!res.headersSent) {
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to download file',
-      })
-    }
   }
 })
 

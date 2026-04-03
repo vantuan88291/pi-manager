@@ -14,7 +14,6 @@ import type { FileManagerActionMenuState, FileManagerAlertState } from "./types"
 export interface FileManagerModalsProps {
   actionMenu: FileManagerActionMenuState
   onCloseActionMenu: () => void
-  onActionMenuDownload: () => void
   onActionMenuRename: () => void
   onActionMenuMove: () => void
   onActionMenuDelete: () => void
@@ -39,7 +38,6 @@ export interface FileManagerModalsProps {
 export const FileManagerModals: FC<FileManagerModalsProps> = ({
   actionMenu,
   onCloseActionMenu,
-  onActionMenuDownload,
   onActionMenuRename,
   onActionMenuMove,
   onActionMenuDelete,
@@ -79,7 +77,6 @@ export const FileManagerModals: FC<FileManagerModalsProps> = ({
         visible={actionMenu.visible && !!actionMenu.item}
         item={actionMenu.item}
         onClose={onCloseActionMenu}
-        onDownloadPress={onActionMenuDownload}
         onRenamePress={onActionMenuRename}
         onMovePress={onActionMenuMove}
         onDeletePress={onActionMenuDelete}

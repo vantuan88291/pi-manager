@@ -25,10 +25,6 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true)
-    // Telegram Web Mini App + file download fetches (see WebApp.downloadFile docs)
-    if (origin === "https://web.telegram.org" || origin === "https://webk.telegram.org") {
-      return callback(null, true)
-    }
     // Allow all *.trycloudflare.com domains
     if (origin.includes('trycloudflare.com')) return callback(null, true)
     // Check against allowed origins list

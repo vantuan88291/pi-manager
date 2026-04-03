@@ -10,7 +10,6 @@ import type {
 } from "@/components/FileManager/types"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 import { postJsonApi, postMultipartApi, RestApiError } from "@/services/api"
-import { downloadFileFromPiServer } from "@/utils/fileManagerDownload"
 import {
   fileManagerDeletePath,
   fileManagerListDirectory,
@@ -165,22 +164,6 @@ export function useFileManager() {
   const closeActionMenu = useCallback(() => {
     setActionMenu({ visible: false, item: null })
   }, [])
-
-  const handleActionMenuDownload = useCallback(() => {
-    const item = actionMenu.item
-    closeActionMenu()
-    if (item?.type !== "file") return
-    void (async () => {
-      try {
-        await downloadFileFromPiServer(item.path, item.name)
-        showAlert(t("common:success"), t("fileManager:downloadSuccess", { name: item.name }))
-      } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : t("fileManager:downloadFailed")
-        showAlert(t("fileManager:downloadErrorTitle"), msg)
-      }
-    })()
-  }, [actionMenu.item, closeActionMenu, showAlert, t])
 
   const handleActionMenuRename = useCallback(() => {
     const item = actionMenu.item
@@ -359,7 +342,6 @@ export function useFileManager() {
     dismissAlert,
     actionMenu,
     closeActionMenu,
-    handleActionMenuDownload,
     handleActionMenuRename,
     handleActionMenuMove,
     handleActionMenuDelete,
