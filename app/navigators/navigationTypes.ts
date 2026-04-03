@@ -3,6 +3,8 @@ import { BottomTabScreenProps } from "@react-navigation/bottom-tabs"
 import { CompositeScreenProps, NavigationContainer } from "@react-navigation/native"
 import { NativeStackScreenProps } from "@react-navigation/native-stack"
 
+import type { CronJobFormData } from "@/utils/cronJobForm"
+
 // Main Tab Navigator types
 export type MainTabParamList = {
   Dashboard: undefined
@@ -27,7 +29,11 @@ export type AppStackParamList = {
   Settings: undefined
   AccessDenied: undefined
   CronJob: undefined
-  CreateJob: undefined
+  CreateJob: {
+    onSubmit: (data: CronJobFormData, editingJobId?: string) => void
+    initialData?: Partial<CronJobFormData>
+    editingJobId?: string
+  }
   SystemControl: undefined
   FileManager: undefined
   FileEditor: { filePath: string; fileName: string }

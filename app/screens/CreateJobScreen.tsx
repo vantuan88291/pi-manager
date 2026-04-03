@@ -1,7 +1,6 @@
-import { FC, useState } from "react"
+import { FC, useState, useCallback } from "react"
 import { View, ViewStyle, TextInput, ScrollView, Pressable } from "react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { useNavigation } from "@react-navigation/native"
+import { useFocusEffect, useNavigation, useRoute, type RouteProp } from "@react-navigation/native"
 import { useTranslation } from "react-i18next"
 
 import { useAppTheme } from "@/theme/context"
@@ -12,40 +11,11 @@ import { Screen } from "@/components/Screen"
 import { TaskTypeDropdown, type TaskType } from "@/components/TaskTypeDropdown"
 import { CalendarPicker, type ScheduleType } from "@/components/CalendarPicker"
 import { Checkbox } from "@/components/Toggle/Checkbox"
+import type { AppStackParamList } from "@/navigators/navigationTypes"
 import type { ThemedStyle } from "@/theme/types"
+import type { CronJobFormData } from "@/utils/cronJobForm"
 
-export interface CronJobFormData {
-  name: string
-  taskType: TaskType
-  command?: string
-  workingDir?: string
-  timeout?: number
-  prompt?: string
-  model?: string
-  message?: string
-  scheduleType: ScheduleType
-  time?: string
-  weekday?: number
-  dayOfMonth?: number
-  intervalValue?: number
-  intervalUnit?: "minutes" | "hours" | "days"
-  cronExpression?: string
-  notifySuccess?: boolean
-  notifyFailure?: boolean
-}
-
-interface CreateJobScreenParams {
-  onSubmit: (data: CronJobFormData) => void
-  initialData?: Partial<CronJobFormData>
-}
-
-declare global {
-  namespace ReactNavigation {
-    interface RootParamList {
-      CreateJob: CreateJobScreenParams
-    }
-  }
-}
+export type { CronJobFormData } from "@/utils/cronJobForm"
 
 const DEFAULT_DATA: CronJobFormData = {
   name: "",
@@ -69,20 +39,21 @@ const DEFAULT_DATA: CronJobFormData = {
 
 export const CreateJobScreen: FC = () => {
   const navigation = useNavigation()
+  const route = useRoute<RouteProp<AppStackParamList, "CreateJob">>()
   const { themed, theme } = useAppTheme()
   const { t } = useTranslation()
-  const route = navigation.getState() as any
-  const params = route?.routes?.[route.routes.length - 1]?.params as
-    | CreateJobScreenParams
-    | undefined
 
-  const onSubmit = params?.onSubmit ?? (() => {})
-  const initialData = params?.initialData
+  const onSubmit = route.params.onSubmit
+  const editingJobId = route.params.editingJobId
+  const isEditMode = !!editingJobId
 
-  const [formData, setFormData] = useState<CronJobFormData>({
-    ...DEFAULT_DATA,
-    ...initialData,
-  })
+  const [formData, setFormData] = useState<CronJobFormData>(DEFAULT_DATA)
+
+  useFocusEffect(
+    useCallback(() => {
+      setFormData({ ...DEFAULT_DATA, ...(route.params.initialData ?? {}) })
+    }, [route.params.initialData, route.params.editingJobId]),
+  )
 
   const handleTaskTypeChange = (type: TaskType) => {
     setFormData((prev) => ({ ...prev, taskType: type }))
@@ -103,7 +74,7 @@ export const CreateJobScreen: FC = () => {
 
   const handleSubmit = () => {
     if (!handleValidate()) return
-    onSubmit(formData)
+    onSubmit(formData, editingJobId)
     navigation.goBack()
   }
 
@@ -236,7 +207,12 @@ export const CreateJobScreen: FC = () => {
         <Pressable onPress={() => navigation.goBack()} style={themed($backButton)}>
           <Icon font="Ionicons" icon="chevron-back" color={theme.colors.text} size={24} />
         </Pressable>
-        <Text tx="cronjob:createScheduledTaskTitle" weight="semiBold" size="lg" color="text" />
+        <Text
+          tx={isEditMode ? "cronjob:editScheduledTaskTitle" : "cronjob:createScheduledTaskTitle"}
+          weight="semiBold"
+          size="lg"
+          color="text"
+        />
         <View style={$spacer} />
       </View>
 
@@ -356,7 +332,7 @@ export const CreateJobScreen: FC = () => {
           style={themed($cancelButton)}
         />
         <Button
-          tx="cronjob:createTask"
+          tx={isEditMode ? "cronjob:saveTask" : "cronjob:createTask"}
           preset="filled"
           onPress={handleSubmit}
           style={themed([$saveButton, { backgroundColor: theme.colors.tint }])}

@@ -7,7 +7,12 @@ import { useTranslation } from "react-i18next"
 import { AlertModal, type AlertButton } from "@/components/AlertModal"
 import { Button } from "@/components/Button"
 import { Header } from "@/components/Header"
-import { CreateJobScreen, type CronJobFormData } from "@/screens/CreateJobScreen"
+import type { CronJobFormData } from "@/utils/cronJobForm"
+import {
+  cronJobToFormData,
+  formDataToCreateRequest,
+  formDataToCronJobPatch,
+} from "@/utils/cronJobForm"
 import { Icon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
 import { SectionHeader } from "@/components/SectionHeader"
@@ -98,9 +103,6 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     buttons: AlertButton[]
   }>({ visible: false, title: "", buttons: [] })
 
-  // Create job screen state
-  const [isCreating, setIsCreating] = useState(false)
-
   // Initialize socket module
   useEffect(() => {
     const socket = socketManager.getSocket()
@@ -166,116 +168,39 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     setAlertConfig({ visible: true, title, message, buttons })
   }
 
+  const handleCronJobFormSubmit = useCallback(
+    (data: CronJobFormData, editingJobId?: string) => {
+      const socket = socketManager.getSocket()
+      if (!socket) {
+        showAlert("Error", "Not connected to server")
+        return
+      }
+
+      const cronjobModule = cronjobClientModule(socket)
+
+      if (editingJobId) {
+        const job = jobs.find((j) => j.jobId === editingJobId)
+        cronjobModule.requestUpdate({
+          jobId: editingJobId,
+          patch: formDataToCronJobPatch(data, { enabled: job?.enabled ?? true }),
+        })
+        return
+      }
+
+      cronjobModule.requestCreate(formDataToCreateRequest(data))
+      showAlert("Success", "Job created!")
+      setRefreshing(true)
+      setTimeout(() => {
+        navigation.navigate("CronJob")
+      }, 500)
+    },
+    [jobs, navigation],
+  )
+
   const handleCreateJob = () => {
     navigation.navigate("CreateJob", {
-      onSubmit: handleJobSubmit,
+      onSubmit: handleCronJobFormSubmit,
     })
-  }
-
-  const handleJobSubmit = (data: CronJobFormData) => {
-    console.log("[CronJobScreen] Creating job with data:", data)
-
-    const socket = socketManager.getSocket()
-    if (!socket) {
-      showAlert("Error", "Not connected to server")
-      return
-    }
-
-    const cronjobModule = cronjobClientModule(socket)
-
-    // Convert form data to API format
-    let payload: any
-    switch (data.taskType) {
-      case "shell":
-        payload = {
-          kind: "systemEvent" as const,
-          text: `🖥️ Running: ${data.command}`,
-        }
-        break
-      case "agent":
-        payload = {
-          kind: "agentTurn" as const,
-          message: data.prompt || "Check system status",
-          model: data.model || "auto",
-          timeoutSeconds: data.timeout || 300,
-        }
-        break
-      case "event":
-        payload = {
-          kind: "systemEvent" as const,
-          text: data.message || "Scheduled event",
-        }
-        break
-    }
-
-    // Convert schedule type to schedule format
-    let schedule: any
-    switch (data.scheduleType) {
-      case "daily":
-        schedule = {
-          kind: "cron" as const,
-          expr: `${data.time ? data.time.split(":")[1] : "0"} ${data.time ? data.time.split(":")[0] : "8"} * * *`,
-          tz: "Asia/Saigon",
-        }
-        break
-      case "weekly":
-        schedule = {
-          kind: "cron" as const,
-          expr: `${data.time ? data.time.split(":")[1] : "0"} ${data.time ? data.time.split(":")[0] : "8"} * * ${data.weekday || 1}`,
-          tz: "Asia/Saigon",
-        }
-        break
-      case "monthly":
-        schedule = {
-          kind: "cron" as const,
-          expr: `${data.time ? data.time.split(":")[1] : "0"} ${data.time ? data.time.split(":")[0] : "8"} ${data.dayOfMonth || 1} * *`,
-          tz: "Asia/Saigon",
-        }
-        break
-      case "interval":
-        const unitMs =
-          data.intervalUnit === "minutes"
-            ? 60000
-            : data.intervalUnit === "hours"
-              ? 3600000
-              : 86400000
-        schedule = {
-          kind: "every" as const,
-          everyMs: (data.intervalValue || 1) * unitMs,
-        }
-        break
-      case "custom":
-        schedule = {
-          kind: "cron" as const,
-          expr: data.cronExpression || "* * * * *",
-          tz: "Asia/Saigon",
-        }
-        break
-      default:
-        schedule = {
-          kind: "cron" as const,
-          expr: "* * * * *",
-        }
-    }
-
-    cronjobModule.requestCreate({
-      name: data.name || "Untitled Job",
-      schedule,
-      payload,
-      sessionTarget: "isolated",
-      delivery: {
-        mode: "announce",
-      },
-      enabled: true,
-    })
-
-    // Navigate back to CronJob list explicitly (not goBack which may go too far)
-    // List will auto-refresh via socket event
-    showAlert("Success", "Job created!")
-    setRefreshing(true)
-    setTimeout(() => {
-      navigation.navigate("CronJob")
-    }, 500)
   }
 
   const handleRunJob = (jobId: string) => {
@@ -313,8 +238,11 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     const job = jobs.find((j) => j.jobId === jobId)
     if (!job) return
 
-    // TODO: Navigate to edit screen with pre-filled data
-    showAlert("Edit Job", `Edit "${job.name}" - Coming soon`, [{ text: "OK" }])
+    navigation.navigate("CreateJob", {
+      onSubmit: handleCronJobFormSubmit,
+      initialData: cronJobToFormData(job),
+      editingJobId: job.jobId,
+    })
   }
 
   const handleDeleteJob = (jobId: string) => {

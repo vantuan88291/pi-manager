@@ -89,6 +89,8 @@ const vi: Translations = {
     jobDeleted: "Job đã xóa thành công",
     // CreateJobScreen
     createScheduledTaskTitle: "✨ Tạo Task Lên Lịch",
+    editScheduledTaskTitle: "✏️ Sửa Task Lên Lịch",
+    saveTask: "Lưu",
     command: "Lệnh",
     commandRequired: " *",
     requiresSudo: "⚠️ Yêu cầu quyền sudo",

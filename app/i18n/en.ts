@@ -87,6 +87,8 @@ const en = {
     jobDeleted: "Job deleted successfully",
     // CreateJobScreen
     createScheduledTaskTitle: "✨ Create Scheduled Task",
+    editScheduledTaskTitle: "✏️ Edit Scheduled Task",
+    saveTask: "Save",
     command: "Command",
     commandRequired: " *",
     requiresSudo: "⚠️ Requires sudo permissions",
