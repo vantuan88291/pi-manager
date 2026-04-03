@@ -12,7 +12,7 @@ class StorageClientModule implements SocketModule {
 
   register(socket: Socket): void {
     this.socket = socket
-    
+
     socket.on("storage:status", (status: StorageStatus) => {
       this.cachedStatus = status
       this.statusCallbacks.forEach((cb) => cb(status))
@@ -44,7 +44,7 @@ class StorageClientModule implements SocketModule {
         resolve({ success: false })
         return
       }
-      
+
       this.socket.emit("storage:refresh", (response: { success: boolean }) => {
         resolve(response)
       })

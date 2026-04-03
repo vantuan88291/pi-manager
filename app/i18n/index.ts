@@ -13,9 +13,9 @@ import vi from "./vi"
 const fallbackLocale = "en"
 
 // Supported languages: English and Vietnamese only
-export const resources = { 
-  en, 
-  vi 
+export const resources = {
+  en,
+  vi,
 } as const
 
 export type LanguageCode = keyof typeof resources

@@ -21,9 +21,12 @@ export function useSystemStats(): UseSystemStatsReturn {
   // Retry on disconnect (max 5 retries with exponential backoff)
   useEffect(() => {
     if (state.status === "disconnected" && retryCount < 5) {
-      const timeout = setTimeout(() => {
-        setRetryCount(prev => prev + 1)
-      }, Math.min(1000 * Math.pow(2, retryCount), 10000))
+      const timeout = setTimeout(
+        () => {
+          setRetryCount((prev) => prev + 1)
+        },
+        Math.min(1000 * Math.pow(2, retryCount), 10000),
+      )
       return () => clearTimeout(timeout)
     }
   }, [state.status, retryCount])

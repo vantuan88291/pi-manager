@@ -23,7 +23,8 @@ const TASK_TYPES: TaskTypeInfo[] = [
     icon: "terminal",
     font: "Ionicons",
     title: "Shell Command",
-    description: "Run bash commands directly on your Raspberry Pi. Use for system control, scripts, and automation tasks.",
+    description:
+      "Run bash commands directly on your Raspberry Pi. Use for system control, scripts, and automation tasks.",
     warnings: ["Requires proper sudo configuration", "Commands are validated for safety"],
   },
   {
@@ -31,16 +32,26 @@ const TASK_TYPES: TaskTypeInfo[] = [
     icon: "robot",
     font: "Ionicons",
     title: "Agent Task",
-    description: "AI agent will execute your prompt to perform intelligent tasks like analysis, reporting, and decision making.",
-    warnings: ["Be specific in your instructions", "Set appropriate timeout (30-300s)", "Model: qwen-coder (default)"],
+    description:
+      "AI agent will execute your prompt to perform intelligent tasks like analysis, reporting, and decision making.",
+    warnings: [
+      "Be specific in your instructions",
+      "Set appropriate timeout (30-300s)",
+      "Model: qwen-coder (default)",
+    ],
   },
   {
     type: "event",
     icon: "chatbubble-ellipses",
     font: "Ionicons",
     title: "System Event",
-    description: "Send a notification message to your OpenClaw session. Use for reminders, alerts, and simple announcements.",
-    warnings: ["Supports emojis and formatting", "Instant delivery (no execution time)", "Delivers to configured channel"],
+    description:
+      "Send a notification message to your OpenClaw session. Use for reminders, alerts, and simple announcements.",
+    warnings: [
+      "Supports emojis and formatting",
+      "Instant delivery (no execution time)",
+      "Delivers to configured channel",
+    ],
   },
 ]
 
@@ -56,36 +67,45 @@ export const TaskTypePicker: FC<TaskTypePickerProps> = ({ selectedType, onSelect
     <View style={themed($container)}>
       {TASK_TYPES.map((taskType) => {
         const isSelected = selectedType === taskType.type
-        
+
         return (
           <View key={taskType.type} style={themed($taskWrapper)}>
             {/* Selectable Card */}
             <Pressable
               onPress={() => onSelect(taskType.type)}
-              style={themed([
-                $card,
-                isSelected && $selectedCard,
-              ])}
+              style={themed([$card, isSelected && $selectedCard])}
             >
               <View style={[$cardHeader, isSelected && $selectedCardHeader]}>
-                <View style={[$iconBadge, { backgroundColor: isSelected ? theme.colors.tint + '20' : theme.colors.border }]}>
-                  <Icon 
-                    font={taskType.font} 
-                    icon={taskType.icon as any} 
-                    color={isSelected ? theme.colors.tint : theme.colors.textDim} 
-                    size={24} 
+                <View
+                  style={[
+                    $iconBadge,
+                    {
+                      backgroundColor: isSelected ? theme.colors.tint + "20" : theme.colors.border,
+                    },
+                  ]}
+                >
+                  <Icon
+                    font={taskType.font}
+                    icon={taskType.icon as any}
+                    color={isSelected ? theme.colors.tint : theme.colors.textDim}
+                    size={24}
                   />
                 </View>
                 <View style={$cardContent}>
-                  <Text 
-                    text={taskType.title} 
-                    weight="semiBold" 
-                    size="sm" 
-                    color={isSelected ? "tint" : "text"} 
+                  <Text
+                    text={taskType.title}
+                    weight="semiBold"
+                    size="sm"
+                    color={isSelected ? "tint" : "text"}
                   />
                   {isSelected && (
                     <View style={$checkmark}>
-                      <Icon font="Ionicons" icon="checkmark-circle" color={theme.colors.tint} size={20} />
+                      <Icon
+                        font="Ionicons"
+                        icon="checkmark-circle"
+                        color={theme.colors.tint}
+                        size={20}
+                      />
                     </View>
                   )}
                 </View>
@@ -96,10 +116,20 @@ export const TaskTypePicker: FC<TaskTypePickerProps> = ({ selectedType, onSelect
             {isSelected && (
               <View style={themed($infoBox)}>
                 <View style={$infoIcon}>
-                  <Icon font="Ionicons" icon="information-circle" color={theme.colors.textDim} size={18} />
+                  <Icon
+                    font="Ionicons"
+                    icon="information-circle"
+                    color={theme.colors.textDim}
+                    size={18}
+                  />
                 </View>
                 <View style={$infoContent}>
-                  <Text text={taskType.description} size="xs" color="textDim" style={$infoDescription} />
+                  <Text
+                    text={taskType.description}
+                    size="xs"
+                    color="textDim"
+                    style={$infoDescription}
+                  />
                   {taskType.warnings?.map((warning, index) => (
                     <View key={index} style={$warningRow}>
                       <Icon font="Ionicons" icon="warning" color={theme.colors.warning} size={14} />
@@ -116,7 +146,7 @@ export const TaskTypePicker: FC<TaskTypePickerProps> = ({ selectedType, onSelect
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   gap: spacing.md,
   paddingHorizontal: spacing.sm,
 })
@@ -135,7 +165,7 @@ const $card: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 
 const $selectedCard: ThemedStyle<ViewStyle> = ({ colors }) => ({
   borderColor: colors.tint,
-  backgroundColor: colors.tint + '08', // 5% opacity
+  backgroundColor: colors.tint + "08", // 5% opacity
 })
 
 const $cardHeader: ViewStyle = {
@@ -171,7 +201,7 @@ const $checkmark: ViewStyle = {
 }
 
 const $infoBox: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.info + '15', // 8% opacity
+  backgroundColor: colors.info + "15", // 8% opacity
   borderRadius: spacing.lg,
   padding: spacing.lg,
   marginTop: spacing.md,
@@ -179,7 +209,7 @@ const $infoBox: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   alignItems: "flex-start",
   gap: spacing.md,
   borderWidth: 1,
-  borderColor: colors.info + '30',
+  borderColor: colors.info + "30",
 })
 
 const $infoIcon: ViewStyle = {

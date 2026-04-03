@@ -64,21 +64,30 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
 
   const quickPresets = [
     { label: "Today", getDate: () => new Date() },
-    { label: "Tomorrow", getDate: () => {
-      const d = new Date()
-      d.setDate(d.getDate() + 1)
-      return d
-    }},
-    { label: "Next Week", getDate: () => {
-      const d = new Date()
-      d.setDate(d.getDate() + 7)
-      return d
-    }},
-    { label: "Next Month", getDate: () => {
-      const d = new Date()
-      d.setMonth(d.getMonth() + 1)
-      return d
-    }},
+    {
+      label: "Tomorrow",
+      getDate: () => {
+        const d = new Date()
+        d.setDate(d.getDate() + 1)
+        return d
+      },
+    },
+    {
+      label: "Next Week",
+      getDate: () => {
+        const d = new Date()
+        d.setDate(d.getDate() + 7)
+        return d
+      },
+    },
+    {
+      label: "Next Month",
+      getDate: () => {
+        const d = new Date()
+        d.setMonth(d.getMonth() + 1)
+        return d
+      },
+    },
   ]
 
   const handleQuickSelect = (getDate: () => Date) => {
@@ -103,40 +112,40 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
 
   // Build custom styles for datepicker using theme colors
   const datePickerStyles = {
-    days: { 
+    days: {
       backgroundColor: theme.colors.surface,
       padding: 4,
     },
-    day_cell: { 
+    day_cell: {
       padding: 1,
     },
-    day: { 
+    day: {
       borderRadius: 8,
-      backgroundColor: 'transparent',
+      backgroundColor: "transparent",
     },
-    day_label: { 
-      color: theme.colors.text, 
+    day_label: {
+      color: theme.colors.text,
       fontSize: 13,
-      fontWeight: '500',
-      textAlign: 'center',
+      fontWeight: "500",
+      textAlign: "center",
     },
     months: { backgroundColor: theme.colors.surface, padding: 8 },
-    month: { 
-      borderRadius: 10, 
+    month: {
+      borderRadius: 10,
       borderColor: theme.colors.border,
-      backgroundColor: 'transparent',
+      backgroundColor: "transparent",
       paddingVertical: 10,
     },
     month_label: { color: theme.colors.text, fontSize: 13 },
     years: { backgroundColor: theme.colors.surface, padding: 8 },
-    year: { 
-      borderRadius: 10, 
+    year: {
+      borderRadius: 10,
       borderColor: theme.colors.border,
-      backgroundColor: 'transparent',
+      backgroundColor: "transparent",
       paddingVertical: 10,
     },
     year_label: { color: theme.colors.text, fontSize: 13 },
-    header: { 
+    header: {
       backgroundColor: theme.colors.surface,
       marginBottom: 8,
       paddingBottom: 12,
@@ -146,38 +155,38 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
     },
     month_selector_label: {
       fontSize: 15,
-      fontWeight: '700',
+      fontWeight: "700",
       color: theme.colors.text,
     },
     year_selector_label: {
       fontSize: 15,
-      fontWeight: '700',
+      fontWeight: "700",
       color: theme.colors.text,
     },
     time_selector_label: {
       fontSize: 15,
-      fontWeight: '700',
+      fontWeight: "700",
       color: theme.colors.text,
     },
-    weekdays: { 
+    weekdays: {
       backgroundColor: theme.colors.surface,
       paddingTop: 4,
     },
     weekday_label: {
       fontSize: 11,
-      textTransform: 'uppercase' as const,
+      textTransform: "uppercase" as const,
       color: theme.colors.textDim,
-      fontWeight: '700',
+      fontWeight: "700",
     },
     button_next: {},
     button_prev: {},
     time_label: {
       fontSize: 18,
-      fontWeight: '700',
+      fontWeight: "700",
       color: theme.colors.text,
     },
     time_selected_indicator: {
-      backgroundColor: theme.colors.tint + '25',
+      backgroundColor: theme.colors.tint + "25",
       borderRadius: 10,
       paddingVertical: 4,
       paddingHorizontal: 12,
@@ -193,18 +202,18 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
     },
     selected_label: {
       color: theme.colors.palette.neutral100,
-      fontWeight: '700',
+      fontWeight: "700",
       fontSize: 13,
     },
     // Today state
     today: {
-      backgroundColor: theme.colors.tint + '20',
+      backgroundColor: theme.colors.tint + "20",
       borderWidth: 2,
       borderColor: theme.colors.tint,
     },
     today_label: {
       color: theme.colors.tint,
-      fontWeight: '700',
+      fontWeight: "700",
       fontSize: 13,
     },
     outside_label: {
@@ -215,8 +224,8 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
       color: theme.colors.textDim,
       opacity: 0.3,
     },
-    range_fill: { backgroundColor: 'transparent' },
-    range_middle: { backgroundColor: 'transparent' },
+    range_fill: { backgroundColor: "transparent" },
+    range_middle: { backgroundColor: "transparent" },
     range_middle_label: { color: theme.colors.text },
     range_start_label: { color: theme.colors.palette.neutral100 },
     range_end_label: { color: theme.colors.palette.neutral100 },
@@ -225,37 +234,32 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
       borderColor: theme.colors.tint,
       borderWidth: 2,
     },
-    selected_month_label: { 
+    selected_month_label: {
       color: theme.colors.palette.neutral100,
-      fontWeight: '700',
+      fontWeight: "700",
     },
     selected_year: {
       backgroundColor: theme.colors.tint,
       borderColor: theme.colors.tint,
       borderWidth: 2,
     },
-    selected_year_label: { 
+    selected_year_label: {
       color: theme.colors.palette.neutral100,
-      fontWeight: '700',
+      fontWeight: "700",
     },
     active_year: {
-      backgroundColor: theme.colors.tint + '20',
+      backgroundColor: theme.colors.tint + "20",
       borderColor: theme.colors.tint,
       borderWidth: 2,
     },
-    active_year_label: { 
+    active_year_label: {
       color: theme.colors.tint,
-      fontWeight: '600',
+      fontWeight: "600",
     },
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={themed($overlay)}>
         <View style={themed($modalContent)}>
           {/* Header */}
@@ -263,11 +267,11 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
             <View style={$headerTitle}>
               <Text text={title} weight="semiBold" size="lg" color="text" />
               {mode === "range" && (
-                <Text 
-                  text={rangeSelectionStep === "start" ? " (Select Start)" : " (Select End)"} 
-                  weight="medium" 
-                  size="sm" 
-                  color="tint" 
+                <Text
+                  text={rangeSelectionStep === "start" ? " (Select Start)" : " (Select End)"}
+                  weight="medium"
+                  size="sm"
+                  color="tint"
                 />
               )}
             </View>
@@ -283,11 +287,11 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
                 }}
                 style={themed($modeToggleButton)}
               >
-                <Text 
-                  text={mode === "range" ? "📅 Range" : "📍 Single"} 
-                  size="sm" 
-                  weight="semiBold" 
-                  color="tint" 
+                <Text
+                  text={mode === "range" ? "📅 Range" : "📍 Single"}
+                  size="sm"
+                  weight="semiBold"
+                  color="tint"
                 />
               </Pressable>
               <Pressable onPress={onClose} style={themed($closeButton)}>
@@ -297,7 +301,7 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
           </View>
 
           {/* Scrollable Content */}
-          <ScrollView 
+          <ScrollView
             showsVerticalScrollIndicator={false}
             style={$scrollContent}
             contentContainerStyle={$scrollContentContainer}
@@ -336,18 +340,46 @@ export const DateTimePickerModal: FC<DateTimePickerModalProps> = ({
               <View style={themed($rangeInfo)}>
                 <View style={themed($rangeItem)}>
                   <Text text="📍 Start:" size="sm" weight="semiBold" color="text" />
-                  <Text text={selectedDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })} size="sm" color="text" />
+                  <Text
+                    text={selectedDate.toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                    size="sm"
+                    color="text"
+                  />
                 </View>
                 <View style={themed($rangeItem)}>
                   <Text text="🏁 End:" size="sm" weight="semiBold" color="text" />
-                  <Text text={selectedEndDate ? selectedEndDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "Not selected"} size="sm" color={selectedEndDate ? "text" : "textDim"} />
+                  <Text
+                    text={
+                      selectedEndDate
+                        ? selectedEndDate.toLocaleDateString("en-US", {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+                        : "Not selected"
+                    }
+                    size="sm"
+                    color={selectedEndDate ? "text" : "textDim"}
+                  />
                 </View>
               </View>
             )}
 
             {/* Quick Presets */}
             <View style={themed($presetsSection)}>
-              <Text text="Quick Select" weight="medium" color="textDim" size="xs" style={$presetsLabel} />
+              <Text
+                text="Quick Select"
+                weight="medium"
+                color="textDim"
+                size="xs"
+                style={$presetsLabel}
+              />
               <View style={themed($presetsRow)}>
                 {quickPresets.map((preset, index) => (
                   <Pressable

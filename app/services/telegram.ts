@@ -87,7 +87,7 @@ export function getTelegramDebugInfo(): {
   colorScheme: string
 } {
   const tg = window.Telegram?.WebApp
-  
+
   return {
     hasWindowTelegram: !!window.Telegram,
     hasWebApp: !!tg,

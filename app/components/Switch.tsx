@@ -9,23 +9,19 @@ interface SwitchProps {
   disabled?: boolean
 }
 
-export const Switch: FC<SwitchProps> = function Switch({
-  value,
-  onValueChange,
-  disabled = false,
-}) {
+export const Switch: FC<SwitchProps> = function Switch({ value, onValueChange, disabled = false }) {
   const { theme } = useAppTheme()
   const [isPressed, setIsPressed] = useState(false)
-  
+
   const trackColor = value ? theme.colors.tint : theme.colors.palette.neutral400
   const thumbColor = theme.colors.surface
-  
+
   const handlePressIn = () => {
     if (!disabled) {
       setIsPressed(true)
     }
   }
-  
+
   const handlePressOut = () => {
     setIsPressed(false)
     if (!disabled) {
@@ -33,14 +29,14 @@ export const Switch: FC<SwitchProps> = function Switch({
       onValueChange(!value)
     }
   }
-  
+
   const handleClick = () => {
     if (!disabled) {
       console.log("[Switch] clicked, toggling to:", !value)
       onValueChange(!value)
     }
   }
-  
+
   return (
     <View
       onMouseDown={handlePressIn}
@@ -53,7 +49,7 @@ export const Switch: FC<SwitchProps> = function Switch({
         width: 50,
         height: 30,
         borderRadius: 15,
-        backgroundColor: isPressed ? (trackColor + "80") : trackColor,
+        backgroundColor: isPressed ? trackColor + "80" : trackColor,
         justifyContent: "center",
         padding: 3,
         opacity: disabled ? 0.5 : 1,

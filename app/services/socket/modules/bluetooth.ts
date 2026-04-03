@@ -1,12 +1,12 @@
 import { Socket } from "socket.io-client"
 import type { SocketModule } from "../types"
-import type { 
-  BluetoothDevice, 
-  BluetoothStatus, 
+import type {
+  BluetoothDevice,
+  BluetoothStatus,
   BluetoothPairRequest,
   BluetoothPairResponse,
   BluetoothConnectRequest,
-  BluetoothConnectResponse 
+  BluetoothConnectResponse,
 } from "../../../../shared/types/bluetooth"
 
 type StatusCallback = (status: BluetoothStatus) => void
@@ -19,7 +19,7 @@ class BluetoothClientModule implements SocketModule {
 
   register(socket: Socket): void {
     this.socket = socket
-    
+
     socket.on("bluetooth:status", (status: BluetoothStatus) => {
       this.cachedStatus = status
       this.statusCallbacks.forEach((cb) => cb(status))
@@ -51,7 +51,7 @@ class BluetoothClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       this.socket.emit("bluetooth:scan", (response: { success: boolean; error?: string }) => {
         resolve(response)
       })
@@ -70,7 +70,7 @@ class BluetoothClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       const request: BluetoothPairRequest = { mac, pin }
       this.socket.emit("bluetooth:pair", request, (response: BluetoothPairResponse) => {
         resolve(response)
@@ -85,7 +85,7 @@ class BluetoothClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       const request: BluetoothConnectRequest = { mac }
       this.socket.emit("bluetooth:connect", request, (response: BluetoothConnectResponse) => {
         resolve(response)
@@ -100,11 +100,15 @@ class BluetoothClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       const request: BluetoothConnectRequest = { mac }
-      this.socket.emit("bluetooth:disconnect", request, (response: { success: boolean; error?: string }) => {
-        resolve(response)
-      })
+      this.socket.emit(
+        "bluetooth:disconnect",
+        request,
+        (response: { success: boolean; error?: string }) => {
+          resolve(response)
+        },
+      )
     })
   }
 
@@ -115,11 +119,15 @@ class BluetoothClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       const request: BluetoothConnectRequest = { mac }
-      this.socket.emit("bluetooth:unpair", request, (response: { success: boolean; error?: string }) => {
-        resolve(response)
-      })
+      this.socket.emit(
+        "bluetooth:unpair",
+        request,
+        (response: { success: boolean; error?: string }) => {
+          resolve(response)
+        },
+      )
     })
   }
 
@@ -130,10 +138,14 @@ class BluetoothClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
-      this.socket.emit("bluetooth:toggle_power", { powered }, (response: { success: boolean; error?: string }) => {
-        resolve(response)
-      })
+
+      this.socket.emit(
+        "bluetooth:toggle_power",
+        { powered },
+        (response: { success: boolean; error?: string }) => {
+          resolve(response)
+        },
+      )
     })
   }
 

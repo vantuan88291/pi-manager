@@ -1,521 +1,66 @@
-import { FC, useState, useEffect, useCallback, useRef } from 'react'
-import { View, ViewStyle, RefreshControl, ScrollView, Pressable } from 'react-native'
-import { useNavigation, useFocusEffect } from '@react-navigation/native'
-import { useTranslation } from 'react-i18next'
+import { FC } from "react"
+import { View, ViewStyle } from "react-native"
+import { useNavigation } from "@react-navigation/native"
+import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
-import { Header } from '@/components/Header'
-import { Screen } from '@/components/Screen'
-import { Text } from '@/components/Text'
-import { Card } from '@/components/Card'
-import { Button } from '@/components/Button'
-import { Icon } from '@/components/Icon'
-import { ListItem } from '@/components/ListItem'
-import { AlertModal, type AlertButton } from '@/components/AlertModal'
-import { SectionHeader } from '@/components/SectionHeader'
-import { Badge } from '@/components/Badge'
-import { TextField } from '@/components/TextField'
-import { useAppTheme } from '@/theme/context'
-import type { ThemedStyle } from '@/theme/types'
-import type { AppStackParamList } from '@/navigators/navigationTypes'
-import { useSocket } from '@/services/socket/SocketContext'
-import { fileManagerClientModule } from '@/services/socket/modules/file-manager'
-import type { FileInfo, QuickAccessPath } from '../../shared/types/file-manager'
-import { QUICK_ACCESS_PATHS } from '../../shared/types/file-manager'
+import { FileManagerHeader } from "@/components/FileManager/FileManagerHeader"
+import { FileManagerListBody } from "@/components/FileManager/FileManagerListBody"
+import { FileManagerModals } from "@/components/FileManager/FileManagerModals"
+import { FileManagerWebUploadInput } from "@/components/FileManager/FileManagerWebUploadInput"
+import { Header } from "@/components/Header"
+import { Screen } from "@/components/Screen"
+import { useFileManager } from "@/hooks/useFileManager"
+import type { AppStackParamList } from "@/navigators/navigationTypes"
+import { useAppTheme } from "@/theme/context"
+import type { ThemedStyle } from "@/theme/types"
 
-type FileManagerScreenProps = import('@react-navigation/native').NativeStackScreenProps<AppStackParamList, 'FileManager'>
-
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-const formatModifiedTime = (timestamp: number): string => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  
-  if (days === 0) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  if (days === 1) return 'Yesterday'
-  if (days < 7) return `${days} days ago`
-  return date.toLocaleDateString()
-}
-
-const getFileIcon = (file: FileInfo): { font: 'Ionicons' | 'MaterialCommunityIcons'; name: string; color: string } => {
-  if (file.type === 'directory') {
-    return { font: 'Ionicons', name: 'folder', color: '#F59E0B' }
-  }
-  
-  const ext = file.extension?.toLowerCase()
-  if (['js', 'ts', 'tsx', 'jsx'].includes(ext || '')) {
-    return { font: 'Ionicons', name: 'code-slash', color: '#6366F1' }
-  }
-  if (['json', 'yml', 'yaml', 'xml'].includes(ext || '')) {
-    return { font: 'Ionicons', name: 'document-text', color: '#10B981' }
-  }
-  if (['md', 'txt'].includes(ext || '')) {
-    return { font: 'Ionicons', name: 'document-outline', color: '#3B82F6' }
-  }
-  if (['log'].includes(ext || '')) {
-    return { font: 'Ionicons', name: 'bug', color: '#EF4444' }
-  }
-  if (['sh', 'py', 'env'].includes(ext || '')) {
-    return { font: 'Ionicons', name: 'terminal', color: '#8B5CF6' }
-  }
-  
-  return { font: 'Ionicons', name: 'document-outline', color: '#6B7280' }
-}
-
-interface FileListItemProps {
-  item: FileInfo
-  onPress: (item: FileInfo) => void
-  onLongPress?: (item: FileInfo) => void
-  onDelete?: (item: FileInfo) => void
-}
-
-const FileListItem: FC<FileListItemProps> = ({ item, onPress, onLongPress, onDelete }) => {
-  const { themed, theme } = useAppTheme()
-  const icon = getFileIcon(item)
-  
-  return (
-    <View 
-      style={themed($listItem)}
-      onStartShouldSetResponder={() => true}
-      onResponderRelease={() => onPress(item)}
-      onLongPress={onLongPress ? () => onLongPress(item) : undefined}
-    >
-      <View style={$itemContent}>
-        <View style={themed($iconBadge)}>
-          <Icon font={icon.font} icon={icon.name} color={icon.color} size={24} />
-        </View>
-        <View style={$textContainer}>
-          <Text weight="medium" size="sm" color="text" numberOfLines={1}>
-            {item.name}
-          </Text>
-          <View style={$metaRow}>
-            {item.type === 'file' && (
-              <>
-                <Text size="xs" color="textDim">{formatFileSize(item.size)}</Text>
-                <Text size="xs" color="textDim">•</Text>
-                <Text size="xs" color="textDim">{formatModifiedTime(item.modified)}</Text>
-              </>
-            )}
-            {item.type === 'directory' && (
-              <Text size="xs" color="textDim">Folder</Text>
-            )}
-          </View>
-        </View>
-        <View style={$listActions}>
-          {item.isSystem ? (
-            // System file/folder - show lock icon, no delete
-            <Icon font="Ionicons" icon="lock-closed" size={20} color={theme.colors.tint} />
-          ) : (
-            // Regular file/folder - show delete button
-            onDelete && (
-              <Pressable
-                onPress={() => onDelete(item)}
-                style={themed($deleteButton)}
-              >
-                <Icon font="Ionicons" icon="trash" size={18} color={theme.colors.error} />
-              </Pressable>
-            )
-          )}
-          <Icon font="Ionicons" icon="chevron-forward" size={20} color={theme.colors.textDim} />
-        </View>
-      </View>
-    </View>
-  )
-}
+type FileManagerScreenProps = NativeStackScreenProps<AppStackParamList, "FileManager">
 
 export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManagerScreen() {
   const navigation = useNavigation()
-  const { t } = useTranslation()
-  const { themed, theme } = useAppTheme()
-  const { subscribeToModule, unsubscribeFromModule } = useSocket()
-  
-  const [currentPath, setCurrentPath] = useState('/home/vantuan88291')
-  const [items, setItems] = useState<FileInfo[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [quickAccessPaths] = useState<QuickAccessPath[]>(QUICK_ACCESS_PATHS)
-  const [error, setError] = useState<string | null>(null)
-  
-  const [alertConfig, setAlertConfig] = useState<{
-    visible: boolean
-    title: string
-    message?: string
-    buttons: AlertButton[]
-  }>({ visible: false, title: '', buttons: [] })
-
-  const [actionMenu, setActionMenu] = useState<{
-    visible: boolean
-    item: FileInfo | null
-  }>({ visible: false, item: null })
-
-  const [createModalVisible, setCreateModalVisible] = useState(false)
-  const [createType, setCreateType] = useState<'folder' | 'file'>('folder')
-  const [newItemName, setNewItemName] = useState('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    subscribeToModule('file-manager')
-    
-    const unsubList = fileManagerClientModule.onList((result) => {
-      if (result.error) {
-        setError(result.error)
-      } else {
-        setItems(result.items || [])
-        setError(null)
-      }
-      setLoading(false)
-      setRefreshing(false)
-    })
-    
-    const unsubDelete = fileManagerClientModule.onDelete((result) => {
-      if (result.success) {
-        // Refresh current directory
-        fileManagerClientModule.listDirectory(currentPath)
-        showAlert('Success', result.message || 'Deleted successfully')
-      } else {
-        showAlert('Error', result.error || 'Failed to delete')
-      }
-    })
-    
-    // Request quick access paths
-    console.log('[FileManager] Requesting quick access...')
-    fileManagerClientModule.requestQuickAccess()
-    
-    // List current directory immediately
-    console.log('[FileManager] Calling listDirectory:', currentPath)
-    fileManagerClientModule.listDirectory(currentPath)
-    
-    return () => {
-      console.log('[FileManager] cleanup')
-      unsubList()
-      unsubscribeFromModule('file-manager')
-    }
-  }, [subscribeToModule, unsubscribeFromModule, currentPath])
-
-  // Refresh list when screen comes into focus (e.g., after editing a file)
-  useFocusEffect(
-    useCallback(() => {
-      console.log('[FileManager] screen focused - refreshing current path:', currentPath)
-      // Only refresh if we already have data (not on first load)
-      if (!loading) {
-        fileManagerClientModule.listDirectory(currentPath)
-      }
-    }, [currentPath, loading])
-  )
-
-  const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: 'OK' }]) => {
-    setAlertConfig({ visible: true, title, message, buttons })
-  }
-
-  const handleRefresh = () => {
-    setRefreshing(true)
-    fileManagerClientModule.listDirectory(currentPath)
-    setTimeout(() => setRefreshing(false), 1000)
-  }
-
-  const handleNavigate = (item: FileInfo) => {
-    if (item.type === 'directory') {
-      setCurrentPath(item.path)
-      setLoading(true)
-      fileManagerClientModule.listDirectory(item.path)
-    } else {
-      // Navigate to file editor
-      navigation.navigate('FileEditor', {
-        filePath: item.path,
-        fileName: item.name,
-      })
-    }
-  }
-
-  const handleLongPress = (item: FileInfo) => {
-    setActionMenu({ visible: true, item })
-  }
-
-  const handleDelete = (item: FileInfo) => {
-    showAlert(
-      t('fileManager:deleteConfirm', { name: item.name }),
-      t('fileManager:deleteWarning'),
-      [
-        { text: t('common:cancel'), style: 'cancel' },
-        {
-          text: t('common:delete'),
-          style: 'destructive',
-          onPress: () => {
-            fileManagerClientModule.deleteFileOrFolder(item.path)
-          },
-        },
-      ]
-    )
-  }
-
-  const handleCreate = (type: 'folder' | 'file') => {
-    setCreateType(type)
-    setNewItemName('')
-    setCreateModalVisible(true)
-  }
-
-  const handleCreateConfirm = async () => {
-    if (!newItemName.trim()) return
-    
-    const newPath = `${currentPath}/${newItemName.trim()}`
-    
-    try {
-      if (createType === 'folder') {
-        await fetch('/api/files/create-folder', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: newPath }),
-        })
-      } else {
-        await fetch('/api/files/write', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: newPath, content: '' }),
-        })
-      }
-      
-      setCreateModalVisible(false)
-      handleRefresh()
-    } catch (error: any) {
-      showAlert('Error', error.message || `Failed to create ${createType}`)
-    }
-  }
-
-  const handleUpload = () => {
-    // Trigger hidden file input
-    fileInputRef.current?.click()
-  }
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    
-    try {
-      // Read file content
-      const content = await file.text()
-      
-      // Upload to server
-      const newPath = `${currentPath}/${file.name}`
-      await fetch('/api/files/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: newPath, content }),
-      })
-      
-      handleRefresh()
-      showAlert(t('common:success'), t('fileManager:uploadSuccess', { name: file.name }))
-    } catch (error: any) {
-      showAlert(t('common:error'), error.message || t('fileManager:uploadFailed'))
-    }
-    
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-
-  const handleGoUp = () => {
-    const parent = currentPath.substring(0, currentPath.lastIndexOf('/'))
-    if (parent) {
-      setCurrentPath(parent)
-      setLoading(true)
-      fileManagerClientModule.listDirectory(parent)
-    }
-  }
-
-  const handleQuickAccess = (pathObj: QuickAccessPath) => {
-    setCurrentPath(pathObj.path)
-    setLoading(true)
-    fileManagerClientModule.listDirectory(pathObj.path)
-  }
-
-  const renderHeader = () => (
-    <View>
-      {/* Breadcrumb */}
-      <View style={themed($breadcrumb)}>
-        <Button
-          preset="default"
-          size="sm"
-          onPress={handleGoUp}
-          disabled={currentPath === '/' || currentPath === process.env.HOME}
-          style={{ marginRight: 8 }}
-        >
-          <Icon font="Ionicons" icon="arrow-up" size={16} />
-        </Button>
-        <ScrollView 
-          horizontal={true} 
-          showsHorizontalScrollIndicator={false}
-          style={$breadcrumbScroll}
-          contentContainerStyle={$breadcrumbScrollContent}
-        >
-          <Text size="sm" color="textDim">
-            {currentPath}
-          </Text>
-        </ScrollView>
-      </View>
-
-      {/* Quick Access */}
-      {quickAccessPaths.length > 0 && (
-        <View style={themed($quickAccess)}>
-          <Text size="xs" weight="semiBold" color="textDim" style={{ marginBottom: 8 }}>
-            Quick Access
-          </Text>
-          <View style={$quickAccessList}>
-            {quickAccessPaths.map((pathObj) => (
-              <Button
-                key={pathObj.path}
-                preset="default"
-                size="sm"
-                onPress={() => handleQuickAccess(pathObj)}
-                style={{ marginRight: 8, marginBottom: 8, borderColor: theme.colors.border, borderWidth: 1 }}
-              >
-                <Icon font="Ionicons" icon="bookmark" size={14} color={theme.colors.tint} />
-                <Text size="xs" weight="medium" style={{ marginLeft: 4 }}>{pathObj.label}</Text>
-              </Button>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Section Header */}
-      <SectionHeader
-        title="Files"
-        rightAction={
-          <View style={$headerActions}>
-            <Button
-              preset="default"
-              size="sm"
-              onPress={() => handleCreate('folder')}
-              style={{ marginRight: 4 }}
-            >
-              <Icon font="Ionicons" icon="folder" size={18} />
-            </Button>
-            <Button
-              preset="default"
-              size="sm"
-              onPress={() => handleCreate('file')}
-              style={{ marginRight: 4 }}
-            >
-              <Icon font="Ionicons" icon="document" size={18} />
-            </Button>
-            <Button
-              preset="default"
-              size="sm"
-              onPress={handleUpload}
-              style={{ marginRight: 4 }}
-            >
-              <Icon font="Ionicons" icon="cloud-upload" size={18} />
-            </Button>
-          </View>
-        }
-      />
-    </View>
-  )
+  const { themed } = useAppTheme()
+  const fm = useFileManager()
 
   return (
-    <Screen preset="fixed">
+    <Screen preset="scroll">
       <Header titleTx="fileManager:title" leftIcon="back" onLeftPress={() => navigation.goBack()} />
-      
-      <ScrollView
-        style={themed($contentWrapper)}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      >
-        {renderHeader()}
-        
-        {error ? (
-          <Card style={themed($errorCard)}>
-            <Text color="error">{error}</Text>
-          </Card>
-        ) : loading ? (
-          <View style={themed($centered)}>
-            <Text color="textDim">Loading...</Text>
-          </View>
-        ) : items.length === 0 ? (
-          <View style={themed($emptyState)}>
-            <Icon font="Ionicons" icon="folder-open" size={64} color={theme.colors.textDim} />
-            <Text weight="semiBold" size="md" color="textDim" style={{ marginTop: 16 }}>
-              This folder is empty
-            </Text>
-          </View>
-        ) : (
-          <View>
-            {items.map((item, index) => (
-              <View key={item.path}>
-                <FileListItem
-                  item={item}
-                  onPress={handleNavigate}
-                  onLongPress={handleLongPress}
-                  onDelete={handleDelete}
-                />
-                {index < items.length - 1 && <View style={themed($separator)} />}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
 
-      {/* Action Menu Modal */}
-      <AlertModal
-        visible={actionMenu.visible && !!actionMenu.item}
-        title={actionMenu.item?.name || ''}
-        buttons={[
-          { text: 'Cancel', style: 'cancel', onPress: () => setActionMenu({ visible: false, item: null }) },
-          { text: 'Delete', style: 'destructive', onPress: handleDelete },
-        ]}
-        onClose={() => setActionMenu({ visible: false, item: null })}
+      <View style={themed($contentWrapper)}>
+        <FileManagerHeader
+          currentPath={fm.currentPath}
+          quickAccessPaths={fm.quickAccessPaths}
+          onGoUp={fm.handleGoUp}
+          onQuickAccess={fm.handleQuickAccess}
+          onCreateFolder={() => fm.handleCreate("folder")}
+          onCreateFile={() => fm.handleCreate("file")}
+          onUpload={fm.handleUpload}
+        />
+
+        <FileManagerListBody
+          error={fm.error}
+          loading={fm.loading}
+          items={fm.items}
+          onItemPress={fm.handleNavigate}
+          onItemLongPress={fm.handleLongPress}
+          onItemDelete={fm.handleDelete}
+        />
+      </View>
+
+      <FileManagerModals
+        actionMenu={fm.actionMenu}
+        onCloseActionMenu={fm.closeActionMenu}
+        onActionMenuDelete={fm.handleActionMenuDelete}
+        alertConfig={fm.alertConfig}
+        onDismissAlert={fm.dismissAlert}
+        createModalVisible={fm.createModalVisible}
+        createType={fm.createType}
+        newItemName={fm.newItemName}
+        onNewItemNameChange={fm.setNewItemName}
+        onCloseCreateModal={fm.closeCreateModal}
+        onCreateConfirm={fm.handleCreateConfirm}
       />
 
-      {/* Generic Alert */}
-      <AlertModal
-        visible={alertConfig.visible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        buttons={alertConfig.buttons}
-        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
-      />
-
-      {/* Create Folder/File Modal */}
-      <AlertModal
-        visible={createModalVisible}
-        title={createType === 'folder' ? 'New Folder' : 'New File'}
-        message={`Enter ${createType} name:`}
-        buttons={[
-          { text: t('common:cancel'), style: 'cancel', onPress: () => setCreateModalVisible(false) },
-          {
-            text: t('common:ok'),
-            style: 'default',
-            onPress: handleCreateConfirm,
-          },
-        ]}
-        onClose={() => setCreateModalVisible(false)}
-      >
-        <View style={themed($inputContainer)}>
-          <TextField
-            value={newItemName}
-            onChangeText={setNewItemName}
-            placeholder={`Enter ${createType} name...`}
-            autoFocus
-            onSubmitEditing={handleCreateConfirm}
-          />
-        </View>
-      </AlertModal>
-
-      {/* Hidden file input for upload */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
+      <FileManagerWebUploadInput inputRef={fm.fileInputRef} onChange={fm.handleFileChange} />
     </Screen>
   )
 }
@@ -523,109 +68,4 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
 const $contentWrapper: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingHorizontal: spacing.md,
   paddingBottom: spacing.lg,
-})
-
-const $breadcrumb: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: colors.surface,
-  padding: spacing.sm,
-  borderRadius: 12,
-  marginBottom: spacing.md,
-  borderWidth: 1,
-  borderColor: colors.border,
-})
-
-const $breadcrumbScroll: ViewStyle = {
-  flex: 1,
-}
-
-const $breadcrumbScrollContent: ViewStyle = {
-  flexGrow: 1,
-}
-
-const $quickAccess: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.md,
-})
-
-const $quickAccessList: ViewStyle = {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-}
-
-const $listItem: ThemedStyle<ViewStyle> = ({ spacing, colors }) => ({
-  paddingVertical: spacing.md,
-  paddingHorizontal: spacing.md,
-  borderBottomWidth: 1,
-  borderBottomColor: colors.border,
-})
-
-const $listActions: ViewStyle = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 12,
-}
-
-const $deleteButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  padding: spacing.sm,
-})
-
-const $itemContent: ViewStyle = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 12,
-}
-
-const $iconBadge: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  width: 40,
-  height: 40,
-  borderRadius: 10,
-  backgroundColor: 'rgba(0,0,0,0.05)',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginRight: spacing.sm,
-})
-
-const $textContainer: ViewStyle = {
-  flex: 1,
-}
-
-const $metaRow: ViewStyle = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-  marginTop: 4,
-}
-
-const $errorCard: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.error + '10',
-  borderColor: colors.error + '30',
-  padding: spacing.md,
-})
-
-const $emptyState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingVertical: spacing.xl * 2,
-  alignItems: 'center',
-  justifyContent: 'center',
-})
-
-const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingVertical: spacing.xl,
-  alignItems: 'center',
-})
-
-const $separator: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  height: 1,
-  backgroundColor: colors.border,
-  marginHorizontal: spacing.md,
-})
-
-const $headerActions: ViewStyle = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 4,
-}
-
-const $inputContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingVertical: spacing.md,
 })

@@ -73,14 +73,7 @@ export const AlertModal: FC<AlertModalProps> = ({
         </View>
       }
     >
-      {message && (
-        <Text
-          text={message}
-          size="md"
-          color="text"
-          style={themed($message)}
-        />
-      )}
+      {message && <Text text={message} size="md" color="text" style={themed($message)} />}
       {children}
     </ActionModal>
   )

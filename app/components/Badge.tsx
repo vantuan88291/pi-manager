@@ -12,17 +12,24 @@ interface BadgeProps {
 
 export const Badge: FC<BadgeProps> = function Badge({ text, color, size = "small" }) {
   const { theme } = useAppTheme()
-  
+
   const badgeColor = color || theme.colors.palette.neutral400
-  
+
   return (
-    <View style={[
-      $badge,
-      { backgroundColor: badgeColor + "20", borderColor: badgeColor + "40" },
-      size === "small" && $badgeSmall,
-      size === "medium" && $badgeMedium,
-    ]}>
-      <Text text={text} size={size === "small" ? "xs" : "sm"} weight="semiBold" color={badgeColor} />
+    <View
+      style={[
+        $badge,
+        { backgroundColor: badgeColor + "20", borderColor: badgeColor + "40" },
+        size === "small" && $badgeSmall,
+        size === "medium" && $badgeMedium,
+      ]}
+    >
+      <Text
+        text={text}
+        size={size === "small" ? "xs" : "sm"}
+        weight="semiBold"
+        color={badgeColor}
+      />
     </View>
   )
 }

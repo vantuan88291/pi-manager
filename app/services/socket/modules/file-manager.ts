@@ -1,17 +1,26 @@
-import { Socket } from 'socket.io-client'
-import type { SocketModule } from '../types'
-import type { FileInfo, FileContent, DirectoryListResponse, QuickAccessPath } from '../../../../../shared/types/file-manager'
+import { Socket } from "socket.io-client"
+import type { SocketModule } from "../types"
+import type {
+  FileInfo,
+  FileContent,
+  DirectoryListResponse,
+  QuickAccessPath,
+} from "../../../../../shared/types/file-manager"
 
 type DirectoryListCallback = (result: DirectoryListResponse) => void
 type FileReadCallback = (result: { success: boolean; data?: FileContent; error?: string }) => void
 type FileWriteCallback = (result: { success: boolean; message?: string; error?: string }) => void
 type FileDeleteCallback = (result: { success: boolean; message?: string; error?: string }) => void
-type FileCreateFolderCallback = (result: { success: boolean; message?: string; error?: string }) => void
+type FileCreateFolderCallback = (result: {
+  success: boolean
+  message?: string
+  error?: string
+}) => void
 type FileRenameCallback = (result: { success: boolean; message?: string; error?: string }) => void
 type QuickAccessCallback = (result: { paths: QuickAccessPath[] }) => void
 
 class FileManagerClientModule implements SocketModule {
-  name = 'file-manager'
+  name = "file-manager"
   private socket: Socket | null = null
   private listCallbacks: Set<DirectoryListCallback> = new Set()
   private readCallbacks: Set<FileReadCallback> = new Set()
@@ -25,33 +34,48 @@ class FileManagerClientModule implements SocketModule {
   register(socket: Socket): void {
     this.socket = socket
 
-    socket.on('file:list-result', (result: DirectoryListResponse) => {
-      this.listCallbacks.forEach(cb => cb(result))
+    socket.on("file:list-result", (result: DirectoryListResponse) => {
+      this.listCallbacks.forEach((cb) => cb(result))
     })
 
-    socket.on('file:read-result', (result: { success: boolean; data?: FileContent; error?: string }) => {
-      this.readCallbacks.forEach(cb => cb(result))
-    })
+    socket.on(
+      "file:read-result",
+      (result: { success: boolean; data?: FileContent; error?: string }) => {
+        this.readCallbacks.forEach((cb) => cb(result))
+      },
+    )
 
-    socket.on('file:write-result', (result: { success: boolean; message?: string; error?: string }) => {
-      this.writeCallbacks.forEach(cb => cb(result))
-    })
+    socket.on(
+      "file:write-result",
+      (result: { success: boolean; message?: string; error?: string }) => {
+        this.writeCallbacks.forEach((cb) => cb(result))
+      },
+    )
 
-    socket.on('file:delete-result', (result: { success: boolean; message?: string; error?: string }) => {
-      this.deleteCallbacks.forEach(cb => cb(result))
-    })
+    socket.on(
+      "file:delete-result",
+      (result: { success: boolean; message?: string; error?: string }) => {
+        this.deleteCallbacks.forEach((cb) => cb(result))
+      },
+    )
 
-    socket.on('file:create-folder-result', (result: { success: boolean; message?: string; error?: string }) => {
-      this.createFolderCallbacks.forEach(cb => cb(result))
-    })
+    socket.on(
+      "file:create-folder-result",
+      (result: { success: boolean; message?: string; error?: string }) => {
+        this.createFolderCallbacks.forEach((cb) => cb(result))
+      },
+    )
 
-    socket.on('file:rename-result', (result: { success: boolean; message?: string; error?: string }) => {
-      this.renameCallbacks.forEach(cb => cb(result))
-    })
+    socket.on(
+      "file:rename-result",
+      (result: { success: boolean; message?: string; error?: string }) => {
+        this.renameCallbacks.forEach((cb) => cb(result))
+      },
+    )
 
-    socket.on('file:quick-access', (result: { paths: QuickAccessPath[] }) => {
+    socket.on("file:quick-access", (result: { paths: QuickAccessPath[] }) => {
       this.cachedQuickAccess = result.paths
-      this.quickAccessCallbacks.forEach(cb => cb(result))
+      this.quickAccessCallbacks.forEach((cb) => cb(result))
     })
   }
 
@@ -114,31 +138,31 @@ class FileManagerClientModule implements SocketModule {
 
   // Actions
   listDirectory(dirPath: string): void {
-    this.socket?.emit('file:list', { path: dirPath })
+    this.socket?.emit("file:list", { path: dirPath })
   }
 
   readFile(filePath: string): void {
-    this.socket?.emit('file:read', { path: filePath })
+    this.socket?.emit("file:read", { path: filePath })
   }
 
   writeFile(filePath: string, content: string): void {
-    this.socket?.emit('file:write', { path: filePath, content })
+    this.socket?.emit("file:write", { path: filePath, content })
   }
 
   deleteFileOrFolder(itemPath: string): void {
-    this.socket?.emit('file:delete', { path: itemPath })
+    this.socket?.emit("file:delete", { path: itemPath })
   }
 
   createFolder(parentPath: string, name: string): void {
-    this.socket?.emit('file:create-folder', { path: parentPath, name })
+    this.socket?.emit("file:create-folder", { path: parentPath, name })
   }
 
   renameItem(oldPath: string, newName: string): void {
-    this.socket?.emit('file:rename', { oldPath, newName })
+    this.socket?.emit("file:rename", { oldPath, newName })
   }
 
   requestQuickAccess(): void {
-    this.socket?.emit('file:quick-access')
+    this.socket?.emit("file:quick-access")
   }
 
   getQuickAccessPaths(): QuickAccessPath[] {

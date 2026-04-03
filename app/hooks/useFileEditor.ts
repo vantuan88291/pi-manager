@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { FileReadResponse } from '@/shared/types/file-manager'
+import { useState, useEffect, useCallback, useMemo } from "react"
+import type { FileReadResponse } from "@/shared/types/file-manager"
 
 interface UseFileEditorParams {
   filePath: string
@@ -14,7 +14,7 @@ interface UseFileEditorReturn {
   error: string | null
   hasChanges: boolean
   isMediaFile: boolean
-  mediaType: 'image' | 'video' | 'audio' | null
+  mediaType: "image" | "video" | "audio" | null
   language: string
   handleSave: () => Promise<void>
   handleBack: (onDiscard: () => void) => void
@@ -24,31 +24,48 @@ interface UseFileEditorReturn {
 }
 
 // Media file extensions that should be previewed, not edited
-const MEDIA_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'mp4', 'webm', 'avi', 'mov', 'mp3', 'wav', 'ogg', 'flac']
+const MEDIA_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "bmp",
+  "svg",
+  "ico",
+  "mp4",
+  "webm",
+  "avi",
+  "mov",
+  "mp3",
+  "wav",
+  "ogg",
+  "flac",
+]
 
 /**
  * Check if file is a media file based on extension
  */
 function isMediaFile(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase()
+  const ext = filename.split(".").pop()?.toLowerCase()
   return ext ? MEDIA_EXTENSIONS.includes(ext) : false
 }
 
 /**
  * Get media type for preview
  */
-function getMediaType(filename: string): 'image' | 'video' | 'audio' | null {
-  const ext = filename.split('.').pop()?.toLowerCase()
+function getMediaType(filename: string): "image" | "video" | "audio" | null {
+  const ext = filename.split(".").pop()?.toLowerCase()
   if (!ext) return null
-  
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext)) {
-    return 'image'
+
+  if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"].includes(ext)) {
+    return "image"
   }
-  if (['mp4', 'webm', 'avi', 'mov'].includes(ext)) {
-    return 'video'
+  if (["mp4", "webm", "avi", "mov"].includes(ext)) {
+    return "video"
   }
-  if (['mp3', 'wav', 'ogg', 'flac'].includes(ext)) {
-    return 'audio'
+  if (["mp3", "wav", "ogg", "flac"].includes(ext)) {
+    return "audio"
   }
   return null
 }
@@ -57,28 +74,28 @@ function getMediaType(filename: string): 'image' | 'video' | 'audio' | null {
  * Get language from file extension for syntax highlighting
  */
 function getLanguageFromExtension(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase()
+  const ext = filename.split(".").pop()?.toLowerCase()
   const languageMap: Record<string, string> = {
-    js: 'javascript',
-    jsx: 'javascript',
-    ts: 'typescript',
-    tsx: 'typescript',
-    json: 'json',
-    md: 'markdown',
-    html: 'html',
-    css: 'css',
-    scss: 'scss',
-    yaml: 'yaml',
-    yml: 'yaml',
-    xml: 'xml',
-    py: 'python',
-    sh: 'shell',
-    bash: 'shell',
-    env: 'shell',
-    log: 'text',
-    txt: 'text',
+    js: "javascript",
+    jsx: "javascript",
+    ts: "typescript",
+    tsx: "typescript",
+    json: "json",
+    md: "markdown",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    yaml: "yaml",
+    yml: "yaml",
+    xml: "xml",
+    py: "python",
+    sh: "shell",
+    bash: "shell",
+    env: "shell",
+    log: "text",
+    txt: "text",
   }
-  return languageMap[ext || ''] || 'text'
+  return languageMap[ext || ""] || "text"
 }
 
 /**
@@ -88,8 +105,8 @@ function getLanguageFromExtension(filename: string): string {
  * Detects media files for preview mode
  */
 export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseFileEditorReturn {
-  const [content, setContent] = useState('')
-  const [originalContent, setOriginalContent] = useState('')
+  const [content, setContent] = useState("")
+  const [originalContent, setOriginalContent] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -118,11 +135,11 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
           setContent(result.data.content)
           setOriginalContent(result.data.content)
         } else {
-          setError(result.error || 'Failed to read file')
+          setError(result.error || "Failed to read file")
         }
       } catch (err: any) {
         if (!isMounted) return
-        setError(err.message || 'Network error')
+        setError(err.message || "Network error")
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -145,9 +162,9 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     setSaving(true)
 
     try {
-      const response = await fetch('/api/files/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/files/write", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           path: filePath,
           content,
@@ -159,10 +176,10 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
       if (result.success) {
         setOriginalContent(content)
       } else {
-        setError(result.error || 'Failed to save file')
+        setError(result.error || "Failed to save file")
       }
     } catch (err: any) {
-      setError(err.message || 'Network error')
+      setError(err.message || "Network error")
     } finally {
       setSaving(false)
     }
@@ -177,7 +194,7 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
         onDiscard()
       }
     },
-    [hasChanges]
+    [hasChanges],
   )
 
   return {

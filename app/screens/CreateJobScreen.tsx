@@ -72,8 +72,10 @@ export const CreateJobScreen: FC = () => {
   const { themed, theme } = useAppTheme()
   const { t } = useTranslation()
   const route = navigation.getState() as any
-  const params = route?.routes?.[route.routes.length - 1]?.params as CreateJobScreenParams | undefined
-  
+  const params = route?.routes?.[route.routes.length - 1]?.params as
+    | CreateJobScreenParams
+    | undefined
+
   const onSubmit = params?.onSubmit ?? (() => {})
   const initialData = params?.initialData
 
@@ -83,11 +85,11 @@ export const CreateJobScreen: FC = () => {
   })
 
   const handleTaskTypeChange = (type: TaskType) => {
-    setFormData(prev => ({ ...prev, taskType: type }))
+    setFormData((prev) => ({ ...prev, taskType: type }))
   }
 
   const handleScheduleTypeChange = (type: ScheduleType) => {
-    setFormData(prev => ({ ...prev, scheduleType: type }))
+    setFormData((prev) => ({ ...prev, scheduleType: type }))
   }
 
   const handleValidate = (): boolean => {
@@ -117,7 +119,7 @@ export const CreateJobScreen: FC = () => {
               </View>
               <TextInput
                 value={formData.command}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, command: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, command: text }))}
                 placeholder="sudo shutdown -h now"
                 style={themed($multilineInput)}
                 multiline
@@ -133,7 +135,7 @@ export const CreateJobScreen: FC = () => {
               <Text tx="cronjob:workingDirectory" weight="medium" color="text" size="sm" />
               <TextInput
                 value={formData.workingDir}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, workingDir: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, workingDir: text }))}
                 placeholder="/home/vantuan88291/scripts"
                 style={themed($input)}
                 placeholderTextColor={theme.colors.textDim}
@@ -145,7 +147,9 @@ export const CreateJobScreen: FC = () => {
               <View style={themed($inputRow)}>
                 <TextInput
                   value={formData.timeout?.toString() || "60"}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, timeout: parseInt(text) || 60 }))}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, timeout: parseInt(text) || 60 }))
+                  }
                   placeholder="60"
                   style={themed($smallInput)}
                   keyboardType="number-pad"
@@ -168,7 +172,7 @@ export const CreateJobScreen: FC = () => {
               </View>
               <TextInput
                 value={formData.prompt}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, prompt: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, prompt: text }))}
                 placeholder="Check system status and create a summary report"
                 style={themed($multilineInput)}
                 multiline
@@ -176,14 +180,19 @@ export const CreateJobScreen: FC = () => {
                 maxLength={500}
                 textAlignVertical="top"
               />
-              <Text text={t('cronjob:charCount', { count: formData.prompt?.length || 0, max: 500 })} size="xs" color="textDim" style={themed($charCount)} />
+              <Text
+                text={t("cronjob:charCount", { count: formData.prompt?.length || 0, max: 500 })}
+                size="xs"
+                color="textDim"
+                style={themed($charCount)}
+              />
             </View>
 
             <View style={themed($field)}>
               <Text tx="cronjob:model" weight="medium" color="text" size="sm" />
               <TextInput
                 value={formData.model}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, model: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, model: text }))}
                 placeholder="qwen-coder (default)"
                 style={themed($input)}
                 placeholderTextColor={theme.colors.textDim}
@@ -201,7 +210,7 @@ export const CreateJobScreen: FC = () => {
             </View>
             <TextInput
               value={formData.message}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, message: text }))}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, message: text }))}
               placeholder="🔍 Running daily health check..."
               style={themed($multilineInput)}
               multiline
@@ -209,18 +218,19 @@ export const CreateJobScreen: FC = () => {
               maxLength={200}
               textAlignVertical="top"
             />
-            <Text text={t('cronjob:charCount', { count: formData.message?.length || 0, max: 200 })} size="xs" color="textDim" style={themed($charCount)} />
+            <Text
+              text={t("cronjob:charCount", { count: formData.message?.length || 0, max: 200 })}
+              size="xs"
+              color="textDim"
+              style={themed($charCount)}
+            />
           </View>
         )
     }
   }
 
   return (
-    <Screen
-      preset="scroll"
-      safeAreaEdges={["top", "bottom"]}
-      keyboardShouldPersistTaps="handled"
-    >
+    <Screen preset="scroll" safeAreaEdges={["top", "bottom"]} keyboardShouldPersistTaps="handled">
       {/* Header */}
       <View style={themed($header)}>
         <Pressable onPress={() => navigation.goBack()} style={themed($backButton)}>
@@ -237,13 +247,18 @@ export const CreateJobScreen: FC = () => {
           <Text tx="cronjob:taskName" weight="medium" color="text" size="sm" />
           <TextInput
             value={formData.name}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+            onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
             placeholder="Daily Shutdown"
             style={themed($input)}
             maxLength={50}
             placeholderTextColor={theme.colors.textDim}
           />
-          <Text text={t('cronjob:charCount', { count: formData.name.length, max: 50 })} size="xs" color="textDim" style={themed($charCount)} />
+          <Text
+            text={t("cronjob:charCount", { count: formData.name.length, max: 50 })}
+            size="xs"
+            color="textDim"
+            style={themed($charCount)}
+          />
         </View>
 
         {/* Task Type - Compact Dropdown */}
@@ -254,7 +269,13 @@ export const CreateJobScreen: FC = () => {
 
         {/* Task-Specific Fields */}
         <View style={themed($section)}>
-          <Text tx="cronjob:configuration" weight="semiBold" color="text" size="md" style={$sectionTitle} />
+          <Text
+            tx="cronjob:configuration"
+            weight="semiBold"
+            color="text"
+            size="md"
+            style={$sectionTitle}
+          />
           {renderTaskSpecificFields()}
         </View>
 
@@ -271,17 +292,23 @@ export const CreateJobScreen: FC = () => {
             scheduleType={formData.scheduleType}
             onScheduleTypeChange={handleScheduleTypeChange}
             time={formData.time}
-            onTimeChange={(time) => setFormData(prev => ({ ...prev, time }))}
+            onTimeChange={(time) => setFormData((prev) => ({ ...prev, time }))}
             weekday={formData.weekday}
-            onWeekdayChange={(day) => setFormData(prev => ({ ...prev, weekday: day }))}
+            onWeekdayChange={(day) => setFormData((prev) => ({ ...prev, weekday: day }))}
             dayOfMonth={formData.dayOfMonth}
-            onDayOfMonthChange={(day) => setFormData(prev => ({ ...prev, dayOfMonth: day }))}
+            onDayOfMonthChange={(day) => setFormData((prev) => ({ ...prev, dayOfMonth: day }))}
             intervalValue={formData.intervalValue}
-            onIntervalValueChange={(val) => setFormData(prev => ({ ...prev, intervalValue: val }))}
+            onIntervalValueChange={(val) =>
+              setFormData((prev) => ({ ...prev, intervalValue: val }))
+            }
             intervalUnit={formData.intervalUnit}
-            onIntervalUnitChange={(unit) => setFormData(prev => ({ ...prev, intervalUnit: unit }))}
+            onIntervalUnitChange={(unit) =>
+              setFormData((prev) => ({ ...prev, intervalUnit: unit }))
+            }
             cronExpression={formData.cronExpression}
-            onCronExpressionChange={(expr) => setFormData(prev => ({ ...prev, cronExpression: expr }))}
+            onCronExpressionChange={(expr) =>
+              setFormData((prev) => ({ ...prev, cronExpression: expr }))
+            }
           />
         </View>
 
@@ -298,14 +325,18 @@ export const CreateJobScreen: FC = () => {
             <View style={themed($checkboxRow)}>
               <Checkbox
                 value={formData.notifySuccess ?? true}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, notifySuccess: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, notifySuccess: value }))
+                }
               />
               <Text tx="cronjob:notifyOnCompletion" size="sm" color="text" style={$checkboxLabel} />
             </View>
             <View style={themed($checkboxRow)}>
               <Checkbox
                 value={formData.notifyFailure ?? true}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, notifyFailure: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, notifyFailure: value }))
+                }
               />
               <Text tx="cronjob:notifyOnFailure" size="sm" color="text" style={$checkboxLabel} />
             </View>

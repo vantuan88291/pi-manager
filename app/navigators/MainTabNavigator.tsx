@@ -22,7 +22,12 @@ interface TabConfig {
 
 const TABS: TabConfig[] = [
   { name: "Dashboard", component: DashboardScreen, icon: "speedometer", labelTx: "tabs:dashboard" },
-  { name: "Control", component: ControlMenuScreen, icon: "game-controller", labelTx: "tabs:control" },
+  {
+    name: "Control",
+    component: ControlMenuScreen,
+    icon: "game-controller",
+    labelTx: "tabs:control",
+  },
   { name: "Settings", component: SettingsScreen, icon: "settings", labelTx: "tabs:settings" },
 ]
 

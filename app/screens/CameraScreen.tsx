@@ -43,21 +43,50 @@ export const CameraScreen: FC<CameraScreenProps> = function CameraScreen({ navig
 
   const handleResolutionChange = (newRes: Resolution) => {
     setResolution(newRes)
-    if (isStreaming) { handleStop(); setTimeout(() => handleStart(), 500) }
+    if (isStreaming) {
+      handleStop()
+      setTimeout(() => handleStart(), 500)
+    }
   }
 
   const videoBg = theme.isDark ? "#0F172A" : "#1E293B"
 
   return (
     <Screen preset="fixed">
-      <Header titleTx="camera:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header
+        titleTx="camera:title"
+        titleMode="center"
+        leftIcon="back"
+        onLeftPress={() => navigation.goBack()}
+      />
 
       {/* Resolution Selector */}
       <View style={$segmentedContainer}>
-        <View style={[$segmentedControl, { backgroundColor: theme.isDark ? theme.colors.palette?.neutral800 : theme.colors.palette?.neutral200 }]}>
+        <View
+          style={[
+            $segmentedControl,
+            {
+              backgroundColor: theme.isDark
+                ? theme.colors.palette?.neutral800
+                : theme.colors.palette?.neutral200,
+            },
+          ]}
+        >
           {RESOLUTIONS.map((res) => (
-            <Pressable key={res.label} style={[$segmentButton, resolution === res.label && { backgroundColor: theme.colors.surface }]} onPress={() => handleResolutionChange(res.label)}>
-              <Text text={res.label} size="xs" weight="medium" color={resolution === res.label ? "text" : "textDim"} />
+            <Pressable
+              key={res.label}
+              style={[
+                $segmentButton,
+                resolution === res.label && { backgroundColor: theme.colors.surface },
+              ]}
+              onPress={() => handleResolutionChange(res.label)}
+            >
+              <Text
+                text={res.label}
+                size="xs"
+                weight="medium"
+                color={resolution === res.label ? "text" : "textDim"}
+              />
             </Pressable>
           ))}
         </View>
@@ -85,14 +114,29 @@ export const CameraScreen: FC<CameraScreenProps> = function CameraScreen({ navig
 
       {/* Action Buttons */}
       <View style={$actionButtons}>
-        <Button tx="camera:snapshot" preset="default" onPress={handleSnapshot} disabled={!isStreaming} style={$actionButton} />
-        <Button tx={isStreaming ? "camera:stop" : "camera:start"} preset={isStreaming ? "reversed" : "filled"} onPress={isStreaming ? handleStop : handleStart} style={$actionButton} />
+        <Button
+          tx="camera:snapshot"
+          preset="default"
+          onPress={handleSnapshot}
+          disabled={!isStreaming}
+          style={$actionButton}
+        />
+        <Button
+          tx={isStreaming ? "camera:stop" : "camera:start"}
+          preset={isStreaming ? "reversed" : "filled"}
+          onPress={isStreaming ? handleStop : handleStart}
+          style={$actionButton}
+        />
       </View>
 
       {/* Status Bar */}
       {isStreaming && (
         <View style={$statusBar}>
-          <Text text={`${resolution} @ ${stats.fps}fps | ${stats.bitrate}`} size="xs" color="textDim" />
+          <Text
+            text={`${resolution} @ ${stats.fps}fps | ${stats.bitrate}`}
+            size="xs"
+            color="textDim"
+          />
         </View>
       )}
     </Screen>
@@ -101,11 +145,34 @@ export const CameraScreen: FC<CameraScreenProps> = function CameraScreen({ navig
 
 const $segmentedContainer: ViewStyle = { paddingHorizontal: 16, paddingTop: 8 }
 const $segmentedControl: ViewStyle = { flexDirection: "row", borderRadius: 8, padding: 2 }
-const $segmentButton: ViewStyle = { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 6, flex: 1, alignItems: "center" }
-const $videoContainer: ViewStyle = { aspectRatio: 16 / 9, marginHorizontal: 16, marginTop: 8, borderRadius: 12, overflow: "hidden" }
+const $segmentButton: ViewStyle = {
+  paddingHorizontal: 12,
+  paddingVertical: 4,
+  borderRadius: 6,
+  flex: 1,
+  alignItems: "center",
+}
+const $videoContainer: ViewStyle = {
+  aspectRatio: 16 / 9,
+  marginHorizontal: 16,
+  marginTop: 8,
+  borderRadius: 12,
+  overflow: "hidden",
+}
 const $videoPlaceholder: ViewStyle = { flex: 1, alignItems: "center", justifyContent: "center" }
 const $streamText: TextStyle = { marginTop: 8 }
 const $offlineText: TextStyle = { marginTop: 8 }
-const $actionButtons: ViewStyle = { flexDirection: "row", gap: 12, paddingHorizontal: 16, marginTop: 16 }
+const $actionButtons: ViewStyle = {
+  flexDirection: "row",
+  gap: 12,
+  paddingHorizontal: 16,
+  marginTop: 16,
+}
 const $actionButton: ViewStyle = { flex: 1 }
-const $statusBar: ViewStyle = { position: "absolute", bottom: 16, left: 0, right: 0, alignItems: "center" }
+const $statusBar: ViewStyle = {
+  position: "absolute",
+  bottom: 16,
+  left: 0,
+  right: 0,
+  alignItems: "center",
+}

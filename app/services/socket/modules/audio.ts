@@ -1,12 +1,12 @@
 import { Socket } from "socket.io-client"
 import type { SocketModule } from "../types"
-import type { 
-  AudioStatus, 
+import type {
+  AudioStatus,
   AudioSetVolumeRequest,
   AudioSetVolumeResponse,
   AudioSetOutputRequest,
   AudioSetOutputResponse,
-  AudioTestSoundResponse
+  AudioTestSoundResponse,
 } from "../../../../shared/types/audio"
 
 type StatusCallback = (status: AudioStatus) => void
@@ -19,7 +19,7 @@ class AudioClientModule implements SocketModule {
 
   register(socket: Socket): void {
     this.socket = socket
-    
+
     socket.on("audio:status", (status: AudioStatus) => {
       this.cachedStatus = status
       this.statusCallbacks.forEach((cb) => cb(status))
@@ -51,7 +51,7 @@ class AudioClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       const request: AudioSetVolumeRequest = { volume }
       this.socket.emit("audio:set_volume", request, (response: AudioSetVolumeResponse) => {
         resolve(response)
@@ -66,7 +66,7 @@ class AudioClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       this.socket.emit("audio:toggle_mute", (response: AudioSetVolumeResponse) => {
         resolve(response)
       })
@@ -80,7 +80,7 @@ class AudioClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       const request: AudioSetOutputRequest = { deviceId }
       this.socket.emit("audio:set_output", request, (response: AudioSetOutputResponse) => {
         resolve(response)
@@ -95,7 +95,7 @@ class AudioClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       this.socket.emit("audio:test_sound", (response: AudioTestSoundResponse) => {
         resolve(response)
       })

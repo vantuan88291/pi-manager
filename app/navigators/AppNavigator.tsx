@@ -61,7 +61,7 @@ const AppStack = () => {
       {state.isAuthenticated ? (
         <>
           <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-          
+
           {/* Phase 2 Screens */}
           <Stack.Screen name="Wifi" component={WifiScreen} />
           <Stack.Screen name="Bluetooth" component={BluetoothScreen} />
