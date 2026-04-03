@@ -1,4 +1,4 @@
-import { deleteJsonApi, getJsonApi } from "@/services/api"
+import { deleteJsonApi, getJsonApi, postJsonApi } from "@/services/api"
 
 import type { FileInfo } from "../../shared/types/file-manager"
 
@@ -60,5 +60,27 @@ export async function fileManagerDeletePath(filePath: string): Promise<string | 
   const json = await deleteJsonApi<{ success: true; message?: string }>(
     `/api/files/delete?path=${q}`,
   )
+  return json.message
+}
+
+export async function fileManagerRenamePath(
+  filePath: string,
+  newName: string,
+): Promise<string | undefined> {
+  const json = await postJsonApi<{ success: true; message?: string }>("/api/files/rename", {
+    path: filePath,
+    newName,
+  })
+  return json.message
+}
+
+export async function fileManagerMovePath(
+  filePath: string,
+  destinationDir: string,
+): Promise<string | undefined> {
+  const json = await postJsonApi<{ success: true; message?: string }>("/api/files/move", {
+    path: filePath,
+    destinationDir,
+  })
   return json.message
 }

@@ -10,7 +10,12 @@ import type {
 } from "@/components/FileManager/types"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 import { postJsonApi, postMultipartApi, RestApiError } from "@/services/api"
-import { fileManagerDeletePath, fileManagerListDirectory } from "@/utils/fileManagerRest"
+import {
+  fileManagerDeletePath,
+  fileManagerListDirectory,
+  fileManagerMovePath,
+  fileManagerRenamePath,
+} from "@/utils/fileManagerRest"
 
 import type { FileInfo, QuickAccessPath } from "../../shared/types/file-manager"
 import { QUICK_ACCESS_PATHS } from "../../shared/types/file-manager"
@@ -45,6 +50,8 @@ export function useFileManager() {
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [createType, setCreateType] = useState<"folder" | "file">("folder")
   const [newItemName, setNewItemName] = useState("")
+  const [renameModal, setRenameModal] = useState<{ item: FileInfo; draft: string } | null>(null)
+  const [moveModal, setMoveModal] = useState<{ item: FileInfo; destinationDir: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const skipInitialFocusReload = useRef(true)
 
@@ -158,6 +165,18 @@ export function useFileManager() {
     setActionMenu({ visible: false, item: null })
   }, [])
 
+  const handleActionMenuRename = useCallback(() => {
+    const item = actionMenu.item
+    closeActionMenu()
+    if (item) setRenameModal({ item, draft: item.name })
+  }, [actionMenu.item, closeActionMenu])
+
+  const handleActionMenuMove = useCallback(() => {
+    const item = actionMenu.item
+    closeActionMenu()
+    if (item) setMoveModal({ item, destinationDir: "" })
+  }, [actionMenu.item, closeActionMenu])
+
   const handleActionMenuDelete = useCallback(() => {
     const item = actionMenu.item
     closeActionMenu()
@@ -254,6 +273,64 @@ export function useFileManager() {
     setCreateModalVisible(false)
   }, [])
 
+  const closeRenameModal = useCallback(() => {
+    setRenameModal(null)
+  }, [])
+
+  const closeMoveModal = useCallback(() => {
+    setMoveModal(null)
+  }, [])
+
+  const setRenameDraft = useCallback((text: string) => {
+    setRenameModal((prev) => (prev ? { ...prev, draft: text } : null))
+  }, [])
+
+  const setMoveDestinationDir = useCallback((text: string) => {
+    setMoveModal((prev) => (prev ? { ...prev, destinationDir: text } : null))
+  }, [])
+
+  const handleRenameConfirm = useCallback(async () => {
+    if (!renameModal) return
+    const name = renameModal.draft.trim()
+    if (!name) return
+
+    try {
+      await fileManagerRenamePath(renameModal.item.path, name)
+      setRenameModal(null)
+      handleRefresh()
+      showAlert(t("common:success"), t("fileManager:renamed"))
+    } catch (err: unknown) {
+      const msg =
+        err instanceof RestApiError
+          ? err.formatForUser()
+          : err instanceof Error
+            ? err.message
+            : t("fileManager:renameFailed")
+      showAlert(t("common:error"), msg)
+    }
+  }, [renameModal, handleRefresh, showAlert, t])
+
+  const handleMoveConfirm = useCallback(async () => {
+    if (!moveModal) return
+    const dir = moveModal.destinationDir.trim()
+    if (!dir) return
+
+    try {
+      await fileManagerMovePath(moveModal.item.path, dir)
+      setMoveModal(null)
+      handleRefresh()
+      showAlert(t("common:success"), t("fileManager:moved"))
+    } catch (err: unknown) {
+      const msg =
+        err instanceof RestApiError
+          ? err.formatForUser()
+          : err instanceof Error
+            ? err.message
+            : t("fileManager:moveFailed")
+      showAlert(t("common:error"), msg)
+    }
+  }, [moveModal, handleRefresh, showAlert, t])
+
   return {
     currentPath,
     items,
@@ -265,7 +342,17 @@ export function useFileManager() {
     dismissAlert,
     actionMenu,
     closeActionMenu,
+    handleActionMenuRename,
+    handleActionMenuMove,
     handleActionMenuDelete,
+    renameModal,
+    moveModal,
+    setRenameDraft,
+    setMoveDestinationDir,
+    closeRenameModal,
+    closeMoveModal,
+    handleRenameConfirm,
+    handleMoveConfirm,
     createModalVisible,
     createType,
     newItemName,

@@ -7,11 +7,15 @@ import { TextField } from "@/components/TextField"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 
+import type { FileInfo } from "../../../shared/types/file-manager"
+import { FileManagerItemActionsModal } from "./FileManagerItemActionsModal"
 import type { FileManagerActionMenuState, FileManagerAlertState } from "./types"
 
 export interface FileManagerModalsProps {
   actionMenu: FileManagerActionMenuState
   onCloseActionMenu: () => void
+  onActionMenuRename: () => void
+  onActionMenuMove: () => void
   onActionMenuDelete: () => void
   alertConfig: FileManagerAlertState
   onDismissAlert: () => void
@@ -21,11 +25,21 @@ export interface FileManagerModalsProps {
   onNewItemNameChange: (text: string) => void
   onCloseCreateModal: () => void
   onCreateConfirm: () => void
+  renameModal: { item: FileInfo; draft: string } | null
+  onRenameDraftChange: (text: string) => void
+  onCloseRenameModal: () => void
+  onRenameConfirm: () => void
+  moveModal: { item: FileInfo; destinationDir: string } | null
+  onMoveDestinationChange: (text: string) => void
+  onCloseMoveModal: () => void
+  onMoveConfirm: () => void
 }
 
 export const FileManagerModals: FC<FileManagerModalsProps> = ({
   actionMenu,
   onCloseActionMenu,
+  onActionMenuRename,
+  onActionMenuMove,
   onActionMenuDelete,
   alertConfig,
   onDismissAlert,
@@ -35,6 +49,14 @@ export const FileManagerModals: FC<FileManagerModalsProps> = ({
   onNewItemNameChange,
   onCloseCreateModal,
   onCreateConfirm,
+  renameModal,
+  onRenameDraftChange,
+  onCloseRenameModal,
+  onRenameConfirm,
+  moveModal,
+  onMoveDestinationChange,
+  onCloseMoveModal,
+  onMoveConfirm,
 }) => {
   const { t } = useTranslation()
   const { themed } = useAppTheme()
@@ -51,14 +73,13 @@ export const FileManagerModals: FC<FileManagerModalsProps> = ({
 
   return (
     <>
-      <AlertModal
+      <FileManagerItemActionsModal
         visible={actionMenu.visible && !!actionMenu.item}
-        title={actionMenu.item?.name || ""}
-        buttons={[
-          { text: t("common:cancel"), style: "cancel", onPress: onCloseActionMenu },
-          { text: t("common:delete"), style: "destructive", onPress: onActionMenuDelete },
-        ]}
+        item={actionMenu.item}
         onClose={onCloseActionMenu}
+        onRenamePress={onActionMenuRename}
+        onMovePress={onActionMenuMove}
+        onDeletePress={onActionMenuDelete}
       />
 
       <AlertModal
@@ -92,6 +113,53 @@ export const FileManagerModals: FC<FileManagerModalsProps> = ({
             onSubmitEditing={onCreateConfirm}
           />
         </View>
+      </AlertModal>
+
+      <AlertModal
+        visible={!!renameModal}
+        title={t("fileManager:renameTitle", { name: renameModal?.item.name ?? "" })}
+        message={t("fileManager:renameHint")}
+        buttons={[
+          { text: t("common:cancel"), style: "cancel", onPress: onCloseRenameModal },
+          { text: t("common:ok"), style: "default", onPress: onRenameConfirm },
+        ]}
+        onClose={onCloseRenameModal}
+      >
+        {!!renameModal && (
+          <View style={themed($inputContainer)}>
+            <TextField
+              value={renameModal.draft}
+              onChangeText={onRenameDraftChange}
+              placeholder={t("fileManager:renamePlaceholder")}
+              autoFocus
+              onSubmitEditing={onRenameConfirm}
+            />
+          </View>
+        )}
+      </AlertModal>
+
+      <AlertModal
+        visible={!!moveModal}
+        title={t("fileManager:moveTitle", { name: moveModal?.item.name ?? "" })}
+        message={t("fileManager:moveHint")}
+        buttons={[
+          { text: t("common:cancel"), style: "cancel", onPress: onCloseMoveModal },
+          { text: t("common:ok"), style: "default", onPress: onMoveConfirm },
+        ]}
+        onClose={onCloseMoveModal}
+      >
+        {!!moveModal && (
+          <View style={themed($inputContainer)}>
+            <TextField
+              value={moveModal.destinationDir}
+              onChangeText={onMoveDestinationChange}
+              placeholder={t("fileManager:movePlaceholder")}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onSubmitEditing={onMoveConfirm}
+            />
+          </View>
+        )}
       </AlertModal>
     </>
   )

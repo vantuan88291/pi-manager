@@ -65,6 +65,8 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
       <FileManagerModals
         actionMenu={fm.actionMenu}
         onCloseActionMenu={fm.closeActionMenu}
+        onActionMenuRename={fm.handleActionMenuRename}
+        onActionMenuMove={fm.handleActionMenuMove}
         onActionMenuDelete={fm.handleActionMenuDelete}
         alertConfig={fm.alertConfig}
         onDismissAlert={fm.dismissAlert}
@@ -74,6 +76,14 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
         onNewItemNameChange={fm.setNewItemName}
         onCloseCreateModal={fm.closeCreateModal}
         onCreateConfirm={fm.handleCreateConfirm}
+        renameModal={fm.renameModal}
+        onRenameDraftChange={fm.setRenameDraft}
+        onCloseRenameModal={fm.closeRenameModal}
+        onRenameConfirm={fm.handleRenameConfirm}
+        moveModal={fm.moveModal}
+        onMoveDestinationChange={fm.setMoveDestinationDir}
+        onCloseMoveModal={fm.closeMoveModal}
+        onMoveConfirm={fm.handleMoveConfirm}
       />
 
       <FileManagerWebUploadInput inputRef={fm.fileInputRef} onChange={fm.handleFileChange} />

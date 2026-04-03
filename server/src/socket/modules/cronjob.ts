@@ -1,12 +1,41 @@
 import { exec } from "node:child_process"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { promisify } from "node:util"
 import type { Server, Socket } from "socket.io"
 import type { ServerSocketModule } from "../types.js"
 import type {
   CronJob,
   CreateCronJobRequest,
-  CronJobListResponse,
+  UpdateCronJobRequest,
 } from "../../../../shared/types/cronjob.js"
+
+const JOBS_JSON_PATH = "/home/vantuan88291/.openclaw/cron/jobs.json"
+
+function mapJsonJobRowToCronJob(job: Record<string, unknown>): CronJob {
+  const j = job as {
+    id: string
+    name?: string
+    enabled?: boolean
+    schedule: CronJob["schedule"]
+    payload: CronJob["payload"]
+    sessionTarget?: CronJob["sessionTarget"]
+    createdAtMs: number
+    updatedAtMs: number
+    state?: { lastRunAtMs?: number; nextRunAtMs?: number }
+  }
+  return {
+    jobId: j.id,
+    name: j.name || "Untitled",
+    enabled: j.enabled ?? true,
+    schedule: j.schedule,
+    payload: j.payload,
+    sessionTarget: j.sessionTarget || "isolated",
+    createdAt: j.createdAtMs,
+    updatedAt: j.updatedAtMs,
+    lastRunAt: j.state?.lastRunAtMs,
+    nextRunAt: j.state?.nextRunAtMs,
+  }
+}
 
 const execAsync = promisify(exec)
 const jobsCache = new Map<string, CronJob>()
@@ -104,25 +133,11 @@ export const cronjobModule: ServerSocketModule = {
     socket.on("cronjob:list", async () => {
       try {
         console.log("[cronjob] list requested")
-        // Read directly from jobs.json for complete data including enabled status
-        const fs = await import('fs')
-        const jobsPath = '/home/vantuan88291/.openclaw/cron/jobs.json'
-        
-        if (fs.existsSync(jobsPath)) {
-          const data = JSON.parse(fs.readFileSync(jobsPath, 'utf8'))
-          const jobs = data.jobs?.map((job: any) => ({
-            jobId: job.id,
-            name: job.name || "Untitled",
-            enabled: job.enabled ?? true,
-            schedule: job.schedule,
-            payload: job.payload,
-            sessionTarget: job.sessionTarget || "isolated",
-            createdAt: job.createdAtMs,
-            updatedAt: job.updatedAtMs,
-            lastRunAt: job.state?.lastRunAtMs,
-            nextRunAt: job.state?.nextRunAtMs,
-          })) || []
-          jobs.forEach((job: CronJob) => jobsCache.set(job.jobId, job))
+        if (existsSync(JOBS_JSON_PATH)) {
+          const data = JSON.parse(readFileSync(JOBS_JSON_PATH, "utf8"))
+          const jobs: CronJob[] =
+            data.jobs?.map((job: Record<string, unknown>) => mapJsonJobRowToCronJob(job)) || []
+          jobs.forEach((job) => jobsCache.set(job.jobId, job))
           socket.emit("cronjob:list_response", { jobs })
         } else {
           socket.emit("cronjob:list_response", { jobs: [] })
@@ -130,6 +145,51 @@ export const cronjobModule: ServerSocketModule = {
       } catch (err: any) {
         console.error("[cronjob] list error:", err.message)
         socket.emit("cronjob:list_response", { jobs: [] })
+      }
+    })
+
+    socket.on("cronjob:update", async (request: UpdateCronJobRequest) => {
+      try {
+        const { jobId, patch } = request
+        if (!jobId) {
+          socket.emit("cronjob:error", { code: "UPDATE_FAILED", message: "Missing jobId" })
+          return
+        }
+        console.log("[cronjob] update:", jobId)
+        if (!existsSync(JOBS_JSON_PATH)) {
+          socket.emit("cronjob:error", { code: "UPDATE_FAILED", message: "jobs.json not found" })
+          return
+        }
+        const data = JSON.parse(readFileSync(JOBS_JSON_PATH, "utf8"))
+        const list: Record<string, unknown>[] = Array.isArray(data.jobs) ? data.jobs : []
+        const idx = list.findIndex((j) => (j as { id?: string }).id === jobId)
+        if (idx < 0) {
+          socket.emit("cronjob:error", { code: "NOT_FOUND", message: "Job not found" })
+          return
+        }
+        const existing = list[idx] as Record<string, unknown> & { id: string; state?: unknown }
+        const merged: Record<string, unknown> = {
+          ...existing,
+          id: existing.id,
+        }
+        if (patch.name !== undefined) merged.name = patch.name
+        if (patch.enabled !== undefined) merged.enabled = patch.enabled
+        if (patch.schedule !== undefined) merged.schedule = patch.schedule
+        if (patch.payload !== undefined) merged.payload = patch.payload
+        if (patch.sessionTarget !== undefined) merged.sessionTarget = patch.sessionTarget
+        if (patch.delivery !== undefined) merged.delivery = patch.delivery
+        merged.updatedAtMs = Date.now()
+        list[idx] = merged
+        data.jobs = list
+        writeFileSync(JOBS_JSON_PATH, `${JSON.stringify(data, null, 2)}\n`)
+        const job = mapJsonJobRowToCronJob(merged)
+        jobsCache.set(jobId, job)
+        io.emit("cronjob:updated", { job })
+        const jobs: CronJob[] = list.map((row) => mapJsonJobRowToCronJob(row))
+        io.emit("cronjob:list_response", { jobs })
+      } catch (err: any) {
+        console.error("[cronjob] update error:", err.message)
+        socket.emit("cronjob:error", { code: "UPDATE_FAILED", message: err.message })
       }
     })
 
