@@ -196,6 +196,7 @@ echo "   Bot menu auto-updated to: $TUNNEL_URL"
 echo "   Or manual: @BotFather → /setmenubutton → $TUNNEL_URL"
 echo "======================================="
 echo ""
-echo "💡 Note: Socket URL is detected at runtime (no hardcoded URLs)"
+echo "💡 Note: EXPO_PUBLIC_SOCKET_URL is synced above; expo export bakes it into the web bundle."
+echo "    REST and Socket both use getBackendBaseUrl() (same origin)."
 
 wait $SERVER_PID

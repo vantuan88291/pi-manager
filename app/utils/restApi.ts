@@ -1,16 +1,11 @@
+import { getBackendBaseUrl } from "@/utils/backendBaseUrl"
+
 /**
- * REST base URL aligned with Socket.IO (see SocketManager.getSocketUrl).
+ * REST base URL — same origin as Socket.IO (see getBackendBaseUrl).
  * Relative "/api/..." only works when the app is served from the Node server.
  */
 export function getRestApiBaseUrl(): string {
-  const fromEnv = process.env.EXPO_PUBLIC_SOCKET_URL?.trim()
-  if (fromEnv && fromEnv !== "__TUNNEL_URL__") {
-    return fromEnv.replace(/\/$/, "")
-  }
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin.replace(/\/$/, "")
-  }
-  return "http://localhost:3001"
+  return getBackendBaseUrl()
 }
 
 export function restApiUrl(path: string): string {
