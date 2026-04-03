@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 
-import { getJsonApi, postJsonApi } from "@/utils/restApi"
+import { getJsonApi, postJsonApi, RestApiError } from "@/utils/restApi"
 
 interface UseFileEditorParams {
   filePath: string
@@ -141,9 +141,15 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
         } else {
           setError("Failed to read file")
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!isMounted) return
-        setError(err.message || "Network error")
+        setError(
+          err instanceof RestApiError
+            ? err.formatForUser()
+            : err instanceof Error
+              ? err.message
+              : "Network error",
+        )
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -168,8 +174,14 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     try {
       await postJsonApi("/api/files/write", { path: filePath, content })
       setOriginalContent(content)
-    } catch (err: any) {
-      setError(err.message || "Network error")
+    } catch (err: unknown) {
+      setError(
+        err instanceof RestApiError
+          ? err.formatForUser()
+          : err instanceof Error
+            ? err.message
+            : "Network error",
+      )
     } finally {
       setSaving(false)
     }

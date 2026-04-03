@@ -11,7 +11,7 @@ import type {
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 import { useSocket } from "@/services/socket/SocketContext"
 import { fileManagerClientModule } from "@/services/socket/modules/file-manager"
-import { postJsonApi, postMultipartApi } from "@/utils/restApi"
+import { postJsonApi, postMultipartApi, RestApiError } from "@/utils/restApi"
 import type { FileInfo, QuickAccessPath } from "../../shared/types/file-manager"
 import { QUICK_ACCESS_PATHS } from "../../shared/types/file-manager"
 
@@ -206,8 +206,13 @@ export function useFileManager() {
         handleRefresh()
         showAlert(t("common:success"), t("fileManager:uploadSuccess", { name: file.name }))
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : t("fileManager:uploadFailed")
-        showAlert(t("common:error"), message)
+        const message =
+          err instanceof RestApiError
+            ? err.formatForUser()
+            : err instanceof Error
+              ? err.message
+              : t("fileManager:uploadFailed")
+        showAlert(t("fileManager:uploadErrorTitle"), message)
       } finally {
         setUploading(false)
       }

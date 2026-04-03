@@ -357,6 +357,7 @@ const vi: Translations = {
     upload: "Tải file lên",
     uploadSuccess: "Đã upload {{name}} thành công!",
     uploadFailed: "Không thể upload file",
+    uploadErrorTitle: "Upload thất bại",
     uploading: "Đang upload…",
     itemTypeFolder: "Thư mục",
     newFolder: "Thư mục mới",

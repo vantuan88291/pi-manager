@@ -355,6 +355,7 @@ const en = {
     upload: "Upload File",
     uploadSuccess: "Uploaded {{name}} successfully!",
     uploadFailed: "Failed to upload file",
+    uploadErrorTitle: "Upload failed",
     uploading: "Uploading…",
     itemTypeFolder: "Folder",
     newFolder: "New Folder",
