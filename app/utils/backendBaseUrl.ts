@@ -17,8 +17,7 @@ export function getBackendBaseUrl(): string {
       const origin = loc.origin.replace(/\/$/, "")
       const host = loc.hostname
       const port = loc.port
-      const isExpoMetroWeb =
-        (host === "localhost" || host === "127.0.0.1") && port === "8081"
+      const isExpoMetroWeb = (host === "localhost" || host === "127.0.0.1") && port === "8081"
 
       if (isExpoMetroWeb) {
         return "http://localhost:3001"

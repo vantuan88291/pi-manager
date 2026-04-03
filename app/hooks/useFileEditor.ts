@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 
-import { getJsonApi, postJsonApi, RestApiError } from "@/utils/restApi"
+import { getJsonApi, postJsonApi, RestApiError } from "@/services/api"
 
 interface UseFileEditorParams {
   filePath: string

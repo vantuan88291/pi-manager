@@ -353,6 +353,7 @@ const vi: Translations = {
     deleteWarning: "Hành động này không thể hoàn tác.",
     deleted: "Đã xóa thành công",
     deleteFailed: "Không thể xóa",
+    listFailed: "Không tải được thư mục",
     quickAccess: "Truy cập nhanh",
     upload: "Tải file lên",
     uploadSuccess: "Đã upload {{name}} thành công!",

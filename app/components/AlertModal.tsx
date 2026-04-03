@@ -53,8 +53,7 @@ export const AlertModal: FC<AlertModalProps> = ({
   }
 
   const isSingleButton = buttons.length === 1
-  const messageNeedsScroll =
-    !!message && (message.length > 200 || message.includes("\n"))
+  const messageNeedsScroll = !!message && (message.length > 200 || message.includes("\n"))
 
   return (
     <ActionModal
@@ -83,7 +82,13 @@ export const AlertModal: FC<AlertModalProps> = ({
             nestedScrollEnabled
             keyboardShouldPersistTaps="handled"
           >
-            <Text text={message} size="xs" color="text" style={themed($messageMultiline)} selectable />
+            <Text
+              text={message}
+              size="xs"
+              color="text"
+              style={themed($messageMultiline)}
+              selectable
+            />
           </ScrollView>
         ) : (
           <Text text={message} size="md" color="text" style={themed($message)} />

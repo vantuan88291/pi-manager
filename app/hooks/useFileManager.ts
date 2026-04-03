@@ -9,9 +9,9 @@ import type {
   FileManagerAlertState,
 } from "@/components/FileManager/types"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
-import { useSocket } from "@/services/socket/SocketContext"
-import { fileManagerClientModule } from "@/services/socket/modules/file-manager"
-import { postJsonApi, postMultipartApi, RestApiError } from "@/utils/restApi"
+import { postJsonApi, postMultipartApi, RestApiError } from "@/services/api"
+import { fileManagerDeletePath, fileManagerListDirectory } from "@/utils/fileManagerRest"
+
 import type { FileInfo, QuickAccessPath } from "../../shared/types/file-manager"
 import { QUICK_ACCESS_PATHS } from "../../shared/types/file-manager"
 
@@ -20,7 +20,6 @@ const DEFAULT_HOME_PATH = "/home/vantuan88291"
 export function useFileManager() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>()
   const { t } = useTranslation()
-  const { subscribeToModule, unsubscribeFromModule } = useSocket()
 
   const [currentPath, setCurrentPath] = useState(DEFAULT_HOME_PATH)
   const currentPathRef = useRef(currentPath)
@@ -47,6 +46,7 @@ export function useFileManager() {
   const [createType, setCreateType] = useState<"folder" | "file">("folder")
   const [newItemName, setNewItemName] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const skipInitialFocusReload = useRef(true)
 
   const showAlert = useCallback(
     (title: string, message?: string, buttons?: AlertButton[]) => {
@@ -60,56 +60,52 @@ export function useFileManager() {
     [t],
   )
 
-  useEffect(() => {
-    subscribeToModule("file-manager")
-
-    const unsubList = fileManagerClientModule.onList((result) => {
-      if (result.error) {
-        setError(result.error)
-      } else {
-        setItems(result.items || [])
+  const loadDirectory = useCallback(
+    async (dirPath: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const result = await fileManagerListDirectory(dirPath)
+        setItems(result.items)
         setError(null)
+      } catch (err: unknown) {
+        const message =
+          err instanceof RestApiError
+            ? err.formatForUser()
+            : err instanceof Error
+              ? err.message
+              : t("fileManager:listFailed")
+        setError(message)
+        setItems([])
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
-    })
+    },
+    [t],
+  )
 
-    const unsubDelete = fileManagerClientModule.onDelete((result) => {
-      if (result.success) {
-        fileManagerClientModule.listDirectory(currentPathRef.current)
-        showAlert(t("common:success"), result.message || t("fileManager:deleted"))
-      } else {
-        showAlert(t("common:error"), result.error || t("fileManager:deleteFailed"))
-      }
-    })
-
-    fileManagerClientModule.requestQuickAccess()
-    fileManagerClientModule.listDirectory(currentPathRef.current)
-
-    return () => {
-      unsubList()
-      unsubDelete()
-      unsubscribeFromModule("file-manager")
-    }
-  }, [subscribeToModule, unsubscribeFromModule, currentPath, showAlert, t])
+  useEffect(() => {
+    void loadDirectory(currentPath)
+  }, [currentPath, loadDirectory])
 
   useFocusEffect(
     useCallback(() => {
-      if (!loading) {
-        fileManagerClientModule.listDirectory(currentPathRef.current)
+      if (skipInitialFocusReload.current) {
+        skipInitialFocusReload.current = false
+        return
       }
-    }, [loading, currentPath]),
+      void loadDirectory(currentPathRef.current)
+    }, [loadDirectory]),
   )
 
   const handleRefresh = useCallback(() => {
-    fileManagerClientModule.listDirectory(currentPathRef.current)
-  }, [])
+    void loadDirectory(currentPathRef.current)
+  }, [loadDirectory])
 
   const handleNavigate = useCallback(
     (item: FileInfo) => {
       if (item.type === "directory") {
         setCurrentPath(item.path)
-        setLoading(true)
-        fileManagerClientModule.listDirectory(item.path)
       } else {
         navigation.navigate("FileEditor", {
           filePath: item.path,
@@ -135,13 +131,27 @@ export function useFileManager() {
             text: t("common:delete"),
             style: "destructive",
             onPress: () => {
-              fileManagerClientModule.deleteFileOrFolder(item.path)
+              void (async () => {
+                try {
+                  const message = await fileManagerDeletePath(item.path)
+                  await loadDirectory(currentPathRef.current)
+                  showAlert(t("common:success"), message || t("fileManager:deleted"))
+                } catch (err: unknown) {
+                  const msg =
+                    err instanceof RestApiError
+                      ? err.formatForUser()
+                      : err instanceof Error
+                        ? err.message
+                        : t("fileManager:deleteFailed")
+                  showAlert(t("common:error"), msg)
+                }
+              })()
             },
           },
         ],
       )
     },
-    [showAlert, t],
+    [loadDirectory, showAlert, t],
   )
 
   const closeActionMenu = useCallback(() => {
@@ -229,15 +239,11 @@ export function useFileManager() {
     const parent = path.substring(0, path.lastIndexOf("/"))
     if (parent) {
       setCurrentPath(parent)
-      setLoading(true)
-      fileManagerClientModule.listDirectory(parent)
     }
   }, [])
 
   const handleQuickAccess = useCallback((pathObj: QuickAccessPath) => {
     setCurrentPath(pathObj.path)
-    setLoading(true)
-    fileManagerClientModule.listDirectory(pathObj.path)
   }, [])
 
   const dismissAlert = useCallback(() => {

@@ -351,6 +351,7 @@ const en = {
     deleteWarning: "This action cannot be undone.",
     deleted: "Deleted successfully",
     deleteFailed: "Failed to delete",
+    listFailed: "Failed to load folder",
     quickAccess: "Quick Access",
     upload: "Upload File",
     uploadSuccess: "Uploaded {{name}} successfully!",

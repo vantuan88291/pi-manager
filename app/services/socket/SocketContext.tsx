@@ -8,7 +8,6 @@ import {
   bluetoothClientModule,
   audioClientModule,
   storageClientModule,
-  fileManagerClientModule,
 } from "./"
 import type { ConnectionState, TelegramUser } from "./types"
 
@@ -47,7 +46,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socketManager.registerModule(bluetoothClientModule)
     socketManager.registerModule(audioClientModule)
     socketManager.registerModule(storageClientModule)
-    socketManager.registerModule(fileManagerClientModule)
 
     // Subscribe to state changes
     const unsubscribe = socketManager.subscribe(setState)
