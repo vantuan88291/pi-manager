@@ -1,6 +1,7 @@
 import { create, type ApisauceInstance } from "apisauce"
 
 import Config from "@/config"
+import { socketManager } from "@/services/socket/SocketManager"
 import { getBackendBaseUrl } from "@/utils/backendBaseUrl"
 
 import type { ApiConfig } from "./types"
@@ -43,6 +44,11 @@ export class Api {
     })
 
     this.apisauce.axiosInstance.interceptors.request.use((req) => {
+      const token = socketManager.getSessionToken()
+      if (token && req.headers) {
+        const h = req.headers as Record<string, unknown>
+        h.Authorization = `Bearer ${token}`
+      }
       if (isFormDataLike(req.data) && req.headers) {
         const h = req.headers as Record<string, unknown>
         delete h["Content-Type"]

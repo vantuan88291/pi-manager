@@ -139,6 +139,11 @@ class SocketManager {
   getSocket(): Socket | null {
     return this.socket
   }
+
+  /** Same token the server expects on REST (`Authorization: Bearer`). */
+  getSessionToken(): string | null {
+    return this.sessionToken
+  }
 }
 
 export const socketManager = new SocketManager()

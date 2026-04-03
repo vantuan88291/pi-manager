@@ -1,7 +1,7 @@
-import crypto from "node:crypto"
 import { Server, Socket } from "socket.io"
 import { validateTelegramInitData } from "../auth/telegram.js"
 import { whitelist } from "../auth/whitelist.js"
+import { createSessionToken, getValidSession, saveSession } from "../auth/sessions.js"
 import { systemModule } from "./modules/system.js"
 import { wifiModule } from "./modules/wifi.js"
 import { bluetoothModule } from "./modules/bluetooth.js"
@@ -12,22 +12,6 @@ import { cronjobModule } from "./modules/cronjob.js"
 import type { ServerSocketModule } from "./types.js"
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ""
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
-
-interface Session {
-  user: { id: number; firstName: string; username?: string }
-  createdAt: number
-}
-
-const sessions = new Map<string, Session>()
-
-// Cleanup expired sessions every 10 minutes
-setInterval(() => {
-  const now = Date.now()
-  for (const [token, session] of sessions) {
-    if (now - session.createdAt > SESSION_TTL_MS) sessions.delete(token)
-  }
-}, 10 * 60 * 1000)
 
 const modules: ServerSocketModule[] = [
   systemModule,
@@ -45,8 +29,8 @@ export function setupSocketServer(io: Server) {
 
     // Path A: reconnect with session token
     if (sessionToken) {
-      const session = sessions.get(sessionToken)
-      if (session && Date.now() - session.createdAt < SESSION_TTL_MS) {
+      const session = getValidSession(sessionToken)
+      if (session) {
         socket.data.user = session.user
         socket.data.sessionToken = sessionToken
         return next()
@@ -61,27 +45,25 @@ export function setupSocketServer(io: Server) {
 
       if (!whitelist.isAllowed(user.id)) return next(new Error("ACCESS_DENIED"))
 
-      const token = crypto.randomUUID()
-      sessions.set(token, { user, createdAt: Date.now() })
+      const token = createSessionToken()
+      saveSession(token, { user, createdAt: Date.now() })
       socket.data.user = user
       socket.data.sessionToken = token
       return next()
     }
 
     // Path C: No initData and no sessionToken = Dev mode (browser testing)
-    // Allow connection without auth if DEBUG=true
     const isDebug = process.env.DEBUG === "true"
     if (isDebug) {
       console.log("[socket] DEBUG mode: allowing browser connection without auth")
       const devUser = { id: 0, firstName: "Developer", username: "dev" }
-      const token = crypto.randomUUID()
-      sessions.set(token, { user: devUser, createdAt: Date.now() })
+      const token = createSessionToken()
+      saveSession(token, { user: devUser, createdAt: Date.now() })
       socket.data.user = devUser
       socket.data.sessionToken = token
       return next()
     }
-    
-    // Reject connections without auth in production
+
     console.log("[socket] connection rejected: no auth provided")
     return next(new Error("AUTH_REQUIRED"))
   })
@@ -91,13 +73,10 @@ export function setupSocketServer(io: Server) {
     const { user, sessionToken } = socket.data
     console.log(`[socket] connected: ${user.firstName} (${user.id})`)
 
-    // Send auth success with session token
     socket.emit("auth:success", { user, sessionToken })
 
-    // Register all modules
     modules.forEach((mod) => mod.register(socket, io))
 
-    // Generic subscribe / unsubscribe routing
     socket.on("module:subscribe", ({ module: name }: { module: string }) => {
       const mod = modules.find((m) => m.name === name)
       if (mod) {
