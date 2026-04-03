@@ -187,8 +187,9 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
             <Text color="textDim" style={themed($loadingCaption)} tx="common:loading" />
           </View>
         ) : error ? (
-          <View style={themed($centered)}>
-            <Icon font="Ionicons" icon="alert-circle" size={32} color={theme.colors.error} />
+          <View style={themed($errorState)}>
+            <Icon font="Ionicons" icon="alert-circle" size={40} color={theme.colors.error} />
+            <Text color="text" size="sm" style={themed($errorMessage)} text={error} />
           </View>
         ) : preferPlainEditor ? (
           <View style={themed([$editorWrapper, { backgroundColor: editorBgColor }])}>
@@ -269,9 +270,19 @@ const $loadingCaption: ThemedStyle<TextStyle> = ({ spacing }) => ({
   marginTop: spacing.md,
 })
 
-const $centered: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  padding: spacing.xl,
+const $errorState: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flex: 1,
+  minHeight: 280,
+  paddingHorizontal: spacing.lg,
+  paddingTop: spacing.xl,
   alignItems: "center",
+})
+
+const $errorMessage: ThemedStyle<TextStyle> = ({ spacing }) => ({
+  marginTop: spacing.md,
+  textAlign: "center",
+  width: "100%",
+  maxWidth: 520,
 })
 
 const $mediaContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
