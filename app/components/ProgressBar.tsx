@@ -15,12 +15,7 @@ interface ProgressBarProps {
   style?: ViewStyle
 }
 
-export const ProgressBar: FC<ProgressBarProps> = ({
-  value,
-  color,
-  height = 6,
-  style,
-}) => {
+export const ProgressBar: FC<ProgressBarProps> = ({ value, color, height = 6, style }) => {
   const { theme } = useAppTheme()
   const barColor = color ?? theme.colors.tint
   const clampedValue = Math.max(0, Math.min(100, value))

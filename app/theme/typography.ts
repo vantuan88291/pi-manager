@@ -53,7 +53,7 @@ const fonts = {
 
 /**
  * Typography size presets for Pi Manager
- * 
+ *
  * These semantic sizes should be used consistently across the app.
  * Each size maps to a specific font size and weight for a consistent look.
  */

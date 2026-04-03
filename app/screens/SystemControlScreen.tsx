@@ -20,7 +20,10 @@ import { useSocket } from "@/services/socket/SocketContext"
 import { systemClientModule } from "@/services/socket/modules/system"
 import type { ProcessInfo } from "../../shared/types/system"
 
-type SystemControlScreenProps = import("@react-navigation/native").NativeStackScreenProps<AppStackParamList, "SystemControl">
+type SystemControlScreenProps = import("@react-navigation/native").NativeStackScreenProps<
+  AppStackParamList,
+  "SystemControl"
+>
 
 interface ProcessListItemProps {
   process: ProcessInfo
@@ -32,11 +35,22 @@ const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }
   const { themed, theme } = useAppTheme()
   const { t } = useTranslation()
 
-  const cpuColor = process.cpu > 70 ? theme.colors.error : process.cpu > 40 ? theme.colors.warning : theme.colors.success
-  const memColor = process.memory > 70 ? theme.colors.error : process.memory > 40 ? theme.colors.warning : theme.colors.success
-  
+  const cpuColor =
+    process.cpu > 70
+      ? theme.colors.error
+      : process.cpu > 40
+        ? theme.colors.warning
+        : theme.colors.success
+  const memColor =
+    process.memory > 70
+      ? theme.colors.error
+      : process.memory > 40
+        ? theme.colors.warning
+        : theme.colors.success
+
   // Check if process is critical (shouldn't be killed)
-  const isCritical = process.name === 'node' || process.name === 'openclaw-gateway' || process.name === 'cloudflared'
+  const isCritical =
+    process.name === "node" || process.name === "openclaw-gateway" || process.name === "cloudflared"
 
   return (
     <View style={themed($processItem)}>
@@ -47,9 +61,7 @@ const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }
               <Text weight="semiBold" size="md" color="text" numberOfLines={1}>
                 {process.name}
               </Text>
-              {isCritical && (
-                <Badge text="System" color={theme.colors.warning} size="sm" />
-              )}
+              {isCritical && <Badge text="System" color={theme.colors.warning} size="sm" />}
             </View>
             <Text size="xs" color="textDim" numberOfLines={1}>
               PID: {process.pid} • {process.user}
@@ -58,42 +70,54 @@ const ProcessListItem: FC<ProcessListItemProps> = ({ process, onKill, disabled }
               {process.command}
             </Text>
           </View>
-          
+
           <Button
             preset="default"
             size="sm"
             onPress={() => onKill(process)}
             disabled={disabled || isCritical}
-            style={[{ backgroundColor: isCritical ? theme.colors.border + "30" : theme.colors.error + "15" }, $killButton]}
+            style={[
+              {
+                backgroundColor: isCritical
+                  ? theme.colors.border + "30"
+                  : theme.colors.error + "15",
+              },
+              $killButton,
+            ]}
           >
-            <Icon font="Ionicons" icon="close" size={16} color={isCritical ? theme.colors.textDim : theme.colors.error} />
+            <Icon
+              font="Ionicons"
+              icon="close"
+              size={16}
+              color={isCritical ? theme.colors.textDim : theme.colors.error}
+            />
           </Button>
         </View>
 
         {/* CPU Progress Bar */}
         <View style={themed($progressSection)}>
           <View style={$progressLabel}>
-            <Text size="xs" weight="medium" color="text">CPU</Text>
-            <Text size="xs" weight="semiBold" color={cpuColor}>{(process.cpu ?? 0).toFixed(1)}%</Text>
+            <Text size="xs" weight="medium" color="text">
+              CPU
+            </Text>
+            <Text size="xs" weight="semiBold" color={cpuColor}>
+              {(process.cpu ?? 0).toFixed(1)}%
+            </Text>
           </View>
-          <ProgressBar
-            value={process.cpu ?? 0}
-            color={cpuColor}
-            height={8}
-          />
+          <ProgressBar value={process.cpu ?? 0} color={cpuColor} height={8} />
         </View>
 
         {/* Memory Progress Bar */}
         <View style={themed($progressSection)}>
           <View style={$progressLabel}>
-            <Text size="xs" weight="medium" color="text">RAM</Text>
-            <Text size="xs" weight="semiBold" color={memColor}>{(process.memory ?? 0).toFixed(1)}%</Text>
+            <Text size="xs" weight="medium" color="text">
+              RAM
+            </Text>
+            <Text size="xs" weight="semiBold" color={memColor}>
+              {(process.memory ?? 0).toFixed(1)}%
+            </Text>
           </View>
-          <ProgressBar
-            value={process.memory ?? 0}
-            color={memColor}
-            height={8}
-          />
+          <ProgressBar value={process.memory ?? 0} color={memColor} height={8} />
         </View>
       </View>
     </View>
@@ -132,7 +156,10 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
     const unsubKill = systemClientModule.onProcessKilled((result) => {
       setActionInProgress(null)
       if (result.success) {
-        showAlert(t("common:success"), t("systemControl:processKilled", { name: result.name || `PID ${result.pid}` }))
+        showAlert(
+          t("common:success"),
+          t("systemControl:processKilled", { name: result.name || `PID ${result.pid}` }),
+        )
       } else {
         showAlert(t("common:error"), result.message || t("systemControl:killFailed"))
       }
@@ -147,7 +174,11 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
     }
   }, [subscribeToModule, unsubscribeFromModule])
 
-  const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: "OK" }]) => {
+  const showAlert = (
+    title: string,
+    message?: string,
+    buttons: AlertButton[] = [{ text: "OK" }],
+  ) => {
     setAlertConfig({ visible: true, title, message, buttons })
   }
 
@@ -158,65 +189,53 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
   }
 
   const handleReboot = () => {
-    showAlert(
-      t("systemControl:confirmReboot"),
-      undefined,
-      [
-        { text: t("common:cancel"), style: "cancel" },
-        {
-          text: t("common:confirm"),
-          style: "destructive",
-          onPress: () => {
-            setActionInProgress("reboot")
-            systemClientModule.requestReboot()
-            setTimeout(() => {
-              setActionInProgress(null)
-              showAlert(t("common:success"), t("systemControl:rebooting"))
-            }, 2500)
-          },
+    showAlert(t("systemControl:confirmReboot"), undefined, [
+      { text: t("common:cancel"), style: "cancel" },
+      {
+        text: t("common:confirm"),
+        style: "destructive",
+        onPress: () => {
+          setActionInProgress("reboot")
+          systemClientModule.requestReboot()
+          setTimeout(() => {
+            setActionInProgress(null)
+            showAlert(t("common:success"), t("systemControl:rebooting"))
+          }, 2500)
         },
-      ]
-    )
+      },
+    ])
   }
 
   const handleShutdown = () => {
-    showAlert(
-      t("systemControl:confirmShutdown"),
-      undefined,
-      [
-        { text: t("common:cancel"), style: "cancel" },
-        {
-          text: t("common:confirm"),
-          style: "destructive",
-          onPress: () => {
-            setActionInProgress("shutdown")
-            systemClientModule.requestShutdown()
-            setTimeout(() => {
-              setActionInProgress(null)
-              showAlert(t("common:success"), t("systemControl:shuttingDown"))
-            }, 2500)
-          },
+    showAlert(t("systemControl:confirmShutdown"), undefined, [
+      { text: t("common:cancel"), style: "cancel" },
+      {
+        text: t("common:confirm"),
+        style: "destructive",
+        onPress: () => {
+          setActionInProgress("shutdown")
+          systemClientModule.requestShutdown()
+          setTimeout(() => {
+            setActionInProgress(null)
+            showAlert(t("common:success"), t("systemControl:shuttingDown"))
+          }, 2500)
         },
-      ]
-    )
+      },
+    ])
   }
 
   const handleKillProcess = (process: ProcessInfo) => {
-    showAlert(
-      t("systemControl:confirmKill", { name: process.name, pid: process.pid }),
-      undefined,
-      [
-        { text: t("common:cancel"), style: "cancel" },
-        {
-          text: t("common:confirm"),
-          style: "destructive",
-          onPress: () => {
-            setActionInProgress(`kill-${process.pid}`)
-            systemClientModule.requestKillProcess(process.pid, process.name)
-          },
+    showAlert(t("systemControl:confirmKill", { name: process.name, pid: process.pid }), undefined, [
+      { text: t("common:cancel"), style: "cancel" },
+      {
+        text: t("common:confirm"),
+        style: "destructive",
+        onPress: () => {
+          setActionInProgress(`kill-${process.pid}`)
+          systemClientModule.requestKillProcess(process.pid, process.name)
         },
-      ]
-    )
+      },
+    ])
   }
 
   return (
@@ -226,7 +245,11 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
         refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
       }}
     >
-      <Header titleTx="systemControl:title" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header
+        titleTx="systemControl:title"
+        leftIcon="back"
+        onLeftPress={() => navigation.goBack()}
+      />
 
       {/* Content wrapper with padding */}
       <View style={themed($contentWrapper)}>
@@ -234,85 +257,90 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
         <Card
           headingTx="systemControl:actions"
           style={themed($card)}
-        ContentComponent={
-          <View style={$actionButtons}>
-            <Button
-              preset="default"
-              style={[{ flex: 1, borderColor: theme.colors.error + "40", borderWidth: 1 }, themed($actionButton)]}
-              onPress={handleReboot}
-              disabled={actionInProgress !== null}
-              textStyle={{ color: theme.colors.error }}
-            >
-              <Icon font="Ionicons" icon="refresh" size={20} color={theme.colors.error} />
-              <Text weight="medium" style={{ marginLeft: 8, color: theme.colors.error }}>
-                {t("systemControl:reboot")}
-              </Text>
-            </Button>
-            <Button
-              preset="default"
-              style={[{ flex: 1, borderColor: theme.colors.error + "40", borderWidth: 1 }, themed($actionButton)]}
-              onPress={handleShutdown}
-              disabled={actionInProgress !== null}
-              textStyle={{ color: theme.colors.error }}
-            >
-              <Icon font="Ionicons" icon="power" size={20} color={theme.colors.error} />
-              <Text weight="medium" style={{ marginLeft: 8, color: theme.colors.error }}>
-                {t("systemControl:shutdown")}
-              </Text>
-            </Button>
-          </View>
-        }
-      />
+          ContentComponent={
+            <View style={$actionButtons}>
+              <Button
+                preset="default"
+                style={[
+                  { flex: 1, borderColor: theme.colors.error + "40", borderWidth: 1 },
+                  themed($actionButton),
+                ]}
+                onPress={handleReboot}
+                disabled={actionInProgress !== null}
+                textStyle={{ color: theme.colors.error }}
+              >
+                <Icon font="Ionicons" icon="refresh" size={20} color={theme.colors.error} />
+                <Text weight="medium" style={{ marginLeft: 8, color: theme.colors.error }}>
+                  {t("systemControl:reboot")}
+                </Text>
+              </Button>
+              <Button
+                preset="default"
+                style={[
+                  { flex: 1, borderColor: theme.colors.error + "40", borderWidth: 1 },
+                  themed($actionButton),
+                ]}
+                onPress={handleShutdown}
+                disabled={actionInProgress !== null}
+                textStyle={{ color: theme.colors.error }}
+              >
+                <Icon font="Ionicons" icon="power" size={20} color={theme.colors.error} />
+                <Text weight="medium" style={{ marginLeft: 8, color: theme.colors.error }}>
+                  {t("systemControl:shutdown")}
+                </Text>
+              </Button>
+            </View>
+          }
+        />
 
-      {/* Process List Card */}
-      <Card
-        style={themed($card)}
-        ContentComponent={
-          <View>
-            <SectionHeader
-              titleTx="systemControl:processes"
-              rightAction={
-                <Button
-                  preset="default"
-                  size="sm"
-                  onPress={() => {
-                    setLoading(true)
-                    systemClientModule.requestProcessList()
-                  }}
-                  disabled={loading || actionInProgress !== null}
-                  style={{ borderColor: theme.colors.border, borderWidth: 1 }}
-                >
-                  <Icon font="Ionicons" icon="refresh" size={16} />
-                </Button>
-              }
-            />
+        {/* Process List Card */}
+        <Card
+          style={themed($card)}
+          ContentComponent={
+            <View>
+              <SectionHeader
+                titleTx="systemControl:processes"
+                rightAction={
+                  <Button
+                    preset="default"
+                    size="sm"
+                    onPress={() => {
+                      setLoading(true)
+                      systemClientModule.requestProcessList()
+                    }}
+                    disabled={loading || actionInProgress !== null}
+                    style={{ borderColor: theme.colors.border, borderWidth: 1 }}
+                  >
+                    <Icon font="Ionicons" icon="refresh" size={16} />
+                  </Button>
+                }
+              />
 
-            {loading ? (
-              <View style={themed($centered)}>
-                <Text color="textDim">{t("systemControl:searchingProcesses")}</Text>
-              </View>
-            ) : processes.length === 0 ? (
-              <View style={themed($centered)}>
-                <Text color="textDim">{t("systemControl:noProcesses")}</Text>
-              </View>
-            ) : (
-              <View style={{ marginTop: theme.spacing.sm }}>
-                {processes.map((process, index) => (
-                  <View key={process.pid}>
-                    <ProcessListItem
-                      process={process}
-                      onKill={handleKillProcess}
-                      disabled={actionInProgress !== null}
-                    />
-                    {index < processes.length - 1 && <View style={themed($separator)} />}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        }
-      />
-
+              {loading ? (
+                <View style={themed($centered)}>
+                  <Text color="textDim">{t("systemControl:searchingProcesses")}</Text>
+                </View>
+              ) : processes.length === 0 ? (
+                <View style={themed($centered)}>
+                  <Text color="textDim">{t("systemControl:noProcesses")}</Text>
+                </View>
+              ) : (
+                <View style={{ marginTop: theme.spacing.sm }}>
+                  {processes.map((process, index) => (
+                    <View key={process.pid}>
+                      <ProcessListItem
+                        process={process}
+                        onKill={handleKillProcess}
+                        disabled={actionInProgress !== null}
+                      />
+                      {index < processes.length - 1 && <View style={themed($separator)} />}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          }
+        />
       </View>
 
       <AlertModal

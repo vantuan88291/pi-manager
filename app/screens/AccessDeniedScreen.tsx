@@ -27,12 +27,7 @@ export const AccessDeniedScreen: FC = function AccessDeniedScreen() {
 
         <Text tx="accessDenied:title" size="xl" weight="bold" color="text" style={themed($title)} />
 
-        <Text
-          tx="accessDenied:message"
-          size="md"
-          color="textDim"
-          style={themed($body)}
-        />
+        <Text tx="accessDenied:message" size="md" color="textDim" style={themed($body)} />
 
         <Button tx="common:retry" preset="default" onPress={handleRetry} style={$button} />
       </View>
@@ -40,14 +35,21 @@ export const AccessDeniedScreen: FC = function AccessDeniedScreen() {
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({ 
-  flex: 1, 
-  justifyContent: "center", 
-  alignItems: "center", 
-  paddingHorizontal: spacing.xl, 
-  paddingTop: spacing.xl 
+const $container: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  paddingHorizontal: spacing.xl,
+  paddingTop: spacing.xl,
 })
 const $iconContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginBottom: spacing.xl })
-const $title: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginBottom: spacing.md, textAlign: "center" })
-const $body: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginBottom: spacing.xl, textAlign: "center", lineHeight: 24 })
+const $title: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.md,
+  textAlign: "center",
+})
+const $body: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.xl,
+  textAlign: "center",
+  lineHeight: 24,
+})
 const $button: ViewStyle = { minWidth: 120 }

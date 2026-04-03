@@ -61,17 +61,9 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
       <Pressable
         key={type}
         onPress={() => onSelect(type)}
-        style={[
-          themed($segment),
-          isSelected && themed($segmentSelected),
-        ]}
+        style={[themed($segment), isSelected && themed($segmentSelected)]}
       >
-        <Text
-          text={label}
-          size="xs"
-          weight="medium"
-          color={isSelected ? "tint" : "textDim"}
-        />
+        <Text text={label} size="xs" weight="medium" color={isSelected ? "tint" : "textDim"} />
       </Pressable>
     )
   }
@@ -80,7 +72,9 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
     <View style={themed($container)}>
       {/* iOS-style Segmented Control */}
       <View style={themed($segmentedControl)}>
-        {SCHEDULE_OPTIONS.map((type) => renderSegment(type, type.charAt(0).toUpperCase() + type.slice(1)))}
+        {SCHEDULE_OPTIONS.map((type) =>
+          renderSegment(type, type.charAt(0).toUpperCase() + type.slice(1)),
+        )}
       </View>
 
       {/* Schedule Content */}
@@ -200,7 +194,13 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
         {/* Custom Cron */}
         {selectedType === "custom" && (
           <View style={themed($cronContainer)}>
-            <Text text="Cron Expression" weight="medium" color="text" size="sm" style={$cronLabel} />
+            <Text
+              text="Cron Expression"
+              weight="medium"
+              color="text"
+              size="sm"
+              style={$cronLabel}
+            />
             <TextInput
               value={cronExpression}
               onChangeText={onCronExpressionChange}
@@ -208,7 +208,13 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
               style={themed($cronInput)}
               placeholderTextColor={theme.colors.textDim}
             />
-            <Text text="Quick picks:" weight="medium" color="textDim" size="xs" style={$quickPickLabel} />
+            <Text
+              text="Quick picks:"
+              weight="medium"
+              color="textDim"
+              size="xs"
+              style={$quickPickLabel}
+            />
             <View style={themed($quickPicks)}>
               {[
                 { label: "Hourly", expr: "0 * * * *" },

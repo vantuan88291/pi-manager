@@ -22,33 +22,37 @@ interface FeatureCardProps extends Omit<PressableProps, "style"> {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
-export const FeatureCard: FC<FeatureCardProps> = ({ 
+export const FeatureCard: FC<FeatureCardProps> = ({
   title,
   titleTx,
-  subtitle, 
+  subtitle,
   subtitleTx,
   subtitleParams,
-  icon, 
-  accentColor, 
-  danger, 
-  style, 
-  onPress, 
-  ...rest 
+  icon,
+  accentColor,
+  danger,
+  style,
+  onPress,
+  ...rest
 }) => {
   const { themed, theme } = useAppTheme()
   const opacity = useSharedValue(1)
 
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
 
-  const handlePressIn = () => { opacity.value = withTiming(0.7, { duration: 100 }) }
-  const handlePressOut = () => { opacity.value = withTiming(1, { duration: 100 }) }
+  const handlePressIn = () => {
+    opacity.value = withTiming(0.7, { duration: 100 })
+  }
+  const handlePressOut = () => {
+    opacity.value = withTiming(1, { duration: 100 })
+  }
 
   return (
-    <AnimatedPressable 
-      onPress={onPress} 
-      onPressIn={handlePressIn} 
-      onPressOut={handlePressOut} 
-      style={[themed($container), animatedStyle, style]} 
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[themed($container), animatedStyle, style]}
       {...rest}
     >
       <View style={[$iconBadge, { backgroundColor: icon.badgeBg }]}>
@@ -56,31 +60,38 @@ export const FeatureCard: FC<FeatureCardProps> = ({
       </View>
       <Text text={title} tx={titleTx} size="sm" weight="semiBold" style={themed($title)} />
       {(subtitle || subtitleTx) && (
-        <Text 
-          text={subtitle} 
-          tx={subtitleTx} 
+        <Text
+          text={subtitle}
+          tx={subtitleTx}
           txOptions={subtitleParams}
-          size="xs" 
-          color="textDim" 
-          style={themed($subtitle)} 
+          size="xs"
+          color="textDim"
+          style={themed($subtitle)}
         />
       )}
     </AnimatedPressable>
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ 
-  backgroundColor: colors.surface, 
-  borderRadius: spacing.lg, 
-  borderWidth: 1, 
-  borderColor: colors.border, 
-  paddingVertical: spacing.xl, 
-  paddingHorizontal: spacing.lg, 
-  height: 150, 
-  overflow: "hidden", 
-  alignItems: "center", 
-  justifyContent: "center" 
+const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.surface,
+  borderRadius: spacing.lg,
+  borderWidth: 1,
+  borderColor: colors.border,
+  paddingVertical: spacing.xl,
+  paddingHorizontal: spacing.lg,
+  height: 150,
+  overflow: "hidden",
+  alignItems: "center",
+  justifyContent: "center",
 })
-const $iconBadge: ViewStyle = { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 12 }
+const $iconBadge: ViewStyle = {
+  width: 56,
+  height: 56,
+  borderRadius: 16,
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: 12,
+}
 const $title: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text })
 const $subtitle: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.textDim, marginTop: 4 })

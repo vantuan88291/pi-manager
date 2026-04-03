@@ -7,6 +7,7 @@ import express from "express"
 import { Server } from "socket.io"
 import { setupSocketServer } from "./socket/index.js"
 import filesRouter from "./routes/files.js"
+import { requireApiSession } from "./middleware/requireApiSession.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -44,11 +45,11 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() })
 })
 
-// File operations API
-app.use("/api/files", filesRouter)
+// File operations API (requires same Bearer session as Socket.IO)
+app.use("/api/files", requireApiSession, filesRouter)
 
-// System reboot endpoint (requires sudo)
-app.post("/api/system/reboot", async (_req, res) => {
+// System reboot endpoint (requires sudo + session)
+app.post("/api/system/reboot", requireApiSession, async (_req, res) => {
   console.log("[api] reboot requested")
   
   const { spawn } = await import("node:child_process")

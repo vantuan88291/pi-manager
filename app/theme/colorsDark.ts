@@ -1,6 +1,6 @@
 /**
  * Pi Manager Dark Theme Colors
- * 
+ *
  * Semantic tokens for IoT dashboard with modern, vibrant palette.
  * Dark-first design - this is the default theme for Pi Manager.
  */

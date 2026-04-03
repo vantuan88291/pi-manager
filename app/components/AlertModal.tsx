@@ -1,7 +1,8 @@
 import { FC, ReactNode } from "react"
-import { View, ViewStyle, Pressable } from "react-native"
+import { View, ViewStyle, Pressable, ScrollView } from "react-native"
 
 import { useAppTheme } from "@/theme/context"
+import type { ThemedStyle } from "@/theme/types"
 
 import { Text } from "./Text"
 import { Button } from "./Button"
@@ -52,6 +53,7 @@ export const AlertModal: FC<AlertModalProps> = ({
   }
 
   const isSingleButton = buttons.length === 1
+  const messageNeedsScroll = !!message && (message.length > 200 || message.includes("\n"))
 
   return (
     <ActionModal
@@ -73,14 +75,24 @@ export const AlertModal: FC<AlertModalProps> = ({
         </View>
       }
     >
-      {message && (
-        <Text
-          text={message}
-          size="md"
-          color="text"
-          style={themed($message)}
-        />
-      )}
+      {!!message &&
+        (messageNeedsScroll ? (
+          <ScrollView
+            style={themed($messageScroll)}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text
+              text={message}
+              size="xs"
+              color="text"
+              style={themed($messageMultiline)}
+              selectable
+            />
+          </ScrollView>
+        ) : (
+          <Text text={message} size="md" color="text" style={themed($message)} />
+        ))}
       {children}
     </ActionModal>
   )
@@ -113,4 +125,14 @@ const $message: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   textAlign: "center",
   lineHeight: 24,
   paddingHorizontal: spacing.sm,
+})
+
+const $messageScroll: ThemedStyle<ViewStyle> = () => ({
+  maxHeight: 280,
+})
+
+const $messageMultiline: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  textAlign: "left",
+  lineHeight: 20,
+  paddingHorizontal: spacing.xs,
 })

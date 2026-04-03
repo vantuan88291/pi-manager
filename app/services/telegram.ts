@@ -73,6 +73,16 @@ export function isWebBrowser(): boolean {
   return !isTelegramMiniApp()
 }
 
+/**
+ * When true, web can open the app in a normal browser: socket connects without Telegram initData
+ * and TelegramAuthScreen does not block. Requires server dev mode (empty TELEGRAM_BOT_TOKEN) or
+ * equivalent backend that accepts unauthenticated connections — never ship true to production builds
+ * that expose the Pi to the internet.
+ */
+export function allowAccessWithoutTelegram(): boolean {
+  return process.env.EXPO_PUBLIC_DEBUG === "true"
+}
+
 export function getTelegramUser(): TelegramUser | null {
   return getTelegramWebApp()?.initDataUnsafe?.user ?? null
 }
@@ -87,7 +97,7 @@ export function getTelegramDebugInfo(): {
   colorScheme: string
 } {
   const tg = window.Telegram?.WebApp
-  
+
   return {
     hasWindowTelegram: !!window.Telegram,
     hasWebApp: !!tg,

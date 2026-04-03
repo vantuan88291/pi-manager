@@ -37,7 +37,7 @@ export const SkeletonLoader: FC<SkeletonLoaderProps> = ({
           duration: 1000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     )
     animation.start()
     return () => animation.stop()

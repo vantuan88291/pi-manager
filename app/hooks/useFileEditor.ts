@@ -1,10 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { FileReadResponse } from '@/shared/types/file-manager'
+import { useState, useEffect, useCallback, useMemo, startTransition } from "react"
+
+import { getJsonApi, postJsonApi, RestApiError } from "@/services/api"
 
 interface UseFileEditorParams {
   filePath: string
   fileName: string
 }
+
+/** Above this length, skip @uiw/code-editor (Prism on full file is too heavy). */
+export const FILE_EDITOR_PLAIN_TEXT_CHAR_THRESHOLD = 48_000
 
 interface UseFileEditorReturn {
   content: string
@@ -14,8 +18,10 @@ interface UseFileEditorReturn {
   error: string | null
   hasChanges: boolean
   isMediaFile: boolean
-  mediaType: 'image' | 'video' | 'audio' | null
+  mediaType: "image" | "video" | "audio" | null
   language: string
+  /** True when content is large — use plain multiline input instead of syntax-highlight editor. */
+  preferPlainEditor: boolean
   handleSave: () => Promise<void>
   handleBack: (onDiscard: () => void) => void
   setContent: (content: string) => void
@@ -24,31 +30,48 @@ interface UseFileEditorReturn {
 }
 
 // Media file extensions that should be previewed, not edited
-const MEDIA_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'mp4', 'webm', 'avi', 'mov', 'mp3', 'wav', 'ogg', 'flac']
+const MEDIA_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "bmp",
+  "svg",
+  "ico",
+  "mp4",
+  "webm",
+  "avi",
+  "mov",
+  "mp3",
+  "wav",
+  "ogg",
+  "flac",
+]
 
 /**
  * Check if file is a media file based on extension
  */
 function isMediaFile(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase()
+  const ext = filename.split(".").pop()?.toLowerCase()
   return ext ? MEDIA_EXTENSIONS.includes(ext) : false
 }
 
 /**
  * Get media type for preview
  */
-function getMediaType(filename: string): 'image' | 'video' | 'audio' | null {
-  const ext = filename.split('.').pop()?.toLowerCase()
+function getMediaType(filename: string): "image" | "video" | "audio" | null {
+  const ext = filename.split(".").pop()?.toLowerCase()
   if (!ext) return null
-  
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext)) {
-    return 'image'
+
+  if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"].includes(ext)) {
+    return "image"
   }
-  if (['mp4', 'webm', 'avi', 'mov'].includes(ext)) {
-    return 'video'
+  if (["mp4", "webm", "avi", "mov"].includes(ext)) {
+    return "video"
   }
-  if (['mp3', 'wav', 'ogg', 'flac'].includes(ext)) {
-    return 'audio'
+  if (["mp3", "wav", "ogg", "flac"].includes(ext)) {
+    return "audio"
   }
   return null
 }
@@ -57,28 +80,28 @@ function getMediaType(filename: string): 'image' | 'video' | 'audio' | null {
  * Get language from file extension for syntax highlighting
  */
 function getLanguageFromExtension(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase()
+  const ext = filename.split(".").pop()?.toLowerCase()
   const languageMap: Record<string, string> = {
-    js: 'javascript',
-    jsx: 'javascript',
-    ts: 'typescript',
-    tsx: 'typescript',
-    json: 'json',
-    md: 'markdown',
-    html: 'html',
-    css: 'css',
-    scss: 'scss',
-    yaml: 'yaml',
-    yml: 'yaml',
-    xml: 'xml',
-    py: 'python',
-    sh: 'shell',
-    bash: 'shell',
-    env: 'shell',
-    log: 'text',
-    txt: 'text',
+    js: "javascript",
+    jsx: "javascript",
+    ts: "typescript",
+    tsx: "typescript",
+    json: "json",
+    md: "markdown",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    yaml: "yaml",
+    yml: "yaml",
+    xml: "xml",
+    py: "python",
+    sh: "shell",
+    bash: "shell",
+    env: "shell",
+    log: "text",
+    txt: "text",
   }
-  return languageMap[ext || ''] || 'text'
+  return languageMap[ext || ""] || "text"
 }
 
 /**
@@ -88,8 +111,8 @@ function getLanguageFromExtension(filename: string): string {
  * Detects media files for preview mode
  */
 export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseFileEditorReturn {
-  const [content, setContent] = useState('')
-  const [originalContent, setOriginalContent] = useState('')
+  const [content, setContent] = useState("")
+  const [originalContent, setOriginalContent] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -109,20 +132,32 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`)
-        const result: FileReadResponse = await response.json()
+        const result = await getJsonApi<{
+          success: boolean
+          data?: { content: string }
+          error?: string
+        }>(`/api/files/read?path=${encodeURIComponent(filePath)}`)
 
         if (!isMounted) return
 
-        if (result.success && result.data) {
-          setContent(result.data.content)
-          setOriginalContent(result.data.content)
+        if (result.data?.content !== undefined) {
+          const text = result.data.content
+          startTransition(() => {
+            setContent(text)
+            setOriginalContent(text)
+          })
         } else {
-          setError(result.error || 'Failed to read file')
+          setError("Failed to read file")
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!isMounted) return
-        setError(err.message || 'Network error')
+        setError(
+          err instanceof RestApiError
+            ? err.formatForUser()
+            : err instanceof Error
+              ? err.message
+              : "Network error",
+        )
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -137,6 +172,8 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     }
   }, [filePath])
 
+  const preferPlainEditor = content.length > FILE_EDITOR_PLAIN_TEXT_CHAR_THRESHOLD
+
   // Check if content has changed
   const hasChanges = content !== originalContent
 
@@ -145,24 +182,16 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     setSaving(true)
 
     try {
-      const response = await fetch('/api/files/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          path: filePath,
-          content,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setOriginalContent(content)
-      } else {
-        setError(result.error || 'Failed to save file')
-      }
-    } catch (err: any) {
-      setError(err.message || 'Network error')
+      await postJsonApi("/api/files/write", { path: filePath, content })
+      setOriginalContent(content)
+    } catch (err: unknown) {
+      setError(
+        err instanceof RestApiError
+          ? err.formatForUser()
+          : err instanceof Error
+            ? err.message
+            : "Network error",
+      )
     } finally {
       setSaving(false)
     }
@@ -177,7 +206,7 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
         onDiscard()
       }
     },
-    [hasChanges]
+    [hasChanges],
   )
 
   return {
@@ -190,6 +219,7 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     isMediaFile: fileIsMedia,
     mediaType,
     language,
+    preferPlainEditor,
     handleSave,
     handleBack,
     setContent,

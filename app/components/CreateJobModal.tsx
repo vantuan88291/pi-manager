@@ -76,11 +76,11 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
   })
 
   const handleTaskTypeChange = (type: TaskType) => {
-    setFormData(prev => ({ ...prev, taskType: type }))
+    setFormData((prev) => ({ ...prev, taskType: type }))
   }
 
   const handleScheduleTypeChange = (type: ScheduleType) => {
-    setFormData(prev => ({ ...prev, scheduleType: type }))
+    setFormData((prev) => ({ ...prev, scheduleType: type }))
   }
 
   const handleValidate = (): boolean => {
@@ -110,7 +110,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
               </View>
               <TextInput
                 value={formData.command}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, command: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, command: text }))}
                 placeholder="sudo shutdown -h now"
                 style={themed($multilineInput)}
                 multiline
@@ -126,7 +126,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
               <Text text="Working Directory" weight="medium" color="text" size="sm" />
               <TextInput
                 value={formData.workingDir}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, workingDir: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, workingDir: text }))}
                 placeholder="/home/vantuan88291/scripts"
                 style={themed($input)}
                 placeholderTextColor={theme.colors.textDim}
@@ -138,7 +138,9 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
               <View style={themed($inputRow)}>
                 <TextInput
                   value={formData.timeout?.toString() || "60"}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, timeout: parseInt(text) || 60 }))}
+                  onChangeText={(text) =>
+                    setFormData((prev) => ({ ...prev, timeout: parseInt(text) || 60 }))
+                  }
                   placeholder="60"
                   style={themed($smallInput)}
                   keyboardType="number-pad"
@@ -161,7 +163,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
               </View>
               <TextInput
                 value={formData.prompt}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, prompt: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, prompt: text }))}
                 placeholder="Check system status and create a summary report"
                 style={themed($multilineInput)}
                 multiline
@@ -169,14 +171,19 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
                 maxLength={500}
                 textAlignVertical="top"
               />
-              <Text text={`${formData.prompt?.length || 0}/500`} size="xs" color="textDim" style={$charCount} />
+              <Text
+                text={`${formData.prompt?.length || 0}/500`}
+                size="xs"
+                color="textDim"
+                style={$charCount}
+              />
             </View>
 
             <View style={themed($field)}>
               <Text text="Model" weight="medium" color="text" size="sm" />
               <TextInput
                 value={formData.model}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, model: text }))}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, model: text }))}
                 placeholder="qwen-coder (default)"
                 style={themed($input)}
                 placeholderTextColor={theme.colors.textDim}
@@ -194,7 +201,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
             </View>
             <TextInput
               value={formData.message}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, message: text }))}
+              onChangeText={(text) => setFormData((prev) => ({ ...prev, message: text }))}
               placeholder="🔍 Running daily health check..."
               style={themed($multilineInput)}
               multiline
@@ -202,7 +209,12 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
               maxLength={200}
               textAlignVertical="top"
             />
-            <Text text={`${formData.message?.length || 0}/200`} size="xs" color="textDim" style={$charCount} />
+            <Text
+              text={`${formData.message?.length || 0}/200`}
+              size="xs"
+              color="textDim"
+              style={$charCount}
+            />
           </View>
         )
     }
@@ -215,12 +227,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
       title="✨ Create Scheduled Task"
       bottomComponent={
         <View style={themed($footer)}>
-          <Button
-            text="Cancel"
-            preset="filled"
-            onPress={onClose}
-            style={themed($cancelButton)}
-          />
+          <Button text="Cancel" preset="filled" onPress={onClose} style={themed($cancelButton)} />
           <Button
             text="Create Task"
             preset="filled"
@@ -242,7 +249,7 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
           <Text text="Task Name" weight="medium" color="text" size="sm" />
           <TextInput
             value={formData.name}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+            onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
             placeholder="Daily Shutdown"
             style={themed($input)}
             maxLength={50}
@@ -259,7 +266,13 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
 
         {/* Task-Specific Fields */}
         <View style={themed($section)}>
-          <Text text="Configuration" weight="semiBold" color="text" size="sm" style={$sectionTitle} />
+          <Text
+            text="Configuration"
+            weight="semiBold"
+            color="text"
+            size="sm"
+            style={$sectionTitle}
+          />
           {renderTaskSpecificFields()}
         </View>
 
@@ -276,17 +289,23 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
             selectedType={formData.scheduleType}
             onSelect={handleScheduleTypeChange}
             time={formData.time}
-            onTimeChange={(time) => setFormData(prev => ({ ...prev, time }))}
+            onTimeChange={(time) => setFormData((prev) => ({ ...prev, time }))}
             weekday={formData.weekday}
-            onWeekdayChange={(day) => setFormData(prev => ({ ...prev, weekday: day }))}
+            onWeekdayChange={(day) => setFormData((prev) => ({ ...prev, weekday: day }))}
             dayOfMonth={formData.dayOfMonth}
-            onDayOfMonthChange={(day) => setFormData(prev => ({ ...prev, dayOfMonth: day }))}
+            onDayOfMonthChange={(day) => setFormData((prev) => ({ ...prev, dayOfMonth: day }))}
             intervalValue={formData.intervalValue}
-            onIntervalValueChange={(val) => setFormData(prev => ({ ...prev, intervalValue: val }))}
+            onIntervalValueChange={(val) =>
+              setFormData((prev) => ({ ...prev, intervalValue: val }))
+            }
             intervalUnit={formData.intervalUnit}
-            onIntervalUnitChange={(unit) => setFormData(prev => ({ ...prev, intervalUnit: unit }))}
+            onIntervalUnitChange={(unit) =>
+              setFormData((prev) => ({ ...prev, intervalUnit: unit }))
+            }
             cronExpression={formData.cronExpression}
-            onCronExpressionChange={(expr) => setFormData(prev => ({ ...prev, cronExpression: expr }))}
+            onCronExpressionChange={(expr) =>
+              setFormData((prev) => ({ ...prev, cronExpression: expr }))
+            }
           />
         </View>
 
@@ -303,14 +322,18 @@ export const CreateJobModal: FC<CreateJobModalProps> = ({
             <View style={themed($checkboxRow)}>
               <Checkbox
                 value={formData.notifySuccess ?? true}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, notifySuccess: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, notifySuccess: value }))
+                }
               />
               <Text text="Notify on completion" size="sm" color="text" style={$checkboxLabel} />
             </View>
             <View style={themed($checkboxRow)}>
               <Checkbox
                 value={formData.notifyFailure ?? true}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, notifyFailure: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, notifyFailure: value }))
+                }
               />
               <Text text="Notify on failure" size="sm" color="text" style={$checkboxLabel} />
             </View>

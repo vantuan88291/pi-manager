@@ -23,17 +23,17 @@ interface StatCardProps {
   loading?: boolean
 }
 
-export const StatCard: FC<StatCardProps> = ({ 
-  label, 
+export const StatCard: FC<StatCardProps> = ({
+  label,
   labelTx,
-  value, 
-  unit, 
-  progress, 
-  progressColor, 
-  caption, 
+  value,
+  unit,
+  progress,
+  progressColor,
+  caption,
   captionTx,
-  icon, 
-  loading 
+  icon,
+  loading,
 }) => {
   const { themed, theme } = useAppTheme()
 
@@ -61,22 +61,33 @@ export const StatCard: FC<StatCardProps> = ({
         <Text text={value} size="xl" weight="bold" style={themed($value)} />
         {unit && <Text text={unit} size="sm" color="textDim" style={$unit} />}
       </View>
-      {progress !== undefined && <ProgressBar value={progress} color={progressColor} style={$progressBar} />}
-      {(caption || captionTx) && <Text text={caption} tx={captionTx} size="xs" color="textDim" style={$caption} />}
+      {progress !== undefined && (
+        <ProgressBar value={progress} color={progressColor} style={$progressBar} />
+      )}
+      {(caption || captionTx) && (
+        <Text text={caption} tx={captionTx} size="xs" color="textDim" style={$caption} />
+      )}
     </View>
   )
 }
 
-const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({ 
-  backgroundColor: colors.surface, 
-  borderRadius: spacing.md, 
-  borderWidth: 1, 
-  borderColor: colors.border, 
-  padding: spacing.md, 
-  minHeight: 150, 
-  flex: 1 
+const $container: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  backgroundColor: colors.surface,
+  borderRadius: spacing.md,
+  borderWidth: 1,
+  borderColor: colors.border,
+  padding: spacing.md,
+  minHeight: 150,
+  flex: 1,
 })
-const $iconBadge: ViewStyle = { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center", marginBottom: 8 }
+const $iconBadge: ViewStyle = {
+  width: 44,
+  height: 44,
+  borderRadius: 12,
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: 8,
+}
 const $label: ViewStyle = { marginBottom: 4 }
 const $valueRow: ViewStyle = { flexDirection: "row", alignItems: "baseline", marginBottom: 8 }
 const $value: ThemedStyle<TextStyle> = ({ colors }) => ({ color: colors.text, fontSize: 28 })

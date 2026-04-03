@@ -1,6 +1,12 @@
 import { Socket } from "socket.io-client"
 import type { SocketModule } from "../types"
-import type { WiFiNetwork, WiFiConnection, WiFiStatus, WiFiConnectRequest, WiFiConnectResponse } from "../../../../shared/types/wifi"
+import type {
+  WiFiNetwork,
+  WiFiConnection,
+  WiFiStatus,
+  WiFiConnectRequest,
+  WiFiConnectResponse,
+} from "../../../../shared/types/wifi"
 
 type StatusCallback = (status: WiFiStatus) => void
 type ScanCallback = (networks: WiFiNetwork[], error?: string) => void
@@ -14,15 +20,18 @@ class WiFiClientModule implements SocketModule {
 
   register(socket: Socket): void {
     this.socket = socket
-    
+
     socket.on("wifi:status", (status: WiFiStatus) => {
       this.cachedStatus = status
       this.statusCallbacks.forEach((cb) => cb(status))
     })
-    
-    socket.on("wifi:scan_result", ({ networks, error }: { networks: WiFiNetwork[]; error?: string }) => {
-      this.scanCallbacks.forEach((cb) => cb(networks, error))
-    })
+
+    socket.on(
+      "wifi:scan_result",
+      ({ networks, error }: { networks: WiFiNetwork[]; error?: string }) => {
+        this.scanCallbacks.forEach((cb) => cb(networks, error))
+      },
+    )
   }
 
   cleanup(): void {
@@ -51,7 +60,7 @@ class WiFiClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       const request: WiFiConnectRequest = { ssid, password }
       this.socket.emit("wifi:connect", request, (response: WiFiConnectResponse) => {
         resolve(response)
@@ -66,7 +75,7 @@ class WiFiClientModule implements SocketModule {
         resolve({ success: false, error: "Not connected to server" })
         return
       }
-      
+
       this.socket.emit("wifi:disconnect", (response: { success: boolean; error?: string }) => {
         resolve(response)
       })

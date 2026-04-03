@@ -46,11 +46,11 @@ const formatNextRun = (nextRunAt?: number): string => {
   if (!nextRunAt) return "--"
   const diff = nextRunAt - Date.now()
   if (diff < 0) return "Now"
-  
+
   const minutes = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
-  
+
   if (days > 0) return `${days}d ${hours % 24}h`
   if (hours > 0) return `${hours}h ${minutes % 60}m`
   return `${minutes}m`
@@ -123,12 +123,12 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
     }
 
     cronjobModule.onUpdated = ({ job }) => {
-      setJobs(prev => prev.map(j => j.jobId === job.jobId ? job : j))
+      setJobs((prev) => prev.map((j) => (j.jobId === job.jobId ? job : j)))
       showAlert("Success", `Job "${job.name || "Untitled"}" updated!`)
     }
 
     cronjobModule.onRemoved = ({ jobId }) => {
-      setJobs(prev => prev.filter(j => j.jobId !== jobId))
+      setJobs((prev) => prev.filter((j) => j.jobId !== jobId))
       showAlert("Deleted", "Job deleted successfully")
     }
 
@@ -140,7 +140,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
 
     // Subscribe to module
     socketManager.subscribeToModule("cronjob")
-    
+
     // Request initial list
     cronjobModule.requestList()
 
@@ -174,7 +174,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
 
   const handleJobSubmit = (data: CronJobFormData) => {
     console.log("[CronJobScreen] Creating job with data:", data)
-    
+
     const socket = socketManager.getSocket()
     if (!socket) {
       showAlert("Error", "Not connected to server")
@@ -233,7 +233,12 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         }
         break
       case "interval":
-        const unitMs = data.intervalUnit === "minutes" ? 60000 : data.intervalUnit === "hours" ? 3600000 : 86400000
+        const unitMs =
+          data.intervalUnit === "minutes"
+            ? 60000
+            : data.intervalUnit === "hours"
+              ? 3600000
+              : 86400000
         schedule = {
           kind: "every" as const,
           everyMs: (data.intervalValue || 1) * unitMs,
@@ -275,43 +280,39 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
 
   const handleRunJob = (jobId: string) => {
     const job = jobs.find((j) => j.jobId === jobId)
-    showAlert(
-      t('cronjob:runJob'),
-      t('cronjob:runJobConfirm', { name: job?.name || "Untitled" }),
-      [
-        { text: t('cronjob:cancel'), style: "cancel" },
-        {
-          text: runningJobId === jobId ? "⏳" : "▶️ " + t('cronjob:run'),
-          onPress: () => {
-            const socket = socketManager.getSocket()
-            if (!socket) return
-            const cronjobModule = cronjobClientModule(socket)
-            setRunningJobId(jobId)
-            cronjobModule.requestRun(jobId)
-            setTimeout(() => setRunningJobId(null), 2000)
-          },
+    showAlert(t("cronjob:runJob"), t("cronjob:runJobConfirm", { name: job?.name || "Untitled" }), [
+      { text: t("cronjob:cancel"), style: "cancel" },
+      {
+        text: runningJobId === jobId ? "⏳" : "▶️ " + t("cronjob:run"),
+        onPress: () => {
+          const socket = socketManager.getSocket()
+          if (!socket) return
+          const cronjobModule = cronjobClientModule(socket)
+          setRunningJobId(jobId)
+          cronjobModule.requestRun(jobId)
+          setTimeout(() => setRunningJobId(null), 2000)
         },
-      ]
-    )
+      },
+    ])
   }
 
   const handleToggleJob = (jobId: string, currentEnabled: boolean) => {
     const socket = socketManager.getSocket()
     if (!socket) return
     const cronjobModule = cronjobClientModule(socket)
-    
+
     // Optimistic update
-    setJobs(prev => prev.map(job => 
-      job.jobId === jobId ? { ...job, enabled: !currentEnabled } : job
-    ))
-    
+    setJobs((prev) =>
+      prev.map((job) => (job.jobId === jobId ? { ...job, enabled: !currentEnabled } : job)),
+    )
+
     cronjobModule.requestToggle(jobId, !currentEnabled)
   }
 
   const handleEditJob = (jobId: string) => {
     const job = jobs.find((j) => j.jobId === jobId)
     if (!job) return
-    
+
     // TODO: Navigate to edit screen with pre-filled data
     showAlert("Edit Job", `Edit "${job.name}" - Coming soon`, [{ text: "OK" }])
   }
@@ -319,12 +320,12 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   const handleDeleteJob = (jobId: string) => {
     const job = jobs.find((j) => j.jobId === jobId)
     showAlert(
-      t('cronjob:deleteJob'),
-      t('cronjob:deleteJobConfirm', { name: job?.name || "Untitled" }),
+      t("cronjob:deleteJob"),
+      t("cronjob:deleteJobConfirm", { name: job?.name || "Untitled" }),
       [
-        { text: t('cronjob:cancel'), style: "cancel" },
+        { text: t("cronjob:cancel"), style: "cancel" },
         {
-          text: deletingJobId === jobId ? "⏳" : "🗑️ " + t('cronjob:delete'),
+          text: deletingJobId === jobId ? "⏳" : "🗑️ " + t("cronjob:delete"),
           style: "destructive",
           onPress: () => {
             const socket = socketManager.getSocket()
@@ -334,7 +335,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
             cronjobModule.requestRemove(jobId)
           },
         },
-      ]
+      ],
     )
   }
 
@@ -368,8 +369,20 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         />
         <View style={themed($errorContainer)}>
           <Text text="❌" size="xxl" style={themed($errorIcon)} />
-          <Text tx="cronjob:errorTitle" size="lg" weight="semiBold" color="text" style={themed($errorTitle)} />
-          <Text text={error} size="sm" color="textDim" textAlign="center" style={themed($errorMessage)} />
+          <Text
+            tx="cronjob:errorTitle"
+            size="lg"
+            weight="semiBold"
+            color="text"
+            style={themed($errorTitle)}
+          />
+          <Text
+            text={error}
+            size="sm"
+            color="textDim"
+            textAlign="center"
+            style={themed($errorMessage)}
+          />
           <Button
             text="Retry"
             preset="primary"
@@ -416,7 +429,12 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         {refreshing && (
           <View style={themed($refreshingBar)}>
             <ActivityIndicator size="small" color={theme.colors.tint} />
-            <Text tx="cronjob:refreshing" size="xs" color="textDim" style={themed($refreshingText)} />
+            <Text
+              tx="cronjob:refreshing"
+              size="xs"
+              color="textDim"
+              style={themed($refreshingText)}
+            />
           </View>
         )}
 
@@ -424,7 +442,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         {activeJobs.length > 0 && (
           <>
             <SectionHeader
-              title={`📊 ${t('cronjob:activeJobs', { count: activeJobs.length })}`}
+              title={`📊 ${t("cronjob:activeJobs", { count: activeJobs.length })}`}
               style={themed($sectionHeader)}
             />
 
@@ -435,12 +453,17 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     <Text text={getJobIcon(job.payload)} size="xl" />
                   </View>
                   <View style={themed($jobInfo)}>
-                    <Text text={job.name || "Untitled Job"} weight="semiBold" size="sm" color="text" />
+                    <Text
+                      text={job.name || "Untitled Job"}
+                      weight="semiBold"
+                      size="sm"
+                      color="text"
+                    />
                     <Text text={formatSchedule(job.schedule)} size="xs" color="textDim" />
-                    <Text 
-                      text={getJobDescription(job.payload)} 
-                      size="xs" 
-                      color="textDim" 
+                    <Text
+                      text={getJobDescription(job.payload)}
+                      size="xs"
+                      color="textDim"
                       numberOfLines={2}
                       style={themed($jobDescription)}
                     />
@@ -453,7 +476,11 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                       <View style={themed($statusDot)} />
                       <Text tx="cronjob:enabled" size="xs" weight="medium" color="success" />
                     </View>
-                    <Text text={`🟢 ${t('cronjob:nextRun', { time: formatNextRun(job.nextRunAt) })}`} size="xs" color="textDim" />
+                    <Text
+                      text={`🟢 ${t("cronjob:nextRun", { time: formatNextRun(job.nextRunAt) })}`}
+                      size="xs"
+                      color="textDim"
+                    />
                   </View>
                 </View>
 
@@ -465,7 +492,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     style={themed($actionButton)}
                     disabled={runningJobId === job.jobId}
                   >
-                    {runningJobId === job.jobId ? "⏳" : "▶️"} {t('cronjob:run')}
+                    {runningJobId === job.jobId ? "⏳" : "▶️"} {t("cronjob:run")}
                   </Button>
                   <Button
                     preset="default"
@@ -473,7 +500,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     onPress={() => handleEditJob(job.jobId)}
                     style={themed($actionButton)}
                   >
-                    ✏️ {t('cronjob:edit')}
+                    ✏️ {t("cronjob:edit")}
                   </Button>
                   <Button
                     preset="default"
@@ -481,7 +508,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     onPress={() => handleToggleJob(job.jobId, true)}
                     style={themed($actionButton)}
                   >
-                    ⏸️ {t('cronjob:disable')}
+                    ⏸️ {t("cronjob:disable")}
                   </Button>
                 </View>
               </View>
@@ -493,7 +520,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         {disabledJobs.length > 0 && (
           <>
             <SectionHeader
-              title={`⚪ ${t('cronjob:disabledJobs', { count: disabledJobs.length })}`}
+              title={`⚪ ${t("cronjob:disabledJobs", { count: disabledJobs.length })}`}
               style={themed($sectionHeader)}
             />
 
@@ -504,12 +531,17 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     <Text text={getJobIcon(job.payload)} size="xl" />
                   </View>
                   <View style={themed($jobInfo)}>
-                    <Text text={job.name || "Untitled Job"} weight="semiBold" size="sm" color="textDim" />
+                    <Text
+                      text={job.name || "Untitled Job"}
+                      weight="semiBold"
+                      size="sm"
+                      color="textDim"
+                    />
                     <Text text={formatSchedule(job.schedule)} size="xs" color="textDim" />
-                    <Text 
-                      text={getJobDescription(job.payload)} 
-                      size="xs" 
-                      color="textDim" 
+                    <Text
+                      text={getJobDescription(job.payload)}
+                      size="xs"
+                      color="textDim"
                       numberOfLines={2}
                       style={themed($jobDescription)}
                     />
@@ -532,7 +564,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     onPress={() => handleToggleJob(job.jobId, false)}
                     style={themed($actionButton)}
                   >
-                    ▶️ {t('cronjob:enable')}
+                    ▶️ {t("cronjob:enable")}
                   </Button>
                   <Button
                     preset="default"
@@ -540,7 +572,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     onPress={() => handleEditJob(job.jobId)}
                     style={themed($actionButton)}
                   >
-                    ✏️ {t('cronjob:edit')}
+                    ✏️ {t("cronjob:edit")}
                   </Button>
                   <Button
                     preset="default"
@@ -549,7 +581,7 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
                     style={themed($actionButton)}
                     disabled={deletingJobId === job.jobId}
                   >
-                    {deletingJobId === job.jobId ? "⏳" : "🗑️"} {t('cronjob:delete')}
+                    {deletingJobId === job.jobId ? "⏳" : "🗑️"} {t("cronjob:delete")}
                   </Button>
                 </View>
               </View>

@@ -1,6 +1,6 @@
 /**
  * Pi Manager Light Theme Colors
- * 
+ *
  * Semantic tokens for IoT dashboard with modern, vibrant palette.
  * Replace Ignite default browns/beiges with cool gray/indigo tones.
  */

@@ -14,6 +14,7 @@
     "prebuild:clean": "npx expo prebuild --clean",
     "compile": "tsc --noEmit -p . --pretty",
     "lint": "eslint . --fix",
+    "format": "prettier --write \"app/**/*.{js,jsx,json,md,ts,tsx}\"",
     "lint:check": "eslint .",
     "depcruise": "depcruise app --config .dependency-cruiser.js",
     "depcruise:graph": "depcruise app --include-only \"^app\" --config .dependency-cruiser.js --output-type dot > app-dependency-graph.dot && dot -T svg app-dependency-graph.dot -o app-dependency-graph.svg && dot -T png app-dependency-graph.dot -o app-dependency-graph.png && rm app-dependency-graph.dot",

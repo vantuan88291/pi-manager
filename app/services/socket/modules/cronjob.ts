@@ -21,7 +21,7 @@ export interface CronjobClientModule {
   requestRun: (jobId: string) => void
   requestRuns: (jobId: string, limit?: number) => void
   requestToggle: (jobId: string, enabled: boolean) => void
-  
+
   // Event callbacks
   onListResponse?: (data: CronJobListResponse) => void
   onCreated?: (data: CronJobCreateResponse) => void

@@ -6,7 +6,12 @@ type StatsCallback = (stats: SystemStats) => void
 type InfoCallback = (info: SystemInfo) => void
 type ProcessesCallback = (processes: ProcessInfo[]) => void
 type ActionCallback = (response: { success: boolean; message: string; action: string }) => void
-type ProcessKilledCallback = (result: { success: boolean; pid: number; message?: string; name?: string }) => void
+type ProcessKilledCallback = (result: {
+  success: boolean
+  pid: number
+  message?: string
+  name?: string
+}) => void
 
 class SystemClientModule implements SocketModule {
   name = "system"
@@ -35,18 +40,27 @@ class SystemClientModule implements SocketModule {
       this.cachedProcesses = processes
       this.processesCallbacks.forEach((cb) => cb(processes))
     })
-    socket.on("system:action-complete", (response: { success: boolean; message: string; action: string }) => {
-      this.actionCallbacks.forEach((cb) => cb(response))
-    })
-    socket.on("system:action-failed", (response: { success: boolean; message: string; action: string }) => {
-      this.actionCallbacks.forEach((cb) => cb(response))
-    })
-    socket.on("system:process-killed", (response: { success: boolean; pid: number; message?: string }) => {
-      const name = this.processNames.get(response.pid)
-      this.processKilledCallbacks.forEach((cb) => cb({ ...response, name }))
-      // Clear the name from map after kill attempt
-      this.processNames.delete(response.pid)
-    })
+    socket.on(
+      "system:action-complete",
+      (response: { success: boolean; message: string; action: string }) => {
+        this.actionCallbacks.forEach((cb) => cb(response))
+      },
+    )
+    socket.on(
+      "system:action-failed",
+      (response: { success: boolean; message: string; action: string }) => {
+        this.actionCallbacks.forEach((cb) => cb(response))
+      },
+    )
+    socket.on(
+      "system:process-killed",
+      (response: { success: boolean; pid: number; message?: string }) => {
+        const name = this.processNames.get(response.pid)
+        this.processKilledCallbacks.forEach((cb) => cb({ ...response, name }))
+        // Clear the name from map after kill attempt
+        this.processNames.delete(response.pid)
+      },
+    )
   }
 
   cleanup(): void {

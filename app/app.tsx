@@ -87,12 +87,12 @@ export function App() {
       <KeyboardProvider>
         <ThemeProvider>
           <SocketProvider>
-          <AppNavigator
-            linking={linking}
-            initialState={initialNavigationState}
-            onStateChange={onNavigationStateChange}
-          />
-        </SocketProvider>
+            <AppNavigator
+              linking={linking}
+              initialState={initialNavigationState}
+              onStateChange={onNavigationStateChange}
+            />
+          </SocketProvider>
         </ThemeProvider>
       </KeyboardProvider>
     </SafeAreaProvider>

@@ -84,25 +84,48 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
               <View style={themed([$settingRow, $borderBottom])}>
                 <View style={$settingLeft}>
                   <Icon font="Ionicons" icon="moon" color={theme.colors.textDim} size={20} />
-                  <Text tx="settings:theme.label" weight="medium" color="text" style={$settingLabel} />
+                  <Text
+                    tx="settings:theme.label"
+                    weight="medium"
+                    color="text"
+                    style={$settingLabel}
+                  />
                 </View>
-                <Pressable style={themed($picker)} onPress={() => {
-                  const currentIndex = THEME_OPTIONS.findIndex((o) => o.value === selectedTheme)
-                  const nextIndex = (currentIndex + 1) % THEME_OPTIONS.length
-                  handleThemeChange(THEME_OPTIONS[nextIndex].value)
-                }}>
+                <Pressable
+                  style={themed($picker)}
+                  onPress={() => {
+                    const currentIndex = THEME_OPTIONS.findIndex((o) => o.value === selectedTheme)
+                    const nextIndex = (currentIndex + 1) % THEME_OPTIONS.length
+                    handleThemeChange(THEME_OPTIONS[nextIndex].value)
+                  }}
+                >
                   <Text tx={getCurrentThemeLabel()} color="textDim" size="sm" />
-                  <Icon font="Ionicons" icon="chevron-forward" color={theme.colors.textDim} size={20} />
+                  <Icon
+                    font="Ionicons"
+                    icon="chevron-forward"
+                    color={theme.colors.textDim}
+                    size={20}
+                  />
                 </Pressable>
               </View>
               <View style={themed($settingRow)}>
                 <View style={$settingLeft}>
                   <Icon font="Ionicons" icon="globe" color={theme.colors.textDim} size={20} />
-                  <Text tx="settings:language.label" weight="medium" color="text" style={$settingLabel} />
+                  <Text
+                    tx="settings:language.label"
+                    weight="medium"
+                    color="text"
+                    style={$settingLabel}
+                  />
                 </View>
                 <Pressable style={themed($picker)} onPress={() => setIsLangModalVisible(true)}>
                   <Text text={getCurrentLanguageLabel()} color="textDim" size="sm" />
-                  <Icon font="Ionicons" icon="chevron-forward" color={theme.colors.textDim} size={20} />
+                  <Icon
+                    font="Ionicons"
+                    icon="chevron-forward"
+                    color={theme.colors.textDim}
+                    size={20}
+                  />
                 </Pressable>
               </View>
             </View>
@@ -117,7 +140,12 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
               <View style={themed([$settingRow, $borderBottom])}>
                 <View style={$settingLeft}>
                   <Icon font="Ionicons" icon="link" color={theme.colors.textDim} size={20} />
-                  <Text tx="settings:serverUrl" weight="medium" color="text" style={$settingLabel} />
+                  <Text
+                    tx="settings:serverUrl"
+                    weight="medium"
+                    color="text"
+                    style={$settingLabel}
+                  />
                 </View>
                 <Text text="http://192.168.50.134:3001" color="textDim" size="sm" />
               </View>
@@ -127,8 +155,15 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
                   <Text tx="settings:status" weight="medium" color="text" style={$settingLabel} />
                 </View>
                 <View style={$statusBadge}>
-                  <View style={[$statusDot, { backgroundColor: theme.colors[connectionStatus.color] }]} />
-                  <Text tx={connectionStatus.text} color={connectionStatus.color} size="sm" weight="medium" />
+                  <View
+                    style={[$statusDot, { backgroundColor: theme.colors[connectionStatus.color] }]}
+                  />
+                  <Text
+                    tx={connectionStatus.text}
+                    color={connectionStatus.color}
+                    size="sm"
+                    weight="medium"
+                  />
                 </View>
               </View>
             </View>
@@ -142,27 +177,49 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
             <View>
               <View style={themed([$settingRow, $borderBottom])}>
                 <View style={$settingLeft}>
-                  <Icon font="Ionicons" icon="information-circle" color={theme.colors.textDim} size={20} />
-                  <Text tx="settings:appVersion" weight="medium" color="text" style={$settingLabel} />
+                  <Icon
+                    font="Ionicons"
+                    icon="information-circle"
+                    color={theme.colors.textDim}
+                    size={20}
+                  />
+                  <Text
+                    tx="settings:appVersion"
+                    weight="medium"
+                    color="text"
+                    style={$settingLabel}
+                  />
                 </View>
                 <Text text="1.0.0" color="textDim" size="sm" />
               </View>
               <View style={themed([$settingRow, $borderBottom])}>
                 <View style={$settingLeft}>
                   <Icon font="Ionicons" icon="server" color={theme.colors.textDim} size={20} />
-                  <Text tx="settings:serverVersion" weight="medium" color="text" style={$settingLabel} />
+                  <Text
+                    tx="settings:serverVersion"
+                    weight="medium"
+                    color="text"
+                    style={$settingLabel}
+                  />
                 </View>
                 <Text text="1.0.0" color="textDim" size="sm" />
               </View>
               <View style={themed($settingRow)}>
                 <View style={$settingLeft}>
                   <Icon font="Ionicons" icon="person" color={theme.colors.textDim} size={20} />
-                  <Text tx="settings:telegramId" weight="medium" color="text" style={$settingLabel} />
+                  <Text
+                    tx="settings:telegramId"
+                    weight="medium"
+                    color="text"
+                    style={$settingLabel}
+                  />
                 </View>
                 <Text
-                  text={connectionState.user
-                    ? `${connectionState.user.firstName} (${connectionState.user.id})`
-                    : "Not connected"}
+                  text={
+                    connectionState.user
+                      ? `${connectionState.user.firstName} (${connectionState.user.id})`
+                      : "Not connected"
+                  }
                   color={connectionState.user ? "text" : "textDim"}
                   size="sm"
                 />
@@ -182,8 +239,6 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
             </View>
           }
         />
-
-
       </View>
 
       {/* Language Selection Modal */}
@@ -219,14 +274,32 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
 }
 
 const $content: ThemedStyle<ViewStyle> = ({ spacing }) => ({ padding: spacing.md })
-const $card: ThemedStyle<ViewStyle> = ({ spacing }) => ({ paddingHorizontal: spacing.md, paddingVertical: spacing.sm })
+const $card: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingHorizontal: spacing.md,
+  paddingVertical: spacing.sm,
+})
 const $section: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginTop: spacing.lg })
-const $settingRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: spacing.md })
-const $borderBottom: ThemedStyle<ViewStyle> = ({ colors }) => ({ borderBottomWidth: 1, borderBottomColor: colors.border })
+const $settingRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingVertical: spacing.md,
+})
+const $borderBottom: ThemedStyle<ViewStyle> = ({ colors }) => ({
+  borderBottomWidth: 1,
+  borderBottomColor: colors.border,
+})
 const $settingLeft: ViewStyle = { flexDirection: "row", alignItems: "center", flex: 1 }
 const $settingLabel: ViewStyle = { marginLeft: 12 }
 const $picker: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 4 }
 const $statusBadge: ViewStyle = { flexDirection: "row", alignItems: "center", gap: 6 }
 const $statusDot: ViewStyle = { width: 8, height: 8, borderRadius: 4 }
 const $langList: ViewStyle = { maxHeight: 300 }
-const $langOption: ViewStyle = { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, paddingHorizontal: 16, borderRadius: 8 }
+const $langOption: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingVertical: 14,
+  paddingHorizontal: 16,
+  borderRadius: 8,
+}

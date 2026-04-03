@@ -21,7 +21,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
   const { themed, theme } = useAppTheme()
   const { accent: audioAccent } = getFeatureColor("audio", theme.isDark)
   const { subscribeToModule, unsubscribeFromModule } = useSocket()
-  
+
   const [volume, setVolume] = useState(0)
   const [muted, setMuted] = useState(false)
   const [outputDevice, setOutputDevice] = useState<AudioDevice | null>(null)
@@ -32,14 +32,14 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
   // Subscribe to Audio module
   useEffect(() => {
     subscribeToModule("audio")
-    
+
     const unsubStatus = audioClientModule.onStatus((status) => {
       setVolume(status.volume)
       setMuted(status.muted)
       setOutputDevice(status.outputDevice)
       setAvailableDevices(status.availableDevices || [])
     })
-    
+
     return () => {
       unsubStatus()
       unsubscribeFromModule("audio")
@@ -49,12 +49,12 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
   const handleVolumeChange = async (newVolume: number) => {
     if (isChangingVolume) return
     setIsChangingVolume(true)
-    
+
     const clampedVolume = Math.max(0, Math.min(100, newVolume))
     const result = await audioClientModule.setVolume(clampedVolume)
-    
+
     setIsChangingVolume(false)
-    
+
     if (!result.success) {
       Alert.alert(t("common:error"), result.error)
     }
@@ -62,7 +62,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
   const handleMuteToggle = async () => {
     const result = await audioClientModule.toggleMute()
-    
+
     if (!result.success) {
       Alert.alert(t("common:error"), result.error)
     }
@@ -72,7 +72,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
     setIsTesting(true)
     const result = await audioClientModule.testSound()
     setIsTesting(false)
-    
+
     if (!result.success) {
       Alert.alert(t("audio:testFailed"), result.error)
     }
@@ -80,7 +80,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
   const handleDeviceChange = async (device: AudioDevice) => {
     const result = await audioClientModule.setOutputDevice(device.id)
-    
+
     if (!result.success) {
       Alert.alert(t("common:error"), result.error)
     }
@@ -95,17 +95,27 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
   const getDeviceIcon = (type: string) => {
     switch (type) {
-      case "speaker": return "🔊"
-      case "headphone": return "🎧"
-      case "hdmi": return "📺"
-      case "bluetooth": return "🔵"
-      default: return "🔊"
+      case "speaker":
+        return "🔊"
+      case "headphone":
+        return "🎧"
+      case "hdmi":
+        return "📺"
+      case "bluetooth":
+        return "🔵"
+      default:
+        return "🔊"
     }
   }
 
   return (
     <Screen preset="fixed">
-      <Header titleTx="audio:title" titleMode="center" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      <Header
+        titleTx="audio:title"
+        titleMode="center"
+        leftIcon="back"
+        onLeftPress={() => navigation.goBack()}
+      />
 
       {/* Volume Control */}
       <View style={themed($card)}>
@@ -113,37 +123,46 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
           <Text text={getVolumeIcon(volume)} size="xl" />
           <View style={$volumeInfo}>
             <Text tx="audio:volume" weight="medium" color="text" size="md" />
-            <Text text={`${muted ? t("audio:muted") : `${volume}%`}`} size="sm" color={muted ? "textDim" : "text"} />
+            <Text
+              text={`${muted ? t("audio:muted") : `${volume}%`}`}
+              size="sm"
+              color={muted ? "textDim" : "text"}
+            />
           </View>
         </View>
-        
+
         {/* Volume Slider */}
         <View style={$sliderContainer}>
           <View style={$sliderTrack}>
-            <View style={[$sliderFill, { width: `${muted ? 0 : volume}%`, backgroundColor: audioAccent }]} />
+            <View
+              style={[
+                $sliderFill,
+                { width: `${muted ? 0 : volume}%`, backgroundColor: audioAccent },
+              ]}
+            />
           </View>
           <View style={$sliderButtons}>
-            <Button 
-              tx="audio:decrease" 
-              preset="default" 
+            <Button
+              tx="audio:decrease"
+              preset="default"
               onPress={() => handleVolumeChange(volume - 5)}
               disabled={isChangingVolume || volume <= 0}
               style={$sliderButton}
             />
-            <Button 
-              tx="audio:increase" 
-              preset="default" 
+            <Button
+              tx="audio:increase"
+              preset="default"
               onPress={() => handleVolumeChange(volume + 5)}
               disabled={isChangingVolume || volume >= 100}
               style={$sliderButton}
             />
           </View>
         </View>
-        
+
         {/* Mute Button */}
-        <Button 
-          tx={muted ? "audio:unmute" : "audio:mute"} 
-          preset={muted ? "default" : "reversed"} 
+        <Button
+          tx={muted ? "audio:unmute" : "audio:mute"}
+          preset={muted ? "default" : "reversed"}
           onPress={handleMuteToggle}
           style={{ marginTop: 16 }}
         />
@@ -151,8 +170,14 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
 
       {/* Output Device */}
       <View style={themed([$card, $section])}>
-        <Text tx="audio:outputDevice" weight="medium" color="text" size="md" style={{ marginBottom: 12 }} />
-        
+        <Text
+          tx="audio:outputDevice"
+          weight="medium"
+          color="text"
+          size="md"
+          style={{ marginBottom: 12 }}
+        />
+
         {availableDevices.map((device) => (
           <View
             key={device.id}
@@ -165,13 +190,13 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
                 <Text text={device.type} size="xs" color="textDim" />
               </View>
             </View>
-            
+
             {outputDevice?.id === device.id && (
               <View style={themed($selectedBadge)}>
                 <Text tx="audio:selected" size="xs" color="success" weight="medium" />
               </View>
             )}
-            
+
             {outputDevice?.id !== device.id && (
               <Button
                 tx="audio:select"
@@ -182,7 +207,7 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
             )}
           </View>
         ))}
-        
+
         {availableDevices.length === 0 && (
           <View style={$emptyState}>
             <Text text="🔊" size="xl" />
@@ -199,7 +224,12 @@ export const AudioScreen: FC<AudioScreenProps> = function AudioScreen({ navigati
           onPress={handleTestSound}
           disabled={isTesting}
         />
-        <Text tx="audio:testHint" size="xs" color="textDim" style={{ marginTop: 8, textAlign: "center" }} />
+        <Text
+          tx="audio:testHint"
+          size="xs"
+          color="textDim"
+          style={{ marginTop: 8, textAlign: "center" }}
+        />
       </View>
     </Screen>
   )
@@ -210,14 +240,35 @@ const $section: ViewStyle = { marginTop: 8 }
 const $volumeHeader: ViewStyle = { flexDirection: "row", alignItems: "center", marginBottom: 16 }
 const $volumeInfo: ViewStyle = { marginLeft: 12, flex: 1 }
 const $sliderContainer: ViewStyle = { gap: 12 }
-const $sliderTrack: ViewStyle = { height: 8, borderRadius: 4, backgroundColor: "rgba(0,0,0,0.1)", overflow: "hidden" }
+const $sliderTrack: ViewStyle = {
+  height: 8,
+  borderRadius: 4,
+  backgroundColor: "rgba(0,0,0,0.1)",
+  overflow: "hidden",
+}
 const $sliderFill: ViewStyle = { height: "100%", borderRadius: 4 }
 const $sliderButtons: ViewStyle = { flexDirection: "row", gap: 12 }
 const $sliderButton: ViewStyle = { flex: 1 }
-const $deviceRow: ViewStyle = { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)" }
-const $deviceRowSelected: ViewStyle = { backgroundColor: "rgba(16, 185, 129, 0.05)", borderRadius: 8, paddingHorizontal: 8 }
+const $deviceRow: ViewStyle = {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingVertical: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: "rgba(0,0,0,0.05)",
+}
+const $deviceRowSelected: ViewStyle = {
+  backgroundColor: "rgba(16, 185, 129, 0.05)",
+  borderRadius: 8,
+  paddingHorizontal: 8,
+}
 const $deviceLeft: ViewStyle = { flexDirection: "row", alignItems: "center", flex: 1 }
 const $deviceInfo: ViewStyle = { marginLeft: 12 }
-const $selectedBadge: ViewStyle = { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, backgroundColor: "rgba(16, 185, 129, 0.1)" }
+const $selectedBadge: ViewStyle = {
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 12,
+  backgroundColor: "rgba(16, 185, 129, 0.1)",
+}
 const $selectButton: ViewStyle = { paddingHorizontal: 16 }
 const $emptyState: ViewStyle = { alignItems: "center", paddingVertical: 24 }

@@ -9,7 +9,12 @@ import { Button } from "@/components/Button"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 import { useSocket } from "@/services/socket/SocketContext"
-import { isTelegramMiniApp, isWebBrowser, getInitData } from "@/services/telegram"
+import {
+  allowAccessWithoutTelegram,
+  getInitData,
+  isTelegramMiniApp,
+  isWebBrowser,
+} from "@/services/telegram"
 
 export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }) {
   const { t } = useTranslation()
@@ -34,12 +39,20 @@ export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }
       }
       setInitData(data)
       connect(data)
+    } else if (allowAccessWithoutTelegram()) {
+      // Browser / dev: SocketProvider already calls connect(); stay on loading until auth completes
+      console.log("[TelegramAuth] Browser bypass (EXPO_PUBLIC_DEBUG=true), waiting for socket auth")
     } else {
-      // NOT in Telegram Mini App - block access
-      console.log("[TelegramAuth] Access denied: Not in Telegram (isTg:", isTg, ", hasData:", !!data, ")")
+      console.log(
+        "[TelegramAuth] Access denied: Not in Telegram (isTg:",
+        isTg,
+        ", hasData:",
+        !!data,
+        ")",
+      )
       setErrorCode("NOT_IN_TELEGRAM")
     }
-  }, [])
+  }, [connect])
 
   // Handle connection errors
   useEffect(() => {
@@ -105,7 +118,12 @@ export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }
         <ActivityIndicator size="large" color={theme.colors.tint} />
         <Text tx="auth:waiting" size="md" color="textDim" style={themed($loadingText)} />
         {state.user && (
-          <Text text={`👤 ${state.user.firstName}`} size="sm" color="text" style={themed($userInfo)} />
+          <Text
+            text={`👤 ${state.user.firstName}`}
+            size="sm"
+            color="text"
+            style={themed($userInfo)}
+          />
         )}
       </View>
     </Screen>
@@ -127,8 +145,17 @@ const $loadingContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingHorizontal: spacing.xl,
 })
 
-const $title: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginBottom: spacing.md, textAlign: "center" })
-const $message: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginBottom: spacing.xl, textAlign: "center" })
+const $title: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.md,
+  textAlign: "center",
+})
+const $message: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.xl,
+  textAlign: "center",
+})
 const $button: ViewStyle = { minWidth: 120 }
-const $loadingText: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginTop: spacing.lg, textAlign: "center" })
+const $loadingText: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginTop: spacing.lg,
+  textAlign: "center",
+})
 const $userInfo: ThemedStyle<ViewStyle> = ({ spacing }) => ({ marginTop: spacing.sm })

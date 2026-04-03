@@ -24,21 +24,36 @@ type ControlMenuScreenProps = MainTabScreenProps<"Control">
 interface MenuItem {
   id: string
   titleTx: TxKeyPath
-  subtitle?: string  // For dynamic strings
-  subtitleTx?: TxKeyPath  // For translation keys
+  subtitle?: string // For dynamic strings
+  subtitleTx?: TxKeyPath // For translation keys
   subtitleParams?: Record<string, string | number>
-  icon: { font: "Ionicons" | "MaterialCommunityIcons"; name: string; color: string; badgeBg: string }
+  icon: {
+    font: "Ionicons" | "MaterialCommunityIcons"
+    name: string
+    color: string
+    badgeBg: string
+  }
   accentColor: string
   danger?: boolean
-  screen?: "Wifi" | "Bluetooth" | "Audio" | "Camera" | "Storage" | "CronJob" | "SystemControl" | "FileManager"
+  screen?:
+    | "Wifi"
+    | "Bluetooth"
+    | "Audio"
+    | "Camera"
+    | "Storage"
+    | "CronJob"
+    | "SystemControl"
+    | "FileManager"
   action?: () => void
 }
 
-export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMenuScreen({ navigation }) {
+export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMenuScreen({
+  navigation,
+}) {
   const { themed, theme } = useAppTheme()
   const { t } = useTranslation()
   const { subscribeToModule, unsubscribeFromModule } = useSocket()
-  
+
   // Alert modal state
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean
@@ -46,12 +61,22 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     message?: string
     buttons: AlertButton[]
   }>({ visible: false, title: "", buttons: [] })
-  
+
   // Real-time status states
-  const [wifiStatus, setWifiStatus] = useState<{ connected: boolean; ssid?: string }>({ connected: false })
-  const [btStatus, setBtStatus] = useState<{ powered: boolean; connectedCount: number }>({ powered: false, connectedCount: 0 })
-  const [audioStatus, setAudioStatus] = useState<{ volume: number; muted: boolean }>({ volume: 75, muted: false })
-  const [storageStatus, setStorageStatus] = useState<{ healthPercent: number }>({ healthPercent: 0 })
+  const [wifiStatus, setWifiStatus] = useState<{ connected: boolean; ssid?: string }>({
+    connected: false,
+  })
+  const [btStatus, setBtStatus] = useState<{ powered: boolean; connectedCount: number }>({
+    powered: false,
+    connectedCount: 0,
+  })
+  const [audioStatus, setAudioStatus] = useState<{ volume: number; muted: boolean }>({
+    volume: 75,
+    muted: false,
+  })
+  const [storageStatus, setStorageStatus] = useState<{ healthPercent: number }>({
+    healthPercent: 0,
+  })
 
   // Subscribe to all modules
   useEffect(() => {
@@ -59,41 +84,41 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     subscribeToModule("bluetooth")
     subscribeToModule("audio")
     subscribeToModule("storage")
-    
+
     // Request initial status from all modules
     wifiClientModule.requestStatus()
     bluetoothClientModule.requestStatus()
     audioClientModule.requestStatus()
     storageClientModule.requestStatus()
-    
+
     const unsubWifi = wifiClientModule.onStatus((status) => {
       setWifiStatus({
         connected: status.connected,
         ssid: status.ssid || undefined,
       })
     })
-    
+
     const unsubBt = bluetoothClientModule.onStatus((status) => {
-      const connectedCount = status.devices?.filter(d => d.connected).length || 0
+      const connectedCount = status.devices?.filter((d) => d.connected).length || 0
       setBtStatus({
         powered: status.powered,
         connectedCount,
       })
     })
-    
+
     const unsubAudio = audioClientModule.onStatus((status) => {
       setAudioStatus({
         volume: status.volume,
         muted: status.muted,
       })
     })
-    
+
     const unsubStorage = storageClientModule.onStatus((status) => {
       setStorageStatus({
         healthPercent: status.health?.percentageUsed || 0,
       })
     })
-    
+
     return () => {
       unsubWifi()
       unsubBt()
@@ -142,101 +167,131 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
     return t("controlMenu:subtitles.storageWear", { percent: storageStatus.healthPercent })
   }
 
-  const showAlert = (title: string, message?: string, buttons: AlertButton[] = [{ text: "OK" }]) => {
+  const showAlert = (
+    title: string,
+    message?: string,
+    buttons: AlertButton[] = [{ text: "OK" }],
+  ) => {
     setAlertConfig({ visible: true, title, message, buttons })
   }
 
   const handleReboot = () => {
-    showAlert(
-      t("reboot:title"),
-      t("reboot:message"),
-      [
-        { text: t("common:cancel"), style: "cancel" },
-        { 
-          text: t("reboot:confirm"), 
-          style: "destructive", 
-          onPress: () => {
-            systemClientModule.requestReboot()
-            showAlert(t("common:success"), t("reboot:rebooting"))
-          } 
+    showAlert(t("reboot:title"), t("reboot:message"), [
+      { text: t("common:cancel"), style: "cancel" },
+      {
+        text: t("reboot:confirm"),
+        style: "destructive",
+        onPress: () => {
+          systemClientModule.requestReboot()
+          showAlert(t("common:success"), t("reboot:rebooting"))
         },
-      ]
-    )
+      },
+    ])
   }
 
   const MENU_ITEMS: MenuItem[] = [
-    { 
-      id: "wifi", 
-      titleTx: "controlMenu:wifi", 
+    {
+      id: "wifi",
+      titleTx: "controlMenu:wifi",
       subtitle: getWifiSubtitle(),
-      icon: { font: "Ionicons", name: "wifi", color: getWifiColors.accent, badgeBg: getWifiColors.badgeBg }, 
-      accentColor: getWifiColors.accent, 
-      screen: "Wifi" 
+      icon: {
+        font: "Ionicons",
+        name: "wifi",
+        color: getWifiColors.accent,
+        badgeBg: getWifiColors.badgeBg,
+      },
+      accentColor: getWifiColors.accent,
+      screen: "Wifi",
     },
-    { 
-      id: "bluetooth", 
-      titleTx: "controlMenu:bluetooth", 
+    {
+      id: "bluetooth",
+      titleTx: "controlMenu:bluetooth",
       subtitle: getBtSubtitle(),
-      icon: { font: "Ionicons", name: "bluetooth", color: btColors.accent, badgeBg: btColors.badgeBg }, 
-      accentColor: btColors.accent, 
-      screen: "Bluetooth" 
+      icon: {
+        font: "Ionicons",
+        name: "bluetooth",
+        color: btColors.accent,
+        badgeBg: btColors.badgeBg,
+      },
+      accentColor: btColors.accent,
+      screen: "Bluetooth",
     },
-    { 
-      id: "audio", 
-      titleTx: "controlMenu:audio", 
+    {
+      id: "audio",
+      titleTx: "controlMenu:audio",
       subtitle: getAudioSubtitle(),
-      icon: { font: "Ionicons", name: "volume-high", color: audioColors.accent, badgeBg: audioColors.badgeBg }, 
-      accentColor: audioColors.accent, 
-      screen: "Audio" 
+      icon: {
+        font: "Ionicons",
+        name: "volume-high",
+        color: audioColors.accent,
+        badgeBg: audioColors.badgeBg,
+      },
+      accentColor: audioColors.accent,
+      screen: "Audio",
     },
-    { 
-      id: "camera", 
-      titleTx: "controlMenu:camera", 
+    {
+      id: "camera",
+      titleTx: "controlMenu:camera",
       subtitle: t("controlMenu:subtitles.cameraOffline"),
-      icon: { font: "Ionicons", name: "camera", color: cameraColors.accent, badgeBg: cameraColors.badgeBg }, 
-      accentColor: cameraColors.accent, 
-      screen: "Camera" 
+      icon: {
+        font: "Ionicons",
+        name: "camera",
+        color: cameraColors.accent,
+        badgeBg: cameraColors.badgeBg,
+      },
+      accentColor: cameraColors.accent,
+      screen: "Camera",
     },
-    { 
-      id: "storage", 
-      titleTx: "controlMenu:storage", 
+    {
+      id: "storage",
+      titleTx: "controlMenu:storage",
       subtitle: getStorageSubtitle(),
-      icon: { font: "MaterialCommunityIcons", name: "harddisk", color: storageColors.accent, badgeBg: storageColors.badgeBg }, 
-      accentColor: storageColors.accent, 
-      screen: "Storage" 
+      icon: {
+        font: "MaterialCommunityIcons",
+        name: "harddisk",
+        color: storageColors.accent,
+        badgeBg: storageColors.badgeBg,
+      },
+      accentColor: storageColors.accent,
+      screen: "Storage",
     },
-    { 
-      id: "reboot", 
-      titleTx: "controlMenu:reboot", 
+    {
+      id: "reboot",
+      titleTx: "controlMenu:reboot",
       subtitle: t("common:ok"),
-      icon: { font: "Ionicons", name: "refresh", color: theme.colors.error, badgeBg: theme.isDark ? "#7F1D1D" : "#FEF2F2" }, 
-      accentColor: theme.colors.error, 
-      danger: true, 
-      action: handleReboot
+      icon: {
+        font: "Ionicons",
+        name: "refresh",
+        color: theme.colors.error,
+        badgeBg: theme.isDark ? "#7F1D1D" : "#FEF2F2",
+      },
+      accentColor: theme.colors.error,
+      danger: true,
+      action: handleReboot,
     },
-    { 
-      id: "cronjob", 
-      titleTx: "controlMenu:cronjob", 
+    {
+      id: "cronjob",
+      titleTx: "controlMenu:cronjob",
       subtitleTx: "controlMenu:subtitles.cronjob",
-      icon: { font: "Ionicons", name: "time", color: "#8B5CF6", badgeBg: "#F5F3FF" }, 
-      accentColor: "#8B5CF6", 
-      screen: "CronJob" 
+      icon: { font: "Ionicons", name: "time", color: "#8B5CF6", badgeBg: "#F5F3FF" },
+      accentColor: "#8B5CF6",
+      screen: "CronJob",
     },
-    { 
-      id: "system", 
-      titleTx: "controlMenu:system", 
+    {
+      id: "system",
+      titleTx: "controlMenu:system",
       subtitle: t("controlMenu:subtitles.system"),
-      icon: { font: "Ionicons", name: "settings-outline", color: "#10B981", badgeBg: "#ECFDF5" }, 
-      accentColor: "#10B981", 
-      screen: "SystemControl" 
+      icon: { font: "Ionicons", name: "settings-outline", color: "#10B981", badgeBg: "#ECFDF5" },
+      accentColor: "#10B981",
+      screen: "SystemControl",
     },
-    { 
-      id: "files", 
-      titleTx: "controlMenu:files", 
+    {
+      id: "files",
+      titleTx: "controlMenu:files",
       subtitle: t("controlMenu:subtitles.files"),
-      icon: { font: "Ionicons", name: "folder-open", color: "#F59E0B", badgeBg: "#FFFBEB" }, 
-      accentColor: "#F59E0B", 
-      screen: "FileManager" 
+      icon: { font: "Ionicons", name: "folder-open", color: "#F59E0B", badgeBg: "#FFFBEB" },
+      accentColor: "#F59E0B",
+      screen: "FileManager",
     },
   ]
 
@@ -275,11 +330,19 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
         title={alertConfig.title}
         message={alertConfig.message}
         buttons={alertConfig.buttons}
-        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+        onClose={() => setAlertConfig((prev) => ({ ...prev, visible: false }))}
       />
     </Screen>
   )
 }
 
-const $gridContainer: ViewStyle = { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", paddingHorizontal: 16 }
-const $cardWrapper: ThemedStyle<ViewStyle> = ({ spacing }) => ({ width: "48%", marginBottom: spacing.md })
+const $gridContainer: ViewStyle = {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "space-between",
+  paddingHorizontal: 16,
+}
+const $cardWrapper: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  width: "48%",
+  marginBottom: spacing.md,
+})

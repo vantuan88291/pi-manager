@@ -1,11 +1,20 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { socketManager, systemClientModule, wifiClientModule, bluetoothClientModule, audioClientModule, storageClientModule, fileManagerClientModule } from "./"
+
+import { allowAccessWithoutTelegram } from "@/services/telegram"
+import {
+  socketManager,
+  systemClientModule,
+  wifiClientModule,
+  bluetoothClientModule,
+  audioClientModule,
+  storageClientModule,
+} from "./"
 import type { ConnectionState, TelegramUser } from "./types"
 
 // Helper to parse Telegram initDataUnsafe
 function parseTelegramInitData(initDataUnsafe: any): TelegramUser | null {
   if (!initDataUnsafe?.user) return null
-  
+
   const user = initDataUnsafe.user
   return {
     id: user.id,
@@ -37,7 +46,6 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socketManager.registerModule(bluetoothClientModule)
     socketManager.registerModule(audioClientModule)
     socketManager.registerModule(storageClientModule)
-    socketManager.registerModule(fileManagerClientModule)
 
     // Subscribe to state changes
     const unsubscribe = socketManager.subscribe(setState)
@@ -46,17 +54,17 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const connectWithAuth = () => {
       if (typeof window !== "undefined") {
         const tg = (window as any).Telegram?.WebApp
-        const isDebug = process.env.EXPO_PUBLIC_DEBUG === "true"
-        
+        const browserBypass = allowAccessWithoutTelegram()
+
         if (tg && tg.initData) {
           console.log("[SocketProvider] Telegram WebApp detected, connecting with auth...")
           console.log("[SocketProvider] initDataUnsafe:", tg.initDataUnsafe)
-          
+
           // Parse and set user data immediately for better UX
           const user = parseTelegramInitData(tg.initDataUnsafe)
           if (user) {
             console.log(`[SocketProvider] Parsed user: ${user.firstName} (${user.id})`)
-            
+
             // Set temporary state while waiting for backend validation
             setState({
               status: "connecting",
@@ -65,11 +73,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
               error: null,
             })
           }
-          
+
           // Connect to backend for proper validation
           socketManager.connect(tg.initData)
-        } else if (isDebug) {
-          console.log("[SocketProvider] DEBUG mode: connecting without Telegram auth (browser testing)")
+        } else if (browserBypass) {
+          console.log(
+            "[SocketProvider] allowAccessWithoutTelegram: connecting without Telegram (browser / dev)",
+          )
           socketManager.connect()
         } else {
           // Production mode without Telegram = show unauthenticated state
@@ -111,7 +121,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <SocketContext.Provider value={{ state, connect, disconnect, subscribeToModule, unsubscribeFromModule }}>
+    <SocketContext.Provider
+      value={{ state, connect, disconnect, subscribeToModule, unsubscribeFromModule }}
+    >
       {children}
     </SocketContext.Provider>
   )

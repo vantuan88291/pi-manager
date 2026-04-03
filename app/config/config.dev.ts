@@ -5,6 +5,9 @@
  *
  * https://reactnative.dev/docs/security#storing-sensitive-info
  */
+import { getBackendBaseUrl } from "@/utils/backendBaseUrl"
+
 export default {
-  API_URL: "https://api.rss2json.com/v1/",
+  /** Pi server REST base (same rules as Socket.IO — tunnel, Metro :3001, same-origin). */
+  API_URL: getBackendBaseUrl(),
 }

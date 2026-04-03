@@ -1,6 +1,6 @@
 /**
  * Pi Manager Feature Accent Colors
- * 
+ *
  * Each feature has a unique tint used for icon badges and highlights.
  * This prevents the "monotone dashboard" problem by giving each module
  * its own visual identity.

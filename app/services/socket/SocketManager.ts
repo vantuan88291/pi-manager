@@ -1,20 +1,11 @@
 import { io, Socket } from "socket.io-client"
+
+import { getBackendBaseUrl } from "@/utils/backendBaseUrl"
+
 import type { SocketModule, ConnectionState, TelegramUser } from "./types"
 
-/**
- * Get socket URL at runtime instead of build-time.
- * This allows the app to work with dynamic Cloudflare tunnel URLs
- * without needing to rebuild or inject URLs post-build.
- * 
- * In web browser: uses window.location.origin (current domain)
- * In React Native: falls back to EXPO_PUBLIC_SOCKET_URL env var
- */
-const getSocketUrl = () => {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin
-  }
-  return process.env.EXPO_PUBLIC_SOCKET_URL || "http://localhost:3001"
-}
+/** Same origin as REST (getBackendBaseUrl). */
+const getSocketUrl = () => getBackendBaseUrl()
 
 class SocketManager {
   private socket: Socket | null = null
@@ -50,11 +41,14 @@ class SocketManager {
     if (this.socket?.connected) return
 
     this.initData = initData ?? null
-    console.log("[SocketManager] Connect called with initData:", initData ? "YES (length: " + initData.length + ")" : "NO")
+    console.log(
+      "[SocketManager] Connect called with initData:",
+      initData ? "YES (length: " + initData.length + ")" : "NO",
+    )
     if (initData) {
       console.log("[SocketManager] initData preview:", initData.substring(0, 100) + "...")
     }
-    
+
     this.state = { ...this.state, status: "connecting", error: null }
     this.notify()
 
@@ -68,11 +62,7 @@ class SocketManager {
       reconnectionDelayMax: 30000,
       timeout: 10000,
       transports: ["websocket", "polling"],
-      auth: this.sessionToken
-        ? { sessionToken: this.sessionToken }
-        : initData
-          ? { initData }
-          : {},
+      auth: this.sessionToken ? { sessionToken: this.sessionToken } : initData ? { initData } : {},
     })
 
     this.socket.on("connect", () => {
@@ -81,16 +71,19 @@ class SocketManager {
       this.modules.forEach((mod) => mod.register(this.socket!))
     })
 
-    this.socket.on("auth:success", ({ user, sessionToken }: { user: TelegramUser; sessionToken: string }) => {
-      this.sessionToken = sessionToken
-      this.state = {
-        ...this.state,
-        isAuthenticated: true,
-        user,
-        error: null,
-      }
-      this.notify()
-    })
+    this.socket.on(
+      "auth:success",
+      ({ user, sessionToken }: { user: TelegramUser; sessionToken: string }) => {
+        this.sessionToken = sessionToken
+        this.state = {
+          ...this.state,
+          isAuthenticated: true,
+          user,
+          error: null,
+        }
+        this.notify()
+      },
+    )
 
     this.socket.on("disconnect", () => {
       this.state = { ...this.state, status: "disconnected", isAuthenticated: false }
@@ -145,6 +138,11 @@ class SocketManager {
 
   getSocket(): Socket | null {
     return this.socket
+  }
+
+  /** Same token the server expects on REST (`Authorization: Bearer`). */
+  getSessionToken(): string | null {
+    return this.sessionToken
   }
 }
 

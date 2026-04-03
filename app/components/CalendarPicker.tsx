@@ -65,19 +65,19 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
     const dayOfMonth = date.getDate().toString()
     const month = (date.getMonth() + 1).toString()
     const dayOfWeek = date.getDay().toString()
-    
+
     // For range mode, use default time 00:00 since calendar doesn't support time selection
-    const hours = mode === "range" ? "00" : date.getHours().toString().padStart(2, '0')
-    const minutes = mode === "range" ? "00" : date.getMinutes().toString().padStart(2, '0')
-    
+    const hours = mode === "range" ? "00" : date.getHours().toString().padStart(2, "0")
+    const minutes = mode === "range" ? "00" : date.getMinutes().toString().padStart(2, "0")
+
     let cron: string
-    
+
     if (mode === "range" && endDate) {
       // For range mode, we'll use the start date's day and end date's day
       // Creating a cron that runs on specific days of month at 00:00
       const endDayOfMonth = endDate.getDate().toString()
       const endMonth = (endDate.getMonth() + 1).toString()
-      
+
       // If same month, create comma-separated days
       if (month === endMonth) {
         cron = `${minutes} ${hours} ${dayOfMonth},${endDayOfMonth} ${month} *`
@@ -89,21 +89,22 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
       // Single date mode with time picker
       cron = `${minutes} ${hours} ${dayOfMonth} ${month} ${dayOfWeek}`
     }
-    
+
     onCronExpressionChange(cron)
     onTimeChange(`${hours}:${minutes}`)
   }
 
   const parseCronToDate = (cron: string): Date => {
     // Parse cron expression to Date object for date picker
-    const parts = cron.split(' ')
+    const parts = cron.split(" ")
     const now = new Date()
     if (parts.length >= 5) {
       const minutes = parseInt(parts[0]) || 0
       const hours = parseInt(parts[1]) || 0
       // Handle wildcard "*" by using current date values
-      const dayOfMonth = parts[2] === '*' ? now.getDate() : parseInt(parts[2]) || now.getDate()
-      const month = parts[3] === '*' ? now.getMonth() : (parseInt(parts[3]) || (now.getMonth() + 1)) - 1
+      const dayOfMonth = parts[2] === "*" ? now.getDate() : parseInt(parts[2]) || now.getDate()
+      const month =
+        parts[3] === "*" ? now.getMonth() : (parseInt(parts[3]) || now.getMonth() + 1) - 1
       const year = now.getFullYear()
       return new Date(year, month, dayOfMonth, hours, minutes)
     }
@@ -265,26 +266,13 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
         {/* Custom Cron */}
         {scheduleType === "custom" && (
           <View style={themed($cronContainer)}>
-            <Pressable
-              onPress={() => setShowDateTimeModal(true)}
-              style={themed($calendarButton)}
-            >
+            <Pressable onPress={() => setShowDateTimeModal(true)} style={themed($calendarButton)}>
               <View style={themed($calendarButtonContent)}>
                 <View style={$calendarIconBadge}>
-                  <Icon
-                    font="Ionicons"
-                    icon="calendar"
-                    color={theme.colors.tint}
-                    size={20}
-                  />
+                  <Icon font="Ionicons" icon="calendar" color={theme.colors.tint} size={20} />
                 </View>
                 <View style={$calendarButtonText}>
-                  <Text
-                    text="Select Date & Time"
-                    weight="semiBold"
-                    size="sm"
-                    color="text"
-                  />
+                  <Text text="Select Date & Time" weight="semiBold" size="sm" color="text" />
                   <Text
                     text={parseCronToDate(cronExpression).toLocaleDateString("en-US", {
                       weekday: "short",
@@ -305,7 +293,13 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
               </View>
             </Pressable>
 
-            <Text text="Cron Expression" weight="medium" color="textDim" size="xs" style={$cronLabel} />
+            <Text
+              text="Cron Expression"
+              weight="medium"
+              color="textDim"
+              size="xs"
+              style={$cronLabel}
+            />
             <View style={themed($cronDisplay)}>
               <Text
                 text={cronExpression}

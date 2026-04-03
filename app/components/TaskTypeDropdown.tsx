@@ -50,7 +50,7 @@ export const TaskTypeDropdown: FC<TaskTypeDropdownProps> = ({ selectedType, onSe
   const { themed, theme } = useAppTheme()
   const [showModal, setShowModal] = useState(false)
 
-  const selectedTask = TASK_TYPES.find(t => t.type === selectedType)
+  const selectedTask = TASK_TYPES.find((t) => t.type === selectedType)
 
   const handleSelect = (type: TaskType) => {
     onSelect(type)
@@ -83,10 +83,7 @@ export const TaskTypeDropdown: FC<TaskTypeDropdownProps> = ({ selectedType, onSe
   // Custom dropdown for web
   return (
     <>
-      <Pressable
-        onPress={() => setShowModal(true)}
-        style={themed($container)}
-      >
+      <Pressable onPress={() => setShowModal(true)} style={themed($container)}>
         <View style={themed($selectedRow)}>
           <View style={themed($iconBadge)}>
             <Icon
@@ -97,24 +94,10 @@ export const TaskTypeDropdown: FC<TaskTypeDropdownProps> = ({ selectedType, onSe
             />
           </View>
           <View style={$content}>
-            <Text
-              text={selectedTask?.title || ""}
-              weight="medium"
-              size="sm"
-              color="text"
-            />
-            <Text
-              text={selectedTask?.description || ""}
-              size="xs"
-              color="textDim"
-            />
+            <Text text={selectedTask?.title || ""} weight="medium" size="sm" color="text" />
+            <Text text={selectedTask?.description || ""} size="xs" color="textDim" />
           </View>
-          <Icon
-            font="Ionicons"
-            icon="chevron-down"
-            color={theme.colors.textDim}
-            size={20}
-          />
+          <Icon font="Ionicons" icon="chevron-down" color={theme.colors.textDim} size={20} />
         </View>
       </Pressable>
 
@@ -124,10 +107,7 @@ export const TaskTypeDropdown: FC<TaskTypeDropdownProps> = ({ selectedType, onSe
         animationType="fade"
         onRequestClose={() => setShowModal(false)}
       >
-        <Pressable
-          style={themed($modalOverlay)}
-          onPress={() => setShowModal(false)}
-        >
+        <Pressable style={themed($modalOverlay)} onPress={() => setShowModal(false)}>
           <View style={themed($modalContent)}>
             <Text
               text="Select Task Type"
@@ -160,11 +140,7 @@ export const TaskTypeDropdown: FC<TaskTypeDropdownProps> = ({ selectedType, onSe
                     size="sm"
                     color={selectedType === task.type ? "tint" : "text"}
                   />
-                  <Text
-                    text={task.description}
-                    size="xs"
-                    color="textDim"
-                  />
+                  <Text text={task.description} size="xs" color="textDim" />
                 </View>
                 {selectedType === task.type && (
                   <Icon

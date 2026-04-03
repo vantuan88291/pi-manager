@@ -28,8 +28,7 @@ const vi: Translations = {
     notAvailable: "Không có",
   },
   welcomeScreen: {
-    postscript:
-      "Đây là màn hình chào mừng. Bạn có thể tùy chỉnh nó theo ý muốn.",
+    postscript: "Đây là màn hình chào mừng. Bạn có thể tùy chỉnh nó theo ý muốn.",
     readyForLaunch: "Ứng dụng của bạn đã sẵn sàng khởi chạy!",
     exciting: "(Thật thú vị!)",
   },
@@ -81,9 +80,9 @@ const vi: Translations = {
     cancel: "Hủy",
     createTask: "Tạo Task",
     deleteJob: "Xóa Job",
-    deleteJobConfirm: "Xóa \"{{name}}\"? Hành động này không thể hoàn tác.",
+    deleteJobConfirm: 'Xóa "{{name}}"? Hành động này không thể hoàn tác.',
     runJob: "Chạy Job",
-    runJobConfirm: "Chạy \"{{name}}\" ngay?",
+    runJobConfirm: 'Chạy "{{name}}" ngay?',
     editJob: "Sửa Job",
     jobCreated: "Job đã tạo!",
     jobUpdated: "Job đã cập nhật!",
@@ -112,6 +111,14 @@ const vi: Translations = {
     network: "Mạng",
     deviceInfo: "Thông tin thiết bị",
     notConnected: "Chưa kết nối",
+    connectingHost: "Đang kết nối…",
+    tapToRetry: "Chạm để thử lại",
+    noNetworkInterfaces: "Không có giao diện mạng",
+    interfaceWifi: "Wi‑Fi",
+    wifiSignalExcellent: "Rất tốt",
+    wifiSignalGood: "Tốt",
+    wifiSignalFair: "Khá",
+    wifiSignalWeak: "Yếu",
     stats: {
       cpu: "CPU",
       temperature: "Nhiệt độ",
@@ -292,7 +299,8 @@ const vi: Translations = {
   },
   accessDenied: {
     title: "Không có quyền truy cập",
-    message: "Telegram ID của bạn chưa được thêm vào danh sách whitelist. Liên hệ admin để được cấp quyền.",
+    message:
+      "Telegram ID của bạn chưa được thêm vào danh sách whitelist. Liên hệ admin để được cấp quyền.",
   },
   systemControl: {
     title: "Hệ thống",
@@ -328,7 +336,8 @@ const vi: Translations = {
   },
   reboot: {
     title: "Khởi động lại",
-    message: "Bạn có chắc muốn khởi động lại Raspberry Pi? Ứng dụng sẽ mất kết nối trong quá trình này.",
+    message:
+      "Bạn có chắc muốn khởi động lại Raspberry Pi? Ứng dụng sẽ mất kết nối trong quá trình này.",
     confirm: "Khởi động lại",
     cancel: "Hủy",
     rebooting: "Đang khởi động lại...",
@@ -336,6 +345,7 @@ const vi: Translations = {
   },
   fileManager: {
     title: "Quản lý file",
+    sectionFiles: "Tệp",
     empty: "Thư mục rỗng",
     loading: "Đang tải...",
     error: "Lỗi",
@@ -343,13 +353,24 @@ const vi: Translations = {
     deleteWarning: "Hành động này không thể hoàn tác.",
     deleted: "Đã xóa thành công",
     deleteFailed: "Không thể xóa",
+    listFailed: "Không tải được thư mục",
     quickAccess: "Truy cập nhanh",
-  },
-  common: {
-    cancel: "Hủy",
-    delete: "Xóa",
-    save: "Lưu",
-    ok: "OK",
+    upload: "Tải file lên",
+    uploadSuccess: "Đã upload {{name}} thành công!",
+    uploadFailed: "Không thể upload file",
+    uploadErrorTitle: "Upload thất bại",
+    uploading: "Đang upload…",
+    itemTypeFolder: "Thư mục",
+    newFolder: "Thư mục mới",
+    newFile: "Tệp mới",
+    enterTypeName: "Nhập tên {{type}}:",
+    typeNounFolder: "thư mục",
+    typeNounFile: "tệp",
+    placeholderFolderName: "Tên thư mục…",
+    placeholderFileName: "Tên tệp…",
+    createFailed: "Không tạo được {{type}}",
+    modifiedYesterday: "Hôm qua",
+    modifiedDaysAgo: "{{count}} ngày trước",
   },
   fileEditor: {
     title: "Chỉnh sửa file",
@@ -360,8 +381,11 @@ const vi: Translations = {
     discardChanges: "Bạn có thay đổi chưa lưu. Hủy chúng?",
     discard: "Hủy",
     mediaPreview: "Xem trước",
+    imagePreviewCaption: "Xem trước ảnh",
     videoNotAvailable: "Video preview không khả dụng",
     audioNotAvailable: "Audio preview không khả dụng",
+    largeFilePlainEditor:
+      "File lớn: dùng ô nhập thường (tắt highlight cú pháp) để mượt hơn.",
   },
 }
 
