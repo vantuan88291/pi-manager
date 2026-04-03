@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
+
+import { allowAccessWithoutTelegram } from "@/services/telegram"
 import {
   socketManager,
   systemClientModule,
@@ -54,7 +56,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     const connectWithAuth = () => {
       if (typeof window !== "undefined") {
         const tg = (window as any).Telegram?.WebApp
-        const isDebug = process.env.EXPO_PUBLIC_DEBUG === "true"
+        const browserBypass = allowAccessWithoutTelegram()
 
         if (tg && tg.initData) {
           console.log("[SocketProvider] Telegram WebApp detected, connecting with auth...")
@@ -76,9 +78,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
           // Connect to backend for proper validation
           socketManager.connect(tg.initData)
-        } else if (isDebug) {
+        } else if (browserBypass) {
           console.log(
-            "[SocketProvider] DEBUG mode: connecting without Telegram auth (browser testing)",
+            "[SocketProvider] allowAccessWithoutTelegram: connecting without Telegram (browser / dev)",
           )
           socketManager.connect()
         } else {

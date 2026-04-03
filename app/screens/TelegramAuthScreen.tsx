@@ -9,7 +9,12 @@ import { Button } from "@/components/Button"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 import { useSocket } from "@/services/socket/SocketContext"
-import { isTelegramMiniApp, isWebBrowser, getInitData } from "@/services/telegram"
+import {
+  allowAccessWithoutTelegram,
+  getInitData,
+  isTelegramMiniApp,
+  isWebBrowser,
+} from "@/services/telegram"
 
 export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }) {
   const { t } = useTranslation()
@@ -34,8 +39,10 @@ export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }
       }
       setInitData(data)
       connect(data)
+    } else if (allowAccessWithoutTelegram()) {
+      // Browser / dev: SocketProvider already calls connect(); stay on loading until auth completes
+      console.log("[TelegramAuth] Browser bypass (EXPO_PUBLIC_DEBUG=true), waiting for socket auth")
     } else {
-      // NOT in Telegram Mini App - block access
       console.log(
         "[TelegramAuth] Access denied: Not in Telegram (isTg:",
         isTg,
@@ -45,7 +52,7 @@ export const TelegramAuthScreen: FC = function TelegramAuthScreen({ navigation }
       )
       setErrorCode("NOT_IN_TELEGRAM")
     }
-  }, [])
+  }, [connect])
 
   // Handle connection errors
   useEffect(() => {
