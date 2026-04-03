@@ -1,4 +1,5 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
+import { createReadStream } from 'node:fs'
 import fs from 'fs/promises'
 import path from 'path'
 import multer from 'multer'
@@ -11,6 +12,11 @@ const MAX_FILE_READ_BYTES = Math.min(
 )
 
 const MAX_UPLOAD_MB = Math.min(Math.max(Number(process.env.MAX_UPLOAD_MB) || 512, 1), 2048)
+
+const MAX_DOWNLOAD_BYTES = Math.min(
+  Math.max(Number(process.env.MAX_DOWNLOAD_MB) || 512, 1),
+  2048,
+) * 1024 * 1024
 
 const uploadParser = multer({
   storage: multer.memoryStorage(),
@@ -73,6 +79,12 @@ function isSystemPath(filePath: string): boolean {
   }
   
   return false
+}
+
+function isSafeBasename(name: string): boolean {
+  if (!name || name === '.' || name === '..') return false
+  if (name.includes('/') || name.includes('\\') || name.includes('\0')) return false
+  return true
 }
 
 function getLanguageFromExtension(filename: string): string {
@@ -252,6 +264,62 @@ router.post('/upload', parseFileUpload, async (req, res) => {
   }
 })
 
+// Download file (binary stream; errors as JSON before headers are sent)
+router.get('/download', async (req, res) => {
+  try {
+    const filePath = req.query.path as string
+
+    if (!filePath) {
+      return res.status(400).json({ success: false, error: 'Path is required' })
+    }
+
+    if (!isPathAllowed(filePath)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
+    }
+
+    const stats = await fs.stat(filePath)
+    if (!stats.isFile()) {
+      return res.status(400).json({ success: false, error: 'Path is not a file' })
+    }
+
+    if (stats.size > MAX_DOWNLOAD_BYTES) {
+      const maxMb = Math.round(MAX_DOWNLOAD_BYTES / (1024 * 1024))
+      return res.status(413).json({
+        success: false,
+        error: `File too large to download (max ${maxMb} MB). Set MAX_DOWNLOAD_MB in server env to raise the limit.`,
+      })
+    }
+
+    const baseName = path.basename(filePath)
+    const asciiName = baseName.replace(/[^\x20-\x7E]/g, '_') || 'download'
+    res.setHeader('Content-Type', 'application/octet-stream')
+    res.setHeader('Content-Length', String(stats.size))
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${asciiName.replace(/"/g, '\\"')}"; filename*=UTF-8''${encodeURIComponent(baseName)}`,
+    )
+
+    const stream = createReadStream(filePath)
+    stream.on('error', (err) => {
+      console.error('[files] download stream error:', err.message)
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, error: err.message || 'Read failed' })
+      } else {
+        res.end()
+      }
+    })
+    stream.pipe(res)
+  } catch (error: any) {
+    console.error('[files] download error:', error.message)
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to download file',
+      })
+    }
+  }
+})
+
 // List directory contents
 router.get('/list', async (req, res) => {
   try {
@@ -341,6 +409,171 @@ router.delete('/delete', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to delete',
+    })
+  }
+})
+
+// Rename file or folder (new name = basename only, same parent directory)
+router.post('/rename', async (req, res) => {
+  try {
+    const { path: oldPath, newName } = req.body as { path?: string; newName?: string }
+
+    if (!oldPath || newName === undefined || newName === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'path and newName are required',
+      })
+    }
+
+    if (typeof newName !== 'string' || !isSafeBasename(newName)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid new name',
+      })
+    }
+
+    if (!isPathAllowed(oldPath)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
+    }
+
+    if (isSystemPath(oldPath)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Cannot rename this path',
+      })
+    }
+
+    const parent = path.dirname(oldPath)
+    const resolvedParent = path.resolve(parent)
+    const newPath = path.resolve(path.join(resolvedParent, newName))
+
+    if (!isPathAllowed(newPath)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Target path not allowed' })
+    }
+
+    if (path.dirname(newPath) !== resolvedParent) {
+      return res.status(400).json({ success: false, error: 'Invalid target path' })
+    }
+
+    try {
+      await fs.access(newPath)
+      return res.status(409).json({
+        success: false,
+        error: 'A file or folder with that name already exists',
+      })
+    } catch {
+      /* target free */
+    }
+
+    await fs.rename(oldPath, newPath)
+
+    res.json({
+      success: true,
+      message: 'Renamed successfully',
+      path: newPath,
+    })
+  } catch (error: any) {
+    console.error('[files] rename error:', error.message)
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to rename',
+    })
+  }
+})
+
+// Move file or folder into an existing directory (keeps base name)
+router.post('/move', async (req, res) => {
+  try {
+    const { path: srcPath, destinationDir } = req.body as {
+      path?: string
+      destinationDir?: string
+    }
+
+    if (!srcPath || !destinationDir) {
+      return res.status(400).json({
+        success: false,
+        error: 'path and destinationDir are required',
+      })
+    }
+
+    if (!isPathAllowed(srcPath) || !isPathAllowed(destinationDir)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
+    }
+
+    if (isSystemPath(srcPath)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Cannot move this path',
+      })
+    }
+
+    let dirStat
+    try {
+      dirStat = await fs.stat(destinationDir)
+    } catch {
+      return res.status(400).json({
+        success: false,
+        error: 'Destination directory does not exist',
+      })
+    }
+
+    if (!dirStat.isDirectory()) {
+      return res.status(400).json({
+        success: false,
+        error: 'destinationDir must be a directory',
+      })
+    }
+
+    const resolvedDir = path.resolve(destinationDir)
+    const baseName = path.basename(srcPath)
+    if (!isSafeBasename(baseName)) {
+      return res.status(400).json({ success: false, error: 'Invalid source name' })
+    }
+
+    const destPath = path.resolve(path.join(resolvedDir, baseName))
+    const rel = path.relative(resolvedDir, destPath)
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      return res.status(400).json({ success: false, error: 'Invalid destination path' })
+    }
+
+    if (!isPathAllowed(destPath)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Target path not allowed' })
+    }
+
+    if (isSystemPath(destPath)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Cannot move to this location',
+      })
+    }
+
+    const resolvedSrc = path.resolve(srcPath)
+    if (resolvedSrc === destPath) {
+      return res.status(400).json({ success: false, error: 'Already at this location' })
+    }
+
+    try {
+      await fs.access(destPath)
+      return res.status(409).json({
+        success: false,
+        error: 'A file or folder with that name already exists in the destination',
+      })
+    } catch {
+      /* ok */
+    }
+
+    await fs.rename(srcPath, destPath)
+
+    res.json({
+      success: true,
+      message: 'Moved successfully',
+      path: destPath,
+    })
+  } catch (error: any) {
+    console.error('[files] move error:', error.message)
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to move',
     })
   }
 })
