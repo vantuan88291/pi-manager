@@ -382,6 +382,8 @@ const en = {
     imagePreviewCaption: "Image preview",
     videoNotAvailable: "Video preview not available",
     audioNotAvailable: "Audio preview not available",
+    largeFilePlainEditor:
+      "Large file: plain text editor (no syntax highlighting) for better performance.",
   },
 }
 

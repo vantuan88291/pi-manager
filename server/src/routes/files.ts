@@ -5,6 +5,11 @@ import multer from 'multer'
 
 const router = express.Router()
 
+const MAX_FILE_READ_BYTES = Math.min(
+  Math.max(Number(process.env.MAX_FILE_READ_KB) || 1024, 64) * 1024,
+  16 * 1024 * 1024,
+)
+
 const MAX_UPLOAD_MB = Math.min(Math.max(Number(process.env.MAX_UPLOAD_MB) || 512, 1), 2048)
 
 const uploadParser = multer({
@@ -94,9 +99,21 @@ router.get('/read', async (req, res) => {
     if (!isPathAllowed(filePath)) {
       return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
     }
-    
-    const content = await fs.readFile(filePath, 'utf8')
+
     const stats = await fs.stat(filePath)
+    if (!stats.isFile()) {
+      return res.status(400).json({ success: false, error: 'Path is not a file' })
+    }
+    if (stats.size > MAX_FILE_READ_BYTES) {
+      const maxKb = Math.round(MAX_FILE_READ_BYTES / 1024)
+      const sizeKb = Math.round(stats.size / 1024)
+      return res.status(413).json({
+        success: false,
+        error: `File too large to open in editor (${sizeKb} KB). Maximum is ${maxKb} KB. Set MAX_FILE_READ_KB in server env to raise the limit.`,
+      })
+    }
+
+    const content = await fs.readFile(filePath, 'utf8')
     const language = getLanguageFromExtension(path.basename(filePath))
     
     res.json({

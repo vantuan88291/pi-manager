@@ -384,6 +384,8 @@ const vi: Translations = {
     imagePreviewCaption: "Xem trước ảnh",
     videoNotAvailable: "Video preview không khả dụng",
     audioNotAvailable: "Audio preview không khả dụng",
+    largeFilePlainEditor:
+      "File lớn: dùng ô nhập thường (tắt highlight cú pháp) để mượt hơn.",
   },
 }
 

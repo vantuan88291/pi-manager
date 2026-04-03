@@ -11,6 +11,7 @@ import { Header } from "@/components/Header"
 import { Icon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
+import { TextField } from "@/components/TextField"
 import { useFileEditor } from "@/hooks/useFileEditor"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 import { useAppTheme } from "@/theme/context"
@@ -33,6 +34,7 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
     isMediaFile,
     mediaType,
     language,
+    preferPlainEditor,
     handleSave,
     setContent,
     handleBack,
@@ -43,6 +45,9 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   const isDark = theme.isDark
   const editorBgColor = isDark ? "#1e293b" : "#f8fafc"
   const editorColor = isDark ? "#e2e8f0" : "#1e293b"
+
+  /** Prism on huge strings is slow; plain editor is used above `preferPlainEditor`. */
+  const disablePrismHighlight = !preferPlainEditor && content.length > 24_000
 
   const saveButtonText = saving ? t("fileEditor:saving") : hasChanges ? t("common:save") : ""
 
@@ -185,11 +190,28 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
           <View style={themed($centered)}>
             <Icon font="Ionicons" icon="alert-circle" size={32} color={theme.colors.error} />
           </View>
+        ) : preferPlainEditor ? (
+          <View style={themed([$editorWrapper, { backgroundColor: editorBgColor }])}>
+            <TextField
+              multiline
+              value={content}
+              onChangeText={setContent}
+              helperTx="fileEditor:largeFilePlainEditor"
+              scrollEnabled
+              containerStyle={$plainFieldContainer}
+              inputWrapperStyle={themed([
+                $plainInputWrapper,
+                { backgroundColor: editorBgColor, borderColor: theme.colors.border },
+              ])}
+              style={[codeEditorStyle, themed($plainTextInput), { color: editorColor }]}
+            />
+          </View>
         ) : (
           <View style={themed([$editorWrapper, { backgroundColor: editorBgColor }])}>
             <CodeEditor
               value={content}
               language={language}
+              rehypePlugins={disablePrismHighlight ? [] : undefined}
               onChange={(e) => setContent(e.target.value)}
               padding={16}
               style={codeEditorStyle}
@@ -220,6 +242,20 @@ const $editorWrapper: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderColor: colors.border,
   overflow: "hidden",
   marginBottom: spacing.md,
+})
+
+const $plainFieldContainer: ViewStyle = {
+  marginBottom: 0,
+}
+
+const $plainInputWrapper: ThemedStyle<ViewStyle> = () => ({
+  minHeight: 500,
+  alignItems: "stretch",
+})
+
+const $plainTextInput: ThemedStyle<TextStyle> = () => ({
+  minHeight: 480,
+  textAlignVertical: "top",
 })
 
 const $loadingContainer: ThemedStyle<ViewStyle> = () => ({

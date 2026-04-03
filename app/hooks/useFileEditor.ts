@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, startTransition } from "react"
 
 import { getJsonApi, postJsonApi, RestApiError } from "@/services/api"
 
@@ -6,6 +6,9 @@ interface UseFileEditorParams {
   filePath: string
   fileName: string
 }
+
+/** Above this length, skip @uiw/code-editor (Prism on full file is too heavy). */
+export const FILE_EDITOR_PLAIN_TEXT_CHAR_THRESHOLD = 48_000
 
 interface UseFileEditorReturn {
   content: string
@@ -17,6 +20,8 @@ interface UseFileEditorReturn {
   isMediaFile: boolean
   mediaType: "image" | "video" | "audio" | null
   language: string
+  /** True when content is large — use plain multiline input instead of syntax-highlight editor. */
+  preferPlainEditor: boolean
   handleSave: () => Promise<void>
   handleBack: (onDiscard: () => void) => void
   setContent: (content: string) => void
@@ -136,8 +141,11 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
         if (!isMounted) return
 
         if (result.data?.content !== undefined) {
-          setContent(result.data.content)
-          setOriginalContent(result.data.content)
+          const text = result.data.content
+          startTransition(() => {
+            setContent(text)
+            setOriginalContent(text)
+          })
         } else {
           setError("Failed to read file")
         }
@@ -163,6 +171,8 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
       isMounted = false
     }
   }, [filePath])
+
+  const preferPlainEditor = content.length > FILE_EDITOR_PLAIN_TEXT_CHAR_THRESHOLD
 
   // Check if content has changed
   const hasChanges = content !== originalContent
@@ -209,6 +219,7 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     isMediaFile: fileIsMedia,
     mediaType,
     language,
+    preferPlainEditor,
     handleSave,
     handleBack,
     setContent,
