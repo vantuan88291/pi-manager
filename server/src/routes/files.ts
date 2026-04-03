@@ -1,8 +1,33 @@
-import express from 'express'
+import express, { type NextFunction, type Request, type Response } from 'express'
 import fs from 'fs/promises'
 import path from 'path'
+import multer from 'multer'
 
 const router = express.Router()
+
+const MAX_UPLOAD_MB = Math.min(Math.max(Number(process.env.MAX_UPLOAD_MB) || 512, 1), 2048)
+
+const uploadParser = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
+})
+
+function parseFileUpload(req: Request, res: Response, next: NextFunction) {
+  uploadParser.single('file')(req, res, (err: unknown) => {
+    if (err) {
+      const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: string }).code) : ''
+      if (code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+          success: false,
+          error: `File too large (max ${MAX_UPLOAD_MB}MB)`,
+        })
+      }
+      const message = err instanceof Error ? err.message : 'Upload failed'
+      return res.status(400).json({ success: false, error: message })
+    }
+    next()
+  })
+}
 
 // Allowed base paths for security
 const ALLOWED_ROOTS = [
@@ -93,30 +118,37 @@ router.get('/read', async (req, res) => {
   }
 })
 
-// Save file content
+// Save file content (utf8 string or base64 for binary uploads)
 router.post('/write', async (req, res) => {
   try {
-    const { path: filePath, content } = req.body
-    
+    const { path: filePath, content, encoding } = req.body as {
+      path?: string
+      content?: string
+      encoding?: 'utf8' | 'base64'
+    }
+
     if (!filePath || content === undefined) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Path and content are required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Path and content are required',
       })
     }
-    
+
     if (!isPathAllowed(filePath)) {
-      return res.status(403).json({ 
-        success: false, 
-        error: 'Access denied: Path not allowed' 
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Path not allowed',
       })
     }
-    
-    // Ensure parent directory exists
+
     const dir = path.dirname(filePath)
     await fs.mkdir(dir, { recursive: true })
-    
-    await fs.writeFile(filePath, content, 'utf8')
+
+    if (encoding === 'base64') {
+      await fs.writeFile(filePath, Buffer.from(content, 'base64'))
+    } else {
+      await fs.writeFile(filePath, content, 'utf8')
+    }
     
     res.json({
       success: true,
@@ -127,6 +159,78 @@ router.post('/write', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to save file',
+    })
+  }
+})
+
+/**
+ * Multipart upload: field `targetDir` (absolute directory path) + file field `file`.
+ * Streams into memory then writes once — suitable for Pi; tune MAX_UPLOAD_MB if needed.
+ */
+router.post('/upload', parseFileUpload, async (req, res) => {
+  try {
+    const targetDir = typeof req.body?.targetDir === 'string' ? req.body.targetDir : ''
+    const file = req.file
+
+    if (!targetDir || !file?.buffer) {
+      return res.status(400).json({
+        success: false,
+        error: 'targetDir and file are required',
+      })
+    }
+
+    if (!isPathAllowed(targetDir)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: target directory not allowed',
+      })
+    }
+
+    let stat
+    try {
+      stat = await fs.stat(targetDir)
+    } catch {
+      return res.status(400).json({
+        success: false,
+        error: 'Target directory does not exist',
+      })
+    }
+
+    if (!stat.isDirectory()) {
+      return res.status(400).json({
+        success: false,
+        error: 'targetDir must be a directory',
+      })
+    }
+
+    const safeName = path.basename(file.originalname || '')
+    if (!safeName || safeName === '.' || safeName === '..') {
+      return res.status(400).json({ success: false, error: 'Invalid file name' })
+    }
+
+    const resolvedDir = path.resolve(targetDir)
+    const fullPath = path.resolve(path.join(resolvedDir, safeName))
+    const rel = path.relative(resolvedDir, fullPath)
+    if (rel.startsWith("..") || path.isAbsolute(rel)) {
+      return res.status(400).json({ success: false, error: "Invalid path" })
+    }
+
+    if (!isPathAllowed(fullPath)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
+    }
+
+    await fs.writeFile(fullPath, file.buffer)
+
+    res.json({
+      success: true,
+      message: 'Uploaded successfully',
+      path: fullPath,
+    })
+  } catch (error: any) {
+    console.error('[files] upload error:', error.message)
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to upload',
     })
   }
 })

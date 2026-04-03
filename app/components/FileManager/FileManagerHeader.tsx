@@ -1,29 +1,19 @@
 import { FC } from "react"
-import { View, ViewStyle, ScrollView } from "react-native"
+import { ActivityIndicator, View, ViewStyle, ScrollView } from "react-native"
 import { useTranslation } from "react-i18next"
 
 import { Text } from "@/components/Text"
 import { Button } from "@/components/Button"
 import { Icon } from "@/components/Icon"
 import { SectionHeader } from "@/components/SectionHeader"
-import type { TxKeyPath } from "@/i18n"
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
 import type { QuickAccessPath } from "../../../shared/types/file-manager"
 
-const QUICK_ACCESS_LABEL_TX: Record<string, TxKeyPath> = {
-  "/home": "fileManager:quickAccessHome",
-  "/var/log": "fileManager:quickAccessLogs",
-  "/etc": "fileManager:quickAccessConfig",
-  "/tmp": "fileManager:quickAccessTemp",
-  "/home/vantuan88291/.openclaw/workspace/code": "fileManager:quickAccessCode",
-  "/home/vantuan88291/.openclaw/workspace/code/reactnative/pi-manager":
-    "fileManager:quickAccessPiManager",
-}
-
 export interface FileManagerHeaderProps {
   currentPath: string
   quickAccessPaths: QuickAccessPath[]
+  uploading?: boolean
   onGoUp: () => void
   onQuickAccess: (path: QuickAccessPath) => void
   onCreateFolder: () => void
@@ -34,10 +24,11 @@ export interface FileManagerHeaderProps {
 export const FileManagerHeader: FC<FileManagerHeaderProps> = ({
   currentPath,
   quickAccessPaths,
+  uploading = false,
   onGoUp,
   onQuickAccess,
-  onCreateFolder,
   onCreateFile,
+  onCreateFolder,
   onUpload,
 }) => {
   const { t } = useTranslation()
@@ -51,7 +42,7 @@ export const FileManagerHeader: FC<FileManagerHeaderProps> = ({
         <Button
           preset="default"
           onPress={onGoUp}
-          disabled={goUpDisabled}
+          disabled={goUpDisabled || uploading}
           style={themed($breadcrumbUpBtn)}
         >
           <Icon font="Ionicons" icon="arrow-up" size={16} />
@@ -74,34 +65,23 @@ export const FileManagerHeader: FC<FileManagerHeaderProps> = ({
             {t("fileManager:quickAccess")}
           </Text>
           <View style={$quickAccessList}>
-            {quickAccessPaths.map((pathObj) => {
-              const labelTx = QUICK_ACCESS_LABEL_TX[pathObj.path]
-              return (
-                <Button
-                  key={pathObj.path}
-                  preset="default"
-                  onPress={() => onQuickAccess(pathObj)}
-                  style={themed($quickAccessChip)}
-                >
-                  <Icon font="Ionicons" icon="bookmark" size={14} color={theme.colors.tint} />
-                  {!!labelTx ? (
-                    <Text
-                      size="xs"
-                      weight="medium"
-                      style={themed($quickAccessChipLabel)}
-                      tx={labelTx}
-                    />
-                  ) : (
-                    <Text
-                      size="xs"
-                      weight="medium"
-                      style={themed($quickAccessChipLabel)}
-                      text={pathObj.label}
-                    />
-                  )}
-                </Button>
-              )
-            })}
+            {quickAccessPaths.map((pathObj) => (
+              <Button
+                key={pathObj.path}
+                preset="default"
+                onPress={() => onQuickAccess(pathObj)}
+                disabled={uploading}
+                style={themed($quickAccessChip)}
+              >
+                <Icon font="Ionicons" icon="bookmark" size={14} color={theme.colors.tint} />
+                <Text
+                  size="xs"
+                  weight="medium"
+                  style={themed($quickAccessChipLabel)}
+                  text={pathObj.label}
+                />
+              </Button>
+            ))}
           </View>
         </View>
       )}
@@ -110,14 +90,33 @@ export const FileManagerHeader: FC<FileManagerHeaderProps> = ({
         titleTx="fileManager:sectionFiles"
         rightAction={
           <View style={themed($headerActions)}>
-            <Button preset="default" onPress={onCreateFolder} style={themed($headerActionBtn)}>
+            <Button
+              preset="default"
+              onPress={onCreateFolder}
+              disabled={uploading}
+              style={themed($headerActionBtn)}
+            >
               <Icon font="Ionicons" icon="folder" size={18} />
             </Button>
-            <Button preset="default" onPress={onCreateFile} style={themed($headerActionBtn)}>
+            <Button
+              preset="default"
+              onPress={onCreateFile}
+              disabled={uploading}
+              style={themed($headerActionBtn)}
+            >
               <Icon font="Ionicons" icon="document" size={18} />
             </Button>
-            <Button preset="default" onPress={onUpload} style={themed($headerActionBtn)}>
-              <Icon font="Ionicons" icon="cloud-upload" size={18} />
+            <Button
+              preset="default"
+              onPress={onUpload}
+              disabled={uploading}
+              style={themed($headerActionBtn)}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color={theme.colors.tint} />
+              ) : (
+                <Icon font="Ionicons" icon="cloud-upload" size={18} />
+              )}
             </Button>
           </View>
         }

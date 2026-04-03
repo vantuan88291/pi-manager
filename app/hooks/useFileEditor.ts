@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
-import type { FileReadResponse } from "@/shared/types/file-manager"
+
+import { getJsonApi, postJsonApi } from "@/utils/restApi"
 
 interface UseFileEditorParams {
   filePath: string
@@ -126,16 +127,19 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`)
-        const result: FileReadResponse = await response.json()
+        const result = await getJsonApi<{
+          success: boolean
+          data?: { content: string }
+          error?: string
+        }>(`/api/files/read?path=${encodeURIComponent(filePath)}`)
 
         if (!isMounted) return
 
-        if (result.success && result.data) {
+        if (result.data?.content !== undefined) {
           setContent(result.data.content)
           setOriginalContent(result.data.content)
         } else {
-          setError(result.error || "Failed to read file")
+          setError("Failed to read file")
         }
       } catch (err: any) {
         if (!isMounted) return
@@ -162,22 +166,8 @@ export function useFileEditor({ filePath, fileName }: UseFileEditorParams): UseF
     setSaving(true)
 
     try {
-      const response = await fetch("/api/files/write", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          path: filePath,
-          content,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setOriginalContent(content)
-      } else {
-        setError(result.error || "Failed to save file")
-      }
+      await postJsonApi("/api/files/write", { path: filePath, content })
+      setOriginalContent(content)
     } catch (err: any) {
       setError(err.message || "Network error")
     } finally {

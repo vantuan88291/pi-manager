@@ -11,6 +11,7 @@ import type {
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 import { useSocket } from "@/services/socket/SocketContext"
 import { fileManagerClientModule } from "@/services/socket/modules/file-manager"
+import { postJsonApi, postMultipartApi } from "@/utils/restApi"
 import type { FileInfo, QuickAccessPath } from "../../shared/types/file-manager"
 import { QUICK_ACCESS_PATHS } from "../../shared/types/file-manager"
 
@@ -27,6 +28,7 @@ export function useFileManager() {
 
   const [items, setItems] = useState<FileInfo[]>([])
   const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
   const [quickAccessPaths] = useState<QuickAccessPath[]>(() => [...QUICK_ACCESS_PATHS])
   const [error, setError] = useState<string | null>(null)
 
@@ -167,17 +169,9 @@ export function useFileManager() {
 
     try {
       if (createType === "folder") {
-        await fetch("/api/files/create-folder", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: newPath }),
-        })
+        await postJsonApi("/api/files/create-folder", { path: newPath })
       } else {
-        await fetch("/api/files/write", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: newPath, content: "" }),
-        })
+        await postJsonApi("/api/files/write", { path: newPath, content: "" })
       }
 
       setCreateModalVisible(false)
@@ -201,20 +195,21 @@ export function useFileManager() {
       const file = e.target.files?.[0]
       if (!file) return
 
+      setUploading(true)
       try {
-        const content = await file.text()
-        const newPath = `${currentPathRef.current}/${file.name}`
-        await fetch("/api/files/write", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: newPath, content }),
-        })
+        const formData = new FormData()
+        formData.append("targetDir", currentPathRef.current)
+        formData.append("file", file, file.name)
+
+        await postMultipartApi("/api/files/upload", formData)
 
         handleRefresh()
         showAlert(t("common:success"), t("fileManager:uploadSuccess", { name: file.name }))
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : t("fileManager:uploadFailed")
         showAlert(t("common:error"), message)
+      } finally {
+        setUploading(false)
       }
 
       if (fileInputRef.current) {
@@ -252,6 +247,7 @@ export function useFileManager() {
     currentPath,
     items,
     loading,
+    uploading,
     quickAccessPaths,
     error,
     alertConfig,
