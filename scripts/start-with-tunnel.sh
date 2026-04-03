@@ -78,6 +78,40 @@ else
   TELEGRAM_ID="your-telegram-id"
 fi
 
+# DEBUG for Node server (Socket dev bypass).
+# 1) Root .env: SERVER_DEBUG= or DEBUG= (not EXPO_PUBLIC_*)
+# 2) Else preserve existing server/.env DEBUG=
+# 3) Else false
+SERVER_DEBUG_VALUE="false"
+_root_debug_set=false
+if [ -f "$ENV_FILE" ]; then
+  _raw=""
+  if grep -qE '^SERVER_DEBUG=' "$ENV_FILE"; then
+    _raw=$(grep -E '^SERVER_DEBUG=' "$ENV_FILE" | head -1 | cut -d'=' -f2-)
+    _root_debug_set=true
+  elif grep -qE '^DEBUG=' "$ENV_FILE"; then
+    _raw=$(grep -E '^DEBUG=' "$ENV_FILE" | head -1 | cut -d'=' -f2-)
+    _root_debug_set=true
+  fi
+  if [ "$_root_debug_set" = true ]; then
+    _raw=$(echo "$_raw" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | tr -d '"' | tr -d "'")
+    case "$_raw" in
+      true|1|yes) SERVER_DEBUG_VALUE="true" ;;
+      *) SERVER_DEBUG_VALUE="false" ;;
+    esac
+  fi
+fi
+if [ "$_root_debug_set" = false ] && [ -f "$SERVER_ENV_FILE" ]; then
+  if grep -qE '^DEBUG=' "$SERVER_ENV_FILE"; then
+    _raw=$(grep -E '^DEBUG=' "$SERVER_ENV_FILE" | head -1 | cut -d'=' -f2-)
+    _raw=$(echo "$_raw" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | tr -d '"' | tr -d "'")
+    case "$_raw" in
+      true|1|yes) SERVER_DEBUG_VALUE="true" ;;
+      *) SERVER_DEBUG_VALUE="false" ;;
+    esac
+  fi
+fi
+
 # Update server .env with values from root .env
 echo "✍️  Writing server .env..."
 cat > "$SERVER_ENV_FILE" << ENVEOF
@@ -85,7 +119,7 @@ PORT=3001
 TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN
 ALLOWED_ORIGINS=$TUNNEL_URL,http://localhost:8081,http://localhost:3001
 ADMIN_TELEGRAM_ID=$TELEGRAM_ID
-DEBUG=true
+DEBUG=$SERVER_DEBUG_VALUE
 ENVEOF
 
 # Verify written values
@@ -94,6 +128,7 @@ echo "   - PORT=3001"
 echo "   - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:0:10}... (length: ${#TELEGRAM_BOT_TOKEN})"
 echo "   - ALLOWED_ORIGINS=$TUNNEL_URL,..."
 echo "   - ADMIN_TELEGRAM_ID=${TELEGRAM_ID:0:5}..."
+echo "   - DEBUG=$SERVER_DEBUG_VALUE (root SERVER_DEBUG/DEBUG, else keep server/.env, else false)"
 echo ""
 
 # Root .env: EXPO_PUBLIC_SOCKET_URL must match this tunnel before expo export (baked into web bundle).
