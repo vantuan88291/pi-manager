@@ -7,6 +7,7 @@ import express from "express"
 import { Server } from "socket.io"
 import { setupSocketServer } from "./socket/index.js"
 import filesRouter from "./routes/files.js"
+import modelUsageRouter from "./routes/modelUsage.js"
 import { requireApiSession } from "./middleware/requireApiSession.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -47,6 +48,9 @@ app.get("/api/health", (_req, res) => {
 
 // File operations API (requires same Bearer session as Socket.IO)
 app.use("/api/files", requireApiSession, filesRouter)
+
+// Model usage proxy (requires auth)
+app.use("/api/model-usage", requireApiSession, modelUsageRouter)
 
 // System reboot endpoint (requires sudo + session)
 app.post("/api/system/reboot", requireApiSession, async (_req, res) => {

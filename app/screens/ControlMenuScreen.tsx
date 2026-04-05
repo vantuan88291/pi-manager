@@ -44,6 +44,7 @@ interface MenuItem {
     | "CronJob"
     | "SystemControl"
     | "FileManager"
+    | "ModelUsage"
   action?: () => void
 }
 
@@ -136,6 +137,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
   const audioColors = getMenuIcon("audio")
   const cameraColors = getMenuIcon("camera")
   const storageColors = getMenuIcon("storage")
+  const modelUsageColors = getMenuIcon("modelUsage")
 
   function getMenuIcon(feature: keyof typeof featureColors) {
     const { accent, badgeLight, badgeDark } = featureColors[feature]
@@ -276,6 +278,19 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
       icon: { font: "Ionicons", name: "time", color: "#8B5CF6", badgeBg: "#F5F3FF" },
       accentColor: "#8B5CF6",
       screen: "CronJob",
+    },
+    {
+      id: "model-usage",
+      titleTx: "controlMenu:modelUsage",
+      subtitleTx: "controlMenu:subtitles.modelUsage",
+      icon: {
+        font: "Ionicons",
+        name: "sparkles",
+        color: modelUsageColors.accent,
+        badgeBg: modelUsageColors.badgeBg,
+      },
+      accentColor: modelUsageColors.accent,
+      screen: "ModelUsage",
     },
     {
       id: "system",

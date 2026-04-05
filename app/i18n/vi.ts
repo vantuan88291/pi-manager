@@ -132,6 +132,7 @@ const vi: Translations = {
   },
   controlMenu: {
     title: "Điều khiển",
+    modelUsage: "Model usage",
     wifi: "Wi-Fi",
     bluetooth: "Bluetooth",
     audio: "Âm thanh",
@@ -155,6 +156,7 @@ const vi: Translations = {
       cronjob: "Quản lý tác vụ tự động",
       system: "Quản lý tiến trình & hệ thống",
       files: "Duyệt & quản lý file",
+      modelUsage: "Xem hoạt động mô hình gần đây",
     },
   },
   wifi: {
@@ -345,6 +347,14 @@ const vi: Translations = {
     rebooting: "Đang khởi động lại...",
     failed: "Không thể khởi động lại",
   },
+  modelUsageScreen: {
+    title: "Model usage",
+    recentRequests: "Yêu cầu gần đây",
+    inputTokens: "Input tokens: {{count}}",
+    outputTokens: "Output tokens: {{count}}",
+    emptyState: "Không có yêu cầu",
+  },
+
   fileManager: {
     title: "Quản lý file",
     sectionFiles: "Tệp",

@@ -130,6 +130,7 @@ const en = {
   },
   controlMenu: {
     title: "Control",
+    modelUsage: "Model usage",
     wifi: "Wi-Fi",
     bluetooth: "Bluetooth",
     audio: "Audio",
@@ -153,6 +154,7 @@ const en = {
       cronjob: "Manage scheduled tasks",
       system: "Process & system management",
       files: "Browse & manage files",
+      modelUsage: "View recent model usage",
     },
   },
   wifi: {
@@ -343,6 +345,14 @@ const en = {
     rebooting: "Rebooting...",
     failed: "Failed to reboot",
   },
+  modelUsageScreen: {
+    title: "Model usage",
+    recentRequests: "Recent requests",
+    inputTokens: "Input tokens: {{count}}",
+    outputTokens: "Output tokens: {{count}}",
+    emptyState: "No recent requests",
+  },
+
   fileManager: {
     title: "File Manager",
     sectionFiles: "Files",
