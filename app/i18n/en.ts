@@ -348,8 +348,8 @@ const en = {
   modelUsageScreen: {
     title: "Model usage",
     recentRequests: "Recent requests",
-    promptTokens: "Prompt tokens: {{count}}",
-    completionTokens: "Completion tokens: {{count}}",
+    inputTokens: "Input tokens: {{count}}",
+    outputTokens: "Output tokens: {{count}}",
     emptyState: "No recent requests",
   },
 

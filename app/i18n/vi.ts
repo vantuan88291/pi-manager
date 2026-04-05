@@ -350,8 +350,8 @@ const vi: Translations = {
   modelUsageScreen: {
     title: "Model usage",
     recentRequests: "Yêu cầu gần đây",
-    promptTokens: "Prompt tokens: {{count}}",
-    completionTokens: "Completion tokens: {{count}}",
+    inputTokens: "Input tokens: {{count}}",
+    outputTokens: "Output tokens: {{count}}",
     emptyState: "Không có yêu cầu",
   },
 

@@ -1,5 +1,5 @@
 import { FC, useCallback, useEffect, useState } from "react"
-import { RefreshControl, View, ViewStyle } from "react-native"
+import { RefreshControl, View, ViewStyle, TextStyle } from "react-native"
 import { format } from "date-fns"
 import { useTranslation } from "react-i18next"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
@@ -56,6 +56,8 @@ export const ModelUsageScreen: FC<ModelUsageScreenProps> = function ModelUsageSc
         leftIcon="back"
         onLeftPress={() => navigation.goBack()}
         titleMode="center"
+        rightTx="common:refresh"
+        onRightPress={loadRequests}
       />
 
       <View style={themed($content)}>
@@ -110,16 +112,18 @@ function ModelUsageListItem({ request }: { request: ModelUsageRequest }) {
       </View>
       <View style={themed($tokenRow)}>
         <Text
-          tx="modelUsageScreen:promptTokens"
+          tx="modelUsageScreen:inputTokens"
           txOptions={{ count: request.promptTokens }}
           size="xs"
           color="textDim"
+          style={themed($tokenText)}
         />
         <Text
-          tx="modelUsageScreen:completionTokens"
+          tx="modelUsageScreen:outputTokens"
           txOptions={{ count: request.completionTokens }}
           size="xs"
           color="textDim"
+          style={themed($tokenText)}
         />
       </View>
       <Text
@@ -148,6 +152,11 @@ const $content: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 
 const $card: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   padding: spacing.md,
+})
+
+const $tokenText: ThemedStyle<TextStyle> = ({ colors }) => ({
+  fontWeight: "600",
+  color: colors.tint,
 })
 
 const $message: ViewStyle = {
