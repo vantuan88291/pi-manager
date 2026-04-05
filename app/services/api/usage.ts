@@ -14,5 +14,5 @@ export interface ModelUsageHistory {
 }
 
 export async function fetchModelUsageHistory(): Promise<ModelUsageHistory> {
-  return getJsonApi<ModelUsageHistory>("/api/usage/history")
+  return getJsonApi<ModelUsageHistory>("/api/model-usage/history")
 }
