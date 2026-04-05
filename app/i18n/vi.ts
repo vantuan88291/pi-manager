@@ -353,6 +353,20 @@ const vi: Translations = {
     inputTokens: "Input tokens: {{count}}",
     outputTokens: "Output tokens: {{count}}",
     emptyState: "Không có yêu cầu",
+    summaryRequests: "Requests",
+    summaryInputTokens: "Input",
+    summaryOutputTokens: "Output",
+    status: "Status",
+  },
+  usageTracker: {
+    title: "Usage tracker",
+    notSupported: "Không hỗ trợ",
+    plan: "Plan: {{plan}}",
+    sessionQuota: "Quota phiên",
+    weeklyQuota: "Quota hàng tuần",
+    resetAt: "Reset lúc {{time}}",
+    remaining: "Còn {{remaining}}",
+    unlimited: "Không giới hạn",
   },
 
   fileManager: {

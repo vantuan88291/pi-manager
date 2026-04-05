@@ -1,5 +1,8 @@
 api: http://localhost:20128/api/usage/history
 api field need to get: recentRequests
+
+- feature show total: use totalRequests, totalPromptTokens, totalCompletionTokens fields to show on the top of list
+
 api response:
 {
   "totalRequests": 16,
