@@ -177,6 +177,10 @@ const $content: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingBottom: spacing.xl,
 })
 
+const $loading: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  marginBottom: spacing.md,
+})
+
 const $card: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginBottom: spacing.lg,
   padding: spacing.md,
