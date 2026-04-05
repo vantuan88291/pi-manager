@@ -1,7 +1,6 @@
 import { FC, useCallback, useEffect, useMemo, useState } from "react"
 import { RefreshControl, View, ViewStyle, TextStyle } from "react-native"
 import { format } from "date-fns"
-import { useTranslation } from "react-i18next"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { Header } from "@/components/Header"
@@ -61,7 +60,6 @@ type ModelUsageScreenProps = NativeStackScreenProps<AppStackParamList, "ModelUsa
 export const ModelUsageScreen: FC<ModelUsageScreenProps> = function ModelUsageScreen({
   navigation,
 }) {
-  const { t } = useTranslation()
   const { themed } = useAppTheme()
 
   const [requests, setRequests] = useState<ModelUsageRequest[]>([])
@@ -119,8 +117,8 @@ export const ModelUsageScreen: FC<ModelUsageScreenProps> = function ModelUsageSc
         leftIcon="back"
         onLeftPress={() => navigation.goBack()}
         titleMode="center"
-        rightTx="common:refresh"
-        onRightPress={loadRequests}
+        rightTx="modelUsageScreen:status"
+        onRightPress={() => navigation.navigate("UsageTracker")}
       />
 
       <View style={themed($content)}>

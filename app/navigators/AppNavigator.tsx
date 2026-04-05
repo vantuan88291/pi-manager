@@ -30,6 +30,7 @@ import { SystemControlScreen } from "@/screens/SystemControlScreen"
 import { FileManagerScreen } from "@/screens/FileManagerScreen"
 import { FileEditorScreen } from "@/screens/FileEditorScreen"
 import { ModelUsageScreen } from "@/screens/ModelUsageScreen"
+import { UsageTrackerScreen } from "@/screens/UsageTrackerScreen"
 import { useSocket } from "@/services/socket/SocketContext"
 import { useEffect } from "react"
 
@@ -77,6 +78,7 @@ const AppStack = () => {
           <Stack.Screen name="FileManager" component={FileManagerScreen} />
           <Stack.Screen name="FileEditor" component={FileEditorScreen} />
           <Stack.Screen name="ModelUsage" component={ModelUsageScreen} />
+          <Stack.Screen name="UsageTracker" component={UsageTrackerScreen} />
         </>
       ) : (
         <Stack.Screen name="TelegramAuth" component={TelegramAuthScreen} />

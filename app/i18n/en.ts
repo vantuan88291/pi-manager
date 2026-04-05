@@ -354,6 +354,17 @@ const en = {
     summaryRequests: "Requests",
     summaryInputTokens: "Input",
     summaryOutputTokens: "Output",
+    status: "Status",
+  },
+  usageTracker: {
+    title: "Usage tracker",
+    notSupported: "Not supported",
+    plan: "Plan: {{plan}}",
+    sessionQuota: "Session quota",
+    weeklyQuota: "Weekly quota",
+    resetAt: "Reset at {{time}}",
+    remaining: "{{remaining}} remaining",
+    unlimited: "Unlimited",
   },
 
   fileManager: {
