@@ -23,14 +23,14 @@ export const ProgressBar: FC<ProgressBarProps> = ({ value, color, height = 6, st
   return (
     <View style={[$track, { height, backgroundColor: theme.colors.border }, style]}>
       <View
-        style=[
+        style={[
           $fill,
           {
             height,
             backgroundColor: barColor,
             width: `${clampedValue}%`,
           },
-        ]
+        ]}
       />
     </View>
   )
