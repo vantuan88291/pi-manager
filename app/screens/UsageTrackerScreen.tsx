@@ -1,5 +1,5 @@
 import { FC, useCallback, useEffect, useMemo, useState } from "react"
-import { RefreshControl, View, ViewStyle, TextStyle } from "react-native"
+import { ActivityIndicator, RefreshControl, View, ViewStyle, TextStyle } from "react-native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { Header } from "@/components/Header"
@@ -59,6 +59,13 @@ export const UsageTrackerScreen: FC<UsageTrackerScreenProps> = function UsageTra
       />
 
       <View style={themed($content)}>
+        {loading && (
+          <ActivityIndicator
+            size="small"
+            color={themed((theme) => theme.colors.tint)}
+            style={themed($loading)}
+          />
+        )}
         {error && (
           <Text text={error} color="error" size="xs" style={themed($message)} />
         )}
@@ -134,15 +141,19 @@ function QuotaLabel({ labelTx, quota, themed }: QuotaLabelProps) {
 
   const percent = quota.total > 0 ? (quota.used / quota.total) * 100 : 0
   const clamped = Math.max(0, Math.min(100, percent))
+  const displayValue = Math.round(clamped)
 
   return (
     <View style={themed($quotaBlock)}>
       <Text tx={labelTx} size="xs" color="textDim" />
       <ProgressBar value={clamped / 100} />
-      <Text
-        text={`${formatNumber(quota.used)} / ${formatNumber(quota.total)}`}
-        weight="semiBold"
-      />
+      <View style={themed($progressRow)}>
+        <Text
+          text={`${formatNumber(quota.used)} / ${formatNumber(quota.total)}`}
+          weight="semiBold"
+        />
+        <Text text={`${displayValue}%`} size="xs" color="textDim" />
+      </View>
       <Text
         text={quota.unlimited ? "Unlimited" : `Remaining ${formatNumber(quota.remaining)}`}
         size="xs"
@@ -197,4 +208,10 @@ const $quotaBlock: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderColor: colors.border,
   padding: spacing.sm,
   marginRight: spacing.xs,
+})
+
+const $progressRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: spacing.xxxs,
 })
