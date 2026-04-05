@@ -19,7 +19,7 @@ const formatNumber = (value: number) => new Intl.NumberFormat().format(value)
 export const UsageTrackerScreen: FC<UsageTrackerScreenProps> = function UsageTrackerScreen({
   navigation,
 }) {
-  const { themed } = useAppTheme()
+  const { themed, theme } = useAppTheme()
 
   const [connections, setConnections] = useState<UsageTrackerConnection[]>([])
   const [loading, setLoading] = useState(false)
@@ -60,11 +60,10 @@ export const UsageTrackerScreen: FC<UsageTrackerScreenProps> = function UsageTra
 
       <View style={themed($content)}>
         {loading && (
-          <ActivityIndicator
-            size="small"
-            color={themed((theme) => theme.colors.tint)}
-            style={themed($loading)}
-          />
+          <View style={themed($loaderWrapper)}>
+            <ActivityIndicator size="small" color={theme.colors.tint} />
+            <Text tx="common:loading" size="xs" color="textDim" style={themed($loadingText)} />
+          </View>
         )}
         {error && (
           <Text text={error} color="error" size="xs" style={themed($message)} />
@@ -212,6 +211,23 @@ const $quotaBlock: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderColor: colors.border,
   padding: spacing.sm,
   marginRight: spacing.xs,
+})
+
+const $quotaRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: spacing.sm,
+})
+
+const $loaderWrapper: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: spacing.xxxs,
+  marginBottom: spacing.md,
+})
+
+const $loadingText: ThemedStyle<TextStyle> = ({ spacing }) => ({
+  marginLeft: spacing.xxxs,
 })
 
 const $progressRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
