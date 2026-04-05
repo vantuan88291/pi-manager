@@ -11,6 +11,8 @@ import type { ThemedStyle } from "@/theme/types"
 import { fetchUsageTracker, type UsageTrackerConnection } from "@/services/api/usageTracker"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 
+import { ProgressBar } from "@/components/ProgressBar"
+
 type UsageTrackerScreenProps = NativeStackScreenProps<AppStackParamList, "UsageTracker">
 
 const formatNumber = (value: number) => new Intl.NumberFormat().format(value)
@@ -65,7 +67,7 @@ export const UsageTrackerScreen: FC<UsageTrackerScreenProps> = function UsageTra
         {connections.map((conn) => (
           <Card
             key={conn.id}
-            heading={conn.name ?? conn.provider}
+            heading={conn.provider}
             style={themed($card)}
             ContentComponent={<ConnectionDetails connection={conn} />}
           />
@@ -83,19 +85,26 @@ function ConnectionDetails({ connection }: { connection: UsageTrackerConnection 
 
   return (
     <View style={themed($connection)}>
-      <Text tx="usageTracker:plan" txOptions={{ plan: connection.plan ?? "—" }} size="xs" color="textDim" />
+      {connection.name && (
+        <Text
+          text={connection.name}
+          size="xs"
+          color="textDim"
+          style={themed($accountName)}
+        />
+      )}
+      <Text
+        tx="usageTracker:plan"
+        txOptions={{ plan: connection.plan ?? "—" }}
+        size="xs"
+        color="textDim"
+      />
       <View style={themed($quotaRow)}>
         <QuotaLabel labelTx="usageTracker:sessionQuota" quota={session} themed={themed} />
         <QuotaLabel labelTx="usageTracker:weeklyQuota" quota={weekly} themed={themed} />
       </View>
     </View>
   )
-}
-
-type QuotaLabelProps = {
-  labelTx: string
-  quota?: UsageTrackerConnection["quotas"]["session"]
-  themed: ReturnType<typeof useAppTheme>["themed"]
 }
 
 function QuotaLabel({ labelTx, quota, themed }: QuotaLabelProps) {
@@ -113,9 +122,12 @@ function QuotaLabel({ labelTx, quota, themed }: QuotaLabelProps) {
       )
     : null
 
+  const percent = quota.total > 0 ? (quota.used / quota.total) * 100 : 0
+
   return (
     <View style={themed($quotaBlock)}>
       <Text tx={labelTx} size="xs" color="textDim" />
+      <ProgressBar value={percent / 100} />
       <Text
         text={`${formatNumber(quota.used)} / ${formatNumber(quota.total)}`}
         weight="semiBold"
@@ -126,43 +138,13 @@ function QuotaLabel({ labelTx, quota, themed }: QuotaLabelProps) {
         color="textDim"
       />
       {resetAt && (
-        <Text tx="usageTracker:resetAt" txOptions={{ time: resetAt }} size="xs" color="textDim" />
+        <Text
+          tx="usageTracker:resetAt"
+          txOptions={{ time: resetAt }}
+          size="xs"
+          color="textDim"
+        />
       )}
     </View>
   )
 }
-
-const $content: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.md,
-  paddingTop: spacing.lg,
-  paddingBottom: spacing.xl,
-})
-
-const $card: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
-  padding: spacing.md,
-})
-
-const $message: ViewStyle = {
-  marginBottom: 8,
-}
-
-const $connection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  gap: spacing.xs,
-})
-
-const $quotaRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginTop: spacing.sm,
-})
-
-const $quotaBlock: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  flex: 1,
-  backgroundColor: colors.surface,
-  borderRadius: 10,
-  borderWidth: 1,
-  borderColor: colors.border,
-  padding: spacing.sm,
-  marginRight: spacing.xs,
-})
