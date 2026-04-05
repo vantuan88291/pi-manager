@@ -351,6 +351,9 @@ const en = {
     inputTokens: "Input tokens: {{count}}",
     outputTokens: "Output tokens: {{count}}",
     emptyState: "No recent requests",
+    summaryRequests: "Requests",
+    summaryInputTokens: "Input",
+    summaryOutputTokens: "Output",
   },
 
   fileManager: {

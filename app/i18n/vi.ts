@@ -353,6 +353,9 @@ const vi: Translations = {
     inputTokens: "Input tokens: {{count}}",
     outputTokens: "Output tokens: {{count}}",
     emptyState: "Không có yêu cầu",
+    summaryRequests: "Requests",
+    summaryInputTokens: "Input",
+    summaryOutputTokens: "Output",
   },
 
   fileManager: {
