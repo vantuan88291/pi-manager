@@ -13,13 +13,50 @@ import type { ThemedStyle } from "@/theme/types"
 import { fetchModelUsageHistory, type ModelUsageHistory, type ModelUsageRequest } from "@/services/api/usage"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 
-type ModelUsageScreenProps = NativeStackScreenProps<AppStackParamList, "ModelUsage">
-
 type Totals = {
   requests: number
   inputTokens: number
   outputTokens: number
 }
+
+const ModelUsageTotals: FC<{ totals: Totals }> = ({ totals }) => {
+  const { themed } = useAppTheme()
+  const formatNumber = useMemo(() => (value: number) => new Intl.NumberFormat().format(value), [])
+
+  return (
+    <View style={themed($summary)}>
+      <View style={themed($summaryItem)}>
+        <Text tx="modelUsageScreen:summaryRequests" size="xs" color="textDim" />
+        <Text
+          text={formatNumber(totals.requests)}
+          weight="semiBold"
+          size="md"
+          style={themed($summaryValue)}
+        />
+      </View>
+      <View style={themed($summaryItem)}>
+        <Text tx="modelUsageScreen:summaryInputTokens" size="xs" color="textDim" />
+        <Text
+          text={formatNumber(totals.inputTokens)}
+          weight="semiBold"
+          size="md"
+          style={themed($summaryValue)}
+        />
+      </View>
+      <View style={themed($summaryItem)}>
+        <Text tx="modelUsageScreen:summaryOutputTokens" size="xs" color="textDim" />
+        <Text
+          text={formatNumber(totals.outputTokens)}
+          weight="semiBold"
+          size="md"
+          style={themed($summaryValue)}
+        />
+      </View>
+    </View>
+  )
+}
+
+type ModelUsageScreenProps = NativeStackScreenProps<AppStackParamList, "ModelUsage">
 
 export const ModelUsageScreen: FC<ModelUsageScreenProps> = function ModelUsageScreen({
   navigation,
@@ -120,43 +157,6 @@ export const ModelUsageScreen: FC<ModelUsageScreenProps> = function ModelUsageSc
         />
       </View>
     </Screen>
-  )
-}
-
-function ModelUsageTotals({ totals }: { totals: Totals }) {
-  const { themed } = useAppTheme()
-  const formatNumber = useMemo(() => (value: number) => new Intl.NumberFormat().format(value), [])
-
-  return (
-    <View style={themed($summary)}>
-      <View style={themed($summaryItem)}>
-        <Text tx="modelUsageScreen:summaryRequests" size="xs" color="textDim" />
-        <Text
-          text={formatNumber(totals.requests)}
-          weight="semiBold"
-          size="md"
-          style={themed($summaryValue)}
-        />
-      </View>
-      <View style={themed($summaryItem)}>
-        <Text tx="modelUsageScreen:summaryInputTokens" size="xs" color="textDim" />
-        <Text
-          text={formatNumber(totals.inputTokens)}
-          weight="semiBold"
-          size="md"
-          style={themed($summaryValue)}
-        />
-      </View>
-      <View style={themed($summaryItem)}>
-        <Text tx="modelUsageScreen:summaryOutputTokens" size="xs" color="textDim" />
-        <Text
-          text={formatNumber(totals.outputTokens)}
-          weight="semiBold"
-          size="md"
-          style={themed($summaryValue)}
-        />
-      </View>
-    </View>
   )
 }
 
