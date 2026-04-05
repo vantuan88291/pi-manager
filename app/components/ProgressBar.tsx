@@ -1,5 +1,5 @@
 import { FC } from "react"
-import { View, ViewStyle, Animated } from "react-native"
+import { View, ViewStyle } from "react-native"
 
 import { useAppTheme } from "@/theme/context"
 import type { ThemedStyle } from "@/theme/types"
@@ -23,24 +23,24 @@ export const ProgressBar: FC<ProgressBarProps> = ({ value, color, height = 6, st
   return (
     <View style={[$track, { height, backgroundColor: theme.colors.border }, style]}>
       <View
-        style={[
+        style=[
           $fill,
           {
             height,
             backgroundColor: barColor,
             width: `${clampedValue}%`,
           },
-        ]}
+        ]
       />
     </View>
   )
 }
 
-const $track: ViewStyle = {
+const $track: ThemedStyle<ViewStyle> = ({ borderRadius }) => ({
   borderRadius: 3,
   overflow: "hidden",
-}
+})
 
-const $fill: ViewStyle = {
+const $fill: ThemedStyle<ViewStyle> = ({ borderRadius }) => ({
   borderRadius: 3,
-}
+})

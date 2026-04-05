@@ -146,7 +146,7 @@ function QuotaLabel({ labelTx, quota, themed }: QuotaLabelProps) {
   return (
     <View style={themed($quotaBlock)}>
       <Text tx={labelTx} size="xs" color="textDim" />
-      <ProgressBar value={clamped / 100} />
+      <ProgressBar value={clamped} />
       <View style={themed($progressRow)}>
         <Text
           text={`${formatNumber(quota.used)} / ${formatNumber(quota.total)}`}
