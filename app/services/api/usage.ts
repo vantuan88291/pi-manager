@@ -11,6 +11,9 @@ export interface ModelUsageRequest {
 
 export interface ModelUsageHistory {
   recentRequests: ModelUsageRequest[]
+  totalRequests?: number
+  totalPromptTokens?: number
+  totalCompletionTokens?: number
 }
 
 export async function fetchModelUsageHistory(): Promise<ModelUsageHistory> {
