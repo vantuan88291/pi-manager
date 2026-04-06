@@ -148,12 +148,16 @@ function deliveryFromForm(data: CronJobFormData): CreateCronJobRequest["delivery
   return { mode: "announce" }
 }
 
+function sessionTargetFromForm(data: CronJobFormData): "main" | "isolated" {
+  return data.taskType === "agent" ? "isolated" : "main"
+}
+
 export function formDataToCreateRequest(data: CronJobFormData): CreateCronJobRequest {
   return {
     name: data.name || "Untitled Job",
     schedule: scheduleFromForm(data),
     payload: payloadFromForm(data),
-    sessionTarget: "isolated",
+    sessionTarget: sessionTargetFromForm(data),
     delivery: deliveryFromForm(data),
     enabled: true,
   }
@@ -167,7 +171,7 @@ export function formDataToCronJobPatch(
     name: data.name || "Untitled Job",
     schedule: scheduleFromForm(data),
     payload: payloadFromForm(data),
-    sessionTarget: "isolated",
+    sessionTarget: sessionTargetFromForm(data),
     delivery: deliveryFromForm(data),
     enabled: current.enabled,
   }
