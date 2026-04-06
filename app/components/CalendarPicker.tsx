@@ -153,7 +153,7 @@ export const CalendarPicker: FC<CalendarPickerProps> = ({
               onChangeText={onTimeChange}
               placeholder="08:00"
               style={themed($timeInput)}
-              keyboardType="number-pad"
+              keyboardType="numbers-and-punctuation"
               placeholderTextColor={theme.colors.textDim}
               textAlign="center"
             />
