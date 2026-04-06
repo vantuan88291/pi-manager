@@ -213,12 +213,6 @@ const $quotaBlock: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   marginRight: spacing.xs,
 })
 
-const $quotaRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginTop: spacing.sm,
-})
-
 const $loaderWrapper: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flexDirection: "row",
   alignItems: "center",
