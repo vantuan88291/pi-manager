@@ -13,6 +13,46 @@ function buildUrl(path: string) {
   }
 }
 
+interface UsageQuota {
+  used: number
+  total: number
+  remaining: number
+  resetAt: string | null
+  unlimited: boolean
+}
+
+function toUsageQuota(value: unknown): UsageQuota | undefined {
+  if (!value || typeof value !== "object") return undefined
+  const quota = value as Record<string, unknown>
+
+  const used = Number(quota.used)
+  const total = Number(quota.total)
+  const remaining = Number(quota.remaining)
+
+  if (!Number.isFinite(used) || !Number.isFinite(total) || !Number.isFinite(remaining)) {
+    return undefined
+  }
+
+  return {
+    used,
+    total,
+    remaining,
+    resetAt: typeof quota.resetAt === "string" ? quota.resetAt : null,
+    unlimited: Boolean(quota.unlimited),
+  }
+}
+
+function normalizeQuotas(rawQuotas: unknown): { session?: UsageQuota; weekly?: UsageQuota } | undefined {
+  if (!rawQuotas || typeof rawQuotas !== "object") return undefined
+  const q = rawQuotas as Record<string, unknown>
+
+  const session = toUsageQuota(q.session) ?? toUsageQuota(q.credit)
+  const weekly = toUsageQuota(q.weekly) ?? toUsageQuota(q.credit_freetrial)
+
+  if (!session && !weekly) return undefined
+  return { session, weekly }
+}
+
 router.get("/", async (_req, res) => {
   try {
     const upstream = await fetch(buildUrl("/api/providers"))
@@ -37,7 +77,19 @@ router.get("/", async (_req, res) => {
         try {
           const usage = await fetch(buildUrl(`/api/usage/${conn.id}`))
           if (usage.ok) {
-            copy.quotas = (await usage.json()).quotas
+            const usagePayload = (await usage.json()) as {
+              plan?: string
+              quotas?: unknown
+            }
+
+            if (typeof usagePayload.plan === "string" && usagePayload.plan.trim()) {
+              copy.plan = usagePayload.plan
+            }
+
+            const normalizedQuotas = normalizeQuotas(usagePayload.quotas)
+            if (normalizedQuotas) {
+              copy.quotas = normalizedQuotas
+            }
           } else {
             console.warn("[usage-tracker] usage request failed", conn.id, usage.status)
           }
