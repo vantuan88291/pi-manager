@@ -88,7 +88,7 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
               onChangeText={onTimeChange}
               placeholder="08:00"
               style={themed($timeInput)}
-              keyboardType="number-pad"
+              keyboardType="numbers-and-punctuation"
               placeholderTextColor={theme.colors.textDim}
             />
           </View>
@@ -126,7 +126,7 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
                 onChangeText={onTimeChange}
                 placeholder="08:00"
                 style={themed($timeInput)}
-                keyboardType="number-pad"
+                keyboardType="numbers-and-punctuation"
                 placeholderTextColor={theme.colors.textDim}
               />
             </View>
@@ -151,7 +151,7 @@ export const SchedulePicker: FC<SchedulePickerProps> = ({
               onChangeText={onTimeChange}
               placeholder="08:00"
               style={themed($timeInput)}
-              keyboardType="number-pad"
+              keyboardType="numbers-and-punctuation"
               placeholderTextColor={theme.colors.textDim}
             />
           </View>
