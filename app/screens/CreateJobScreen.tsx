@@ -8,7 +8,6 @@ import { Text } from "@/components/Text"
 import { Button } from "@/components/Button"
 import { Icon } from "@/components/Icon"
 import { Screen } from "@/components/Screen"
-import { TaskTypeDropdown, type TaskType } from "@/components/TaskTypeDropdown"
 import { CalendarPicker, type ScheduleType } from "@/components/CalendarPicker"
 import { Checkbox } from "@/components/Toggle/Checkbox"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
@@ -55,19 +54,13 @@ export const CreateJobScreen: FC = () => {
     }, [route.params.initialData, route.params.editingJobId]),
   )
 
-  const handleTaskTypeChange = (type: TaskType) => {
-    setFormData((prev) => ({ ...prev, taskType: type }))
-  }
-
   const handleScheduleTypeChange = (type: ScheduleType) => {
     setFormData((prev) => ({ ...prev, scheduleType: type }))
   }
 
   const handleValidate = (): boolean => {
     if (formData.name.length > 50) return false
-    if (formData.taskType === "shell" && !formData.command?.trim()) return false
-    if (formData.taskType === "agent" && !formData.prompt?.trim()) return false
-    if (formData.taskType === "event" && !formData.message?.trim()) return false
+    if (!formData.command?.trim()) return false
     if (formData.timeout && (formData.timeout < 1 || formData.timeout > 3600)) return false
     return true
   }
@@ -79,125 +72,57 @@ export const CreateJobScreen: FC = () => {
   }
 
   const renderTaskSpecificFields = () => {
-    switch (formData.taskType) {
-      case "shell":
-        return (
-          <>
-            <View style={themed($field)}>
-              <View style={themed($labelRow)}>
-                <Text tx="cronjob:command" weight="medium" color="text" size="sm" />
-                <Text tx="cronjob:commandRequired" color="error" size="sm" />
-              </View>
-              <TextInput
-                value={formData.command}
-                onChangeText={(text) => setFormData((prev) => ({ ...prev, command: text }))}
-                placeholder="sudo shutdown -h now"
-                style={themed($multilineInput)}
-                multiline
-                placeholderTextColor={theme.colors.textDim}
-                textAlignVertical="top"
-              />
-              <View style={themed($warningBanner)}>
-                <Text tx="cronjob:requiresSudo" size="xs" color="warning" />
-              </View>
-            </View>
-
-            <View style={themed($field)}>
-              <Text tx="cronjob:workingDirectory" weight="medium" color="text" size="sm" />
-              <TextInput
-                value={formData.workingDir}
-                onChangeText={(text) => setFormData((prev) => ({ ...prev, workingDir: text }))}
-                placeholder="/home/vantuan88291/scripts"
-                style={themed($input)}
-                placeholderTextColor={theme.colors.textDim}
-              />
-            </View>
-
-            <View style={themed($field)}>
-              <Text tx="cronjob:timeout" weight="medium" color="text" size="sm" />
-              <View style={themed($inputRow)}>
-                <TextInput
-                  value={formData.timeout?.toString() || "60"}
-                  onChangeText={(text) =>
-                    setFormData((prev) => ({ ...prev, timeout: parseInt(text) || 60 }))
-                  }
-                  placeholder="60"
-                  style={themed($smallInput)}
-                  keyboardType="number-pad"
-                  placeholderTextColor={theme.colors.textDim}
-                  textAlign="center"
-                />
-                <Text tx="cronjob:maxTimeout" size="sm" color="textDim" />
-              </View>
-            </View>
-          </>
-        )
-
-      case "agent":
-        return (
-          <>
-            <View style={themed($field)}>
-              <View style={themed($labelRow)}>
-                <Text tx="cronjob:prompt" weight="medium" color="text" size="sm" />
-                <Text tx="cronjob:promptRequired" color="error" size="sm" />
-              </View>
-              <TextInput
-                value={formData.prompt}
-                onChangeText={(text) => setFormData((prev) => ({ ...prev, prompt: text }))}
-                placeholder="Check system status and create a summary report"
-                style={themed($multilineInput)}
-                multiline
-                placeholderTextColor={theme.colors.textDim}
-                maxLength={500}
-                textAlignVertical="top"
-              />
-              <Text
-                text={t("cronjob:charCount", { count: formData.prompt?.length || 0, max: 500 })}
-                size="xs"
-                color="textDim"
-                style={themed($charCount)}
-              />
-            </View>
-
-            <View style={themed($field)}>
-              <Text tx="cronjob:model" weight="medium" color="text" size="sm" />
-              <TextInput
-                value={formData.model}
-                onChangeText={(text) => setFormData((prev) => ({ ...prev, model: text }))}
-                placeholder="qwen-coder (default)"
-                style={themed($input)}
-                placeholderTextColor={theme.colors.textDim}
-              />
-            </View>
-          </>
-        )
-
-      case "event":
-        return (
-          <View style={themed($field)}>
-            <View style={themed($labelRow)}>
-              <Text tx="cronjob:message" weight="medium" color="text" size="sm" />
-              <Text tx="cronjob:messageRequired" color="error" size="sm" />
-            </View>
-            <TextInput
-              value={formData.message}
-              onChangeText={(text) => setFormData((prev) => ({ ...prev, message: text }))}
-              placeholder="🔍 Running daily health check..."
-              style={themed($multilineInput)}
-              multiline
-              placeholderTextColor={theme.colors.textDim}
-              maxLength={200}
-              textAlignVertical="top"
-            />
-            <Text
-              text={t("cronjob:charCount", { count: formData.message?.length || 0, max: 200 })}
-              size="xs"
-              color="textDim"
-              style={themed($charCount)}
-            />
+    return (
+      <>
+        <View style={themed($field)}>
+          <View style={themed($labelRow)}>
+            <Text tx="cronjob:command" weight="medium" color="text" size="sm" />
+            <Text tx="cronjob:commandRequired" color="error" size="sm" />
           </View>
-        )
-    }
+          <TextInput
+            value={formData.command}
+            onChangeText={(text) => setFormData((prev) => ({ ...prev, command: text }))}
+            placeholder="sudo shutdown -h now"
+            style={themed($multilineInput)}
+            multiline
+            placeholderTextColor={theme.colors.textDim}
+            textAlignVertical="top"
+          />
+          <View style={themed($warningBanner)}>
+            <Text tx="cronjob:requiresSudo" size="xs" color="warning" />
+          </View>
+        </View>
+
+        <View style={themed($field)}>
+          <Text tx="cronjob:workingDirectory" weight="medium" color="text" size="sm" />
+          <TextInput
+            value={formData.workingDir}
+            onChangeText={(text) => setFormData((prev) => ({ ...prev, workingDir: text }))}
+            placeholder="/home/vantuan88291/scripts"
+            style={themed($input)}
+            placeholderTextColor={theme.colors.textDim}
+          />
+        </View>
+
+        <View style={themed($field)}>
+          <Text tx="cronjob:timeout" weight="medium" color="text" size="sm" />
+          <View style={themed($inputRow)}>
+            <TextInput
+              value={formData.timeout?.toString() || "60"}
+              onChangeText={(text) =>
+                setFormData((prev) => ({ ...prev, timeout: parseInt(text) || 60 }))
+              }
+              placeholder="60"
+              style={themed($smallInput)}
+              keyboardType="number-pad"
+              placeholderTextColor={theme.colors.textDim}
+              textAlign="center"
+            />
+            <Text tx="cronjob:maxTimeout" size="sm" color="textDim" />
+          </View>
+        </View>
+      </>
+    )
   }
 
   return (
@@ -235,12 +160,6 @@ export const CreateJobScreen: FC = () => {
             color="textDim"
             style={themed($charCount)}
           />
-        </View>
-
-        {/* Task Type - Compact Dropdown */}
-        <View style={themed($field)}>
-          <Text tx="cronjob:taskType" weight="medium" color="text" size="sm" />
-          <TaskTypeDropdown selectedType={formData.taskType} onSelect={handleTaskTypeChange} />
         </View>
 
         {/* Task-Specific Fields */}

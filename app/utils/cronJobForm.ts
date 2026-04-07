@@ -1,4 +1,3 @@
-import type { TaskType } from "@/components/TaskTypeDropdown"
 import type { ScheduleType } from "@/components/CalendarPicker"
 import type {
   CreateCronJobRequest,
@@ -9,7 +8,7 @@ import type {
 
 export interface CronJobFormData {
   name: string
-  taskType: TaskType
+  taskType: "shell"
   command?: string
   workingDir?: string
   timeout?: number
@@ -119,25 +118,9 @@ function scheduleFromForm(data: CronJobFormData): Schedule {
 }
 
 function payloadFromForm(data: CronJobFormData): CronPayload {
-  switch (data.taskType) {
-    case "shell":
-      return {
-        kind: "systemEvent",
-        text: `${SHELL_PREFIX}${data.command?.trim() ?? ""}`,
-      }
-    case "agent":
-      return {
-        kind: "agentTurn",
-        message: data.prompt?.trim() || "Check system status",
-        model: data.model?.trim() || "auto",
-        timeoutSeconds:
-          data.timeout && data.timeout >= 1 && data.timeout <= 3600 ? data.timeout : 300,
-      }
-    case "event":
-      return {
-        kind: "systemEvent",
-        text: data.message?.trim() || "Scheduled event",
-      }
+  return {
+    kind: "systemEvent",
+    text: `${SHELL_PREFIX}${data.command?.trim() ?? ""}`,
   }
 }
 
@@ -148,8 +131,8 @@ function deliveryFromForm(data: CronJobFormData): CreateCronJobRequest["delivery
   return { mode: "announce" }
 }
 
-function sessionTargetFromForm(data: CronJobFormData): "main" | "isolated" {
-  return data.taskType === "agent" ? "isolated" : "main"
+function sessionTargetFromForm(_data: CronJobFormData): "main" | "isolated" {
+  return "main"
 }
 
 export function formDataToCreateRequest(data: CronJobFormData): CreateCronJobRequest {
@@ -197,9 +180,8 @@ export function cronJobToFormData(job: CronJob): Partial<CronJobFormData> {
   }
 
   if (job.payload.kind === "agentTurn") {
-    base.taskType = "agent"
-    base.prompt = job.payload.message
-    base.model = job.payload.model && job.payload.model !== "auto" ? job.payload.model : ""
+    base.taskType = "shell"
+    base.command = `echo ${JSON.stringify(job.payload.message || "Scheduled agent job")}`
     base.timeout = job.payload.timeoutSeconds ?? 300
   } else if (job.payload.kind === "systemEvent") {
     const t = job.payload.text ?? ""
@@ -208,8 +190,8 @@ export function cronJobToFormData(job: CronJob): Partial<CronJobFormData> {
       base.command = t.slice(SHELL_PREFIX.length)
       base.timeout = 60
     } else {
-      base.taskType = "event"
-      base.message = t
+      base.taskType = "shell"
+      base.command = `echo ${JSON.stringify(t || "Scheduled event")}`
     }
   }
 
