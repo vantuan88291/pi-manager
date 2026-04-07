@@ -120,6 +120,97 @@ function parseManagedIdsFromCrontab(lines: string[]): Set<string> {
   return ids
 }
 
+interface ParsedCrontabLine {
+  scheduleExpr: string
+  command: string
+  jobId?: string
+}
+
+function parseCrontabLine(line: string): ParsedCrontabLine | null {
+  const trimmed = line.trim()
+  if (!trimmed || trimmed.startsWith("#")) return null
+
+  const parts = trimmed.split(/\s+/)
+  if (parts.length < 6) return null
+
+  const scheduleExpr = parts.slice(0, 5).join(" ")
+  let command = parts.slice(5).join(" ").trim()
+  let jobId: string | undefined
+
+  const markerMatch = command.match(/\s+#\s*PI_MANAGER_JOB_ID=([0-9a-f-]{36})\s*$/i)
+  if (markerMatch?.[1]) {
+    jobId = markerMatch[1]
+    command = command.replace(/\s+#\s*PI_MANAGER_JOB_ID=[0-9a-f-]{36}\s*$/i, "").trim()
+  }
+
+  if (!command) return null
+  return { scheduleExpr, command, jobId }
+}
+
+function deriveImportedJobName(command: string): string {
+  const compact = command.trim().replace(/\s+/g, " ")
+  if (!compact) return "Imported cron job"
+  const first = compact.split(" ")[0] || compact
+  const base = first.includes("/") ? first.split("/").pop() || first : first
+  return `Imported: ${base.slice(0, 40)}`
+}
+
+function syncSystemCrontabToJobsFile(
+  fileData: JsonJobsFile,
+  crontabLines: string[],
+): { changedJson: boolean; changedCrontab: boolean; crontabLinesOut: string[] } {
+  const rows = Array.isArray(fileData.jobs) ? fileData.jobs : []
+  const rowsById = new Map<string, Record<string, unknown>>()
+
+  for (const row of rows) {
+    const id = (row as { id?: string }).id
+    if (id) rowsById.set(id, row)
+  }
+
+  let changedJson = false
+  let changedCrontab = false
+  const now = Date.now()
+  const crontabLinesOut: string[] = []
+
+  for (const rawLine of crontabLines) {
+    const parsed = parseCrontabLine(rawLine)
+    if (!parsed) {
+      crontabLinesOut.push(rawLine)
+      continue
+    }
+
+    const id = parsed.jobId || randomUUID()
+    if (!parsed.jobId) changedCrontab = true
+
+    if (!rowsById.has(id)) {
+      const importedRow: Record<string, unknown> = {
+        id,
+        name: deriveImportedJobName(parsed.command),
+        enabled: true,
+        schedule: { kind: "cron", expr: parsed.scheduleExpr, tz: "Asia/Saigon" },
+        payload: { kind: "systemEvent", text: `${SHELL_PREFIX}${parsed.command}` },
+        sessionTarget: "main",
+        createdAtMs: now,
+        updatedAtMs: now,
+      }
+      rows.push(importedRow)
+      rowsById.set(id, importedRow)
+      changedJson = true
+    }
+
+    if (parsed.jobId) {
+      crontabLinesOut.push(rawLine)
+    } else {
+      crontabLinesOut.push(
+        `${parsed.scheduleExpr} ${parsed.command} # ${CRON_JOB_ID_MARKER}${id}`,
+      )
+    }
+  }
+
+  if (changedJson) fileData.jobs = rows
+  return { changedJson, changedCrontab, crontabLinesOut }
+}
+
 async function readSystemCrontabLines(): Promise<string[]> {
   try {
     const { stdout } = await execAsync("sudo crontab -l", { timeout: 10000 })
@@ -189,9 +280,17 @@ export const cronjobModule: ServerSocketModule = {
     socket.on("cronjob:list", async () => {
       try {
         const fileData = readJobsFile()
-        const jobs = toJobsFromFile(fileData)
+        const crontabLines = await readSystemCrontabLines()
 
-        const activeIds = parseManagedIdsFromCrontab(await readSystemCrontabLines())
+        // One-way sync from system crontab -> jobs.json on list:
+        // - import manual jobs (without PI_MANAGER_JOB_ID)
+        // - assign marker to avoid future duplicate imports
+        const imported = syncSystemCrontabToJobsFile(fileData, crontabLines)
+        if (imported.changedJson) writeJobsFile(fileData)
+        if (imported.changedCrontab) await writeSystemCrontabLines(imported.crontabLinesOut)
+
+        const jobs = toJobsFromFile(fileData)
+        const activeIds = parseManagedIdsFromCrontab(imported.crontabLinesOut)
         const normalized = jobs.map((job) => ({ ...job, enabled: activeIds.has(job.jobId) }))
 
         // Keep JSON enabled flag in sync with actual crontab
