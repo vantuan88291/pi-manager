@@ -1,5 +1,8 @@
+import { randomUUID } from "node:crypto"
 import { exec } from "node:child_process"
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { dirname, join } from "node:path"
 import { promisify } from "node:util"
 import type { Server, Socket } from "socket.io"
 import type { ServerSocketModule } from "../types.js"
@@ -10,141 +13,241 @@ import type {
 } from "../../../../shared/types/cronjob.js"
 
 const JOBS_JSON_PATH = "/home/vantuan88291/.openclaw/cron/jobs.json"
+const CRON_JOB_ID_MARKER = "PI_MANAGER_JOB_ID="
+const SHELL_PREFIX = "🖥️ Running: "
+
+const execAsync = promisify(exec)
+const jobsCache = new Map<string, CronJob>()
+
+interface JsonJobsFile {
+  jobs?: Array<Record<string, unknown>>
+  [key: string]: unknown
+}
+
+function shQuote(input: string): string {
+  return `'${input.replace(/'/g, `'"'"'`)}'`
+}
+
+function extractShellCommand(payload: CronJob["payload"]): string {
+  if (payload.kind === "systemEvent") {
+    const text = payload.text?.trim() || ""
+    if (text.startsWith(SHELL_PREFIX)) return text.slice(SHELL_PREFIX.length).trim()
+    return `echo ${shQuote(text || "Scheduled event")}`
+  }
+
+  // Backward compatibility for old agentTurn jobs
+  const msg = payload.message?.trim() || "Scheduled agent job"
+  return `echo ${shQuote(msg)}`
+}
+
+function scheduleToCronExpr(schedule: CronJob["schedule"]): string | null {
+  if (schedule.kind === "cron") return schedule.expr
+
+  if (schedule.kind === "every") {
+    const everyMs = Math.max(60000, schedule.everyMs)
+    if (everyMs % 86400000 === 0) {
+      const days = Math.max(1, Math.floor(everyMs / 86400000))
+      return `0 0 */${days} * *`
+    }
+    if (everyMs % 3600000 === 0) {
+      const hours = Math.max(1, Math.floor(everyMs / 3600000))
+      return `0 */${hours} * * *`
+    }
+    const minutes = Math.max(1, Math.floor(everyMs / 60000))
+    return `*/${minutes} * * * *`
+  }
+
+  const when = new Date(schedule.at)
+  if (Number.isNaN(when.getTime())) return null
+  const min = when.getMinutes()
+  const hour = when.getHours()
+  const dom = when.getDate()
+  const month = when.getMonth() + 1
+  return `${min} ${hour} ${dom} ${month} *`
+}
 
 function mapJsonJobRowToCronJob(job: Record<string, unknown>): CronJob {
   const j = job as {
     id: string
     name?: string
     enabled?: boolean
-    schedule: CronJob["schedule"]
-    payload: CronJob["payload"]
+    schedule?: CronJob["schedule"]
+    payload?: CronJob["payload"]
     sessionTarget?: CronJob["sessionTarget"]
-    createdAtMs: number
-    updatedAtMs: number
+    createdAtMs?: number
+    updatedAtMs?: number
     state?: { lastRunAtMs?: number; nextRunAtMs?: number }
   }
+
+  const now = Date.now()
   return {
     jobId: j.id,
     name: j.name || "Untitled",
     enabled: j.enabled ?? true,
-    schedule: j.schedule,
-    payload: j.payload,
-    sessionTarget: j.sessionTarget || "isolated",
-    createdAt: j.createdAtMs,
-    updatedAt: j.updatedAtMs,
+    schedule: j.schedule || { kind: "cron", expr: "* * * * *", tz: "Asia/Saigon" },
+    payload: j.payload || { kind: "systemEvent", text: `${SHELL_PREFIX}echo 'Untitled job'` },
+    sessionTarget: j.sessionTarget || "main",
+    createdAt: j.createdAtMs ?? now,
+    updatedAt: j.updatedAtMs ?? now,
     lastRunAt: j.state?.lastRunAtMs,
     nextRunAt: j.state?.nextRunAtMs,
   }
 }
 
-const execAsync = promisify(exec)
-const jobsCache = new Map<string, CronJob>()
-
-async function runOpenClawCommand(args: string[]): Promise<string> {
-  const command = `openclaw ${args.join(" ")}`
-  console.log("[cronjob] executing:", command)
-  
+function readJobsFile(): JsonJobsFile {
+  if (!existsSync(JOBS_JSON_PATH)) return { jobs: [] }
   try {
-    const { stdout, stderr } = await execAsync(command, { timeout: 30000 })
-    if (stderr && !stderr.includes("warn")) {
-      console.warn("[cronjob] stderr:", stderr)
-    }
-    return stdout.trim()
-  } catch (error: any) {
-    console.error("[cronjob] command failed:", error.message)
-    throw new Error(`OpenClaw command failed: ${error.stderr || error.message}`)
+    const raw = readFileSync(JOBS_JSON_PATH, "utf8")
+    const parsed = JSON.parse(raw) as JsonJobsFile
+    if (!Array.isArray(parsed.jobs)) parsed.jobs = []
+    return parsed
+  } catch {
+    return { jobs: [] }
   }
 }
 
-function parseJobsList(output: string): CronJob[] {
-  const jobs: CronJob[] = []
-  if (!output || output.trim() === "") return jobs
-  
-  const lines = output.trim().split("\n")
-  console.log("[cronjob] parsing", lines.length, "lines")
-  
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i]
-    if (!line || line.trim() === "") continue
-    
-    // Parse by fixed column positions
-    const jobId = line.substring(0, 36).trim()
-    const name = line.substring(36, 61).trim() || "Untitled"
-    const scheduleStr = line.substring(61, 94).trim() || ""
-    const nextRun = line.substring(94, 105).trim() || ""
-    const status = line.substring(115, 125).trim() || ""
-    const target = line.substring(125, 135).trim() || "isolated"
-    
-    console.log("[cronjob] parsed:", { jobId, name, status })
-    
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId)) {
-      console.warn("[cronjob] invalid UUID:", line.substring(0, 50))
-      continue
-    }
-    
-    // Parse cron expression from schedule
-    let cronExpr = "* * * * *"
-    let timezone = "Asia/Saigon"
-    if (scheduleStr.includes("cron")) {
-      const parts = scheduleStr.split(/\s+/)
-      if (parts.length >= 6) {
-        cronExpr = parts.slice(1, 6).join(" ")
-        if (parts[6] === "@") timezone = parts[7] || "Asia/Saigon"
-      }
-    }
-    
-    // Parse next run time
-    let nextRunAt: number | undefined
-    if (nextRun && nextRun !== "-" && nextRun !== "now") {
-      const match = nextRun.match(/in\s+(\d+)([mhd])/)
-      if (match) {
-        const value = parseInt(match[1])
-        const unit = match[2]
-        const now = Date.now()
-        if (unit === "m") nextRunAt = now + value * 60000
-        else if (unit === "h") nextRunAt = now + value * 3600000
-        else if (unit === "d") nextRunAt = now + value * 86400000
-      }
-    }
-    
-    jobs.push({
-      jobId,
-      name,
-      enabled: status === "idle" || status === "running",
-      schedule: { kind: "cron" as const, expr: cronExpr, tz: timezone },
-      payload: { kind: "systemEvent" as const, text: `Job: ${name}` },
-      sessionTarget: target as "main" | "isolated" || "isolated",
-      createdAt: Date.now() - 86400000,
-      updatedAt: Date.now(),
-      nextRunAt,
-    })
+function writeJobsFile(data: JsonJobsFile): void {
+  mkdirSync(dirname(JOBS_JSON_PATH), { recursive: true })
+  writeFileSync(JOBS_JSON_PATH, `${JSON.stringify(data, null, 2)}\n`)
+}
+
+function parseManagedIdsFromCrontab(lines: string[]): Set<string> {
+  const ids = new Set<string>()
+  for (const line of lines) {
+    const m = line.match(/#\s*PI_MANAGER_JOB_ID=([0-9a-f-]+)/i)
+    if (m?.[1]) ids.add(m[1])
   }
-  
-  console.log("[cronjob] parsed", jobs.length, "jobs")
-  return jobs
+  return ids
+}
+
+async function readSystemCrontabLines(): Promise<string[]> {
+  try {
+    const { stdout } = await execAsync("sudo crontab -l", { timeout: 10000 })
+    return stdout
+      .split("\n")
+      .map((line) => line.trimEnd())
+      .filter((line) => line.trim().length > 0)
+  } catch (error: any) {
+    const stderr = String(error?.stderr || error?.message || "")
+    if (stderr.toLowerCase().includes("no crontab")) return []
+    throw error
+  }
+}
+
+async function writeSystemCrontabLines(lines: string[]): Promise<void> {
+  const tempPath = join(tmpdir(), `pi-manager-crontab-${Date.now()}.txt`)
+  const content = `${lines.join("\n")}\n`
+
+  writeFileSync(tempPath, content)
+  try {
+    await execAsync(`sudo crontab ${shQuote(tempPath)}`, { timeout: 10000 })
+  } finally {
+    try {
+      unlinkSync(tempPath)
+    } catch {
+      // ignore cleanup errors
+    }
+  }
+}
+
+function buildCrontabLine(job: CronJob): string | null {
+  if (!job.enabled) return null
+  const expr = scheduleToCronExpr(job.schedule)
+  if (!expr) return null
+
+  const command = extractShellCommand(job.payload)
+  if (!command) return null
+
+  return `${expr} /bin/bash -lc ${shQuote(command)} # ${CRON_JOB_ID_MARKER}${job.jobId}`
+}
+
+async function syncJobsToSystemCrontab(jobs: CronJob[]): Promise<void> {
+  const current = await readSystemCrontabLines()
+  const kept = current.filter((line) => !line.includes(CRON_JOB_ID_MARKER))
+
+  const managed = jobs
+    .map((job) => buildCrontabLine(job))
+    .filter((line): line is string => !!line)
+
+  await writeSystemCrontabLines([...kept, ...managed])
+}
+
+function toJobsFromFile(fileData: JsonJobsFile): CronJob[] {
+  const rows = Array.isArray(fileData.jobs) ? fileData.jobs : []
+  return rows.map((row) => mapJsonJobRowToCronJob(row))
+}
+
+function refreshCache(jobs: CronJob[]): void {
+  jobsCache.clear()
+  jobs.forEach((job) => jobsCache.set(job.jobId, job))
 }
 
 export const cronjobModule: ServerSocketModule = {
   name: "cronjob",
 
   register(socket: Socket, io: Server) {
-    console.log("[cronjob] module registered")
-
     socket.on("cronjob:list", async () => {
       try {
-        console.log("[cronjob] list requested")
-        if (existsSync(JOBS_JSON_PATH)) {
-          const data = JSON.parse(readFileSync(JOBS_JSON_PATH, "utf8"))
-          const jobs: CronJob[] =
-            data.jobs?.map((job: Record<string, unknown>) => mapJsonJobRowToCronJob(job)) || []
-          jobs.forEach((job) => jobsCache.set(job.jobId, job))
-          socket.emit("cronjob:list_response", { jobs })
-        } else {
-          socket.emit("cronjob:list_response", { jobs: [] })
-        }
+        const fileData = readJobsFile()
+        const jobs = toJobsFromFile(fileData)
+
+        const activeIds = parseManagedIdsFromCrontab(await readSystemCrontabLines())
+        const normalized = jobs.map((job) => ({ ...job, enabled: activeIds.has(job.jobId) }))
+
+        // Keep JSON enabled flag in sync with actual crontab
+        fileData.jobs = normalized.map((job) => ({
+          id: job.jobId,
+          name: job.name,
+          enabled: job.enabled,
+          schedule: job.schedule,
+          payload: job.payload,
+          sessionTarget: job.sessionTarget,
+          createdAtMs: job.createdAt,
+          updatedAtMs: Date.now(),
+        }))
+        writeJobsFile(fileData)
+
+        refreshCache(normalized)
+        socket.emit("cronjob:list_response", { jobs: normalized })
       } catch (err: any) {
-        console.error("[cronjob] list error:", err.message)
+        socket.emit("cronjob:error", { code: "LIST_FAILED", message: err.message })
         socket.emit("cronjob:list_response", { jobs: [] })
+      }
+    })
+
+    socket.on("cronjob:create", async (request: CreateCronJobRequest) => {
+      try {
+        const fileData = readJobsFile()
+        const rows = Array.isArray(fileData.jobs) ? fileData.jobs : []
+
+        const id = randomUUID()
+        const now = Date.now()
+        const row: Record<string, unknown> = {
+          id,
+          name: request.name || "Untitled Job",
+          enabled: request.enabled ?? true,
+          schedule: request.schedule,
+          payload: request.payload,
+          sessionTarget: request.sessionTarget || "main",
+          delivery: request.delivery,
+          createdAtMs: now,
+          updatedAtMs: now,
+        }
+
+        rows.push(row)
+        fileData.jobs = rows
+        writeJobsFile(fileData)
+
+        const jobs = toJobsFromFile(fileData)
+        await syncJobsToSystemCrontab(jobs)
+
+        const created = jobs.find((j) => j.jobId === id)
+        if (created) io.emit("cronjob:created", { job: created })
+
+        refreshCache(jobs)
+        io.emit("cronjob:list_response", { jobs })
+      } catch (err: any) {
+        socket.emit("cronjob:error", { code: "CREATE_FAILED", message: err.message })
       }
     })
 
@@ -155,156 +258,119 @@ export const cronjobModule: ServerSocketModule = {
           socket.emit("cronjob:error", { code: "UPDATE_FAILED", message: "Missing jobId" })
           return
         }
-        console.log("[cronjob] update:", jobId)
-        if (!existsSync(JOBS_JSON_PATH)) {
-          socket.emit("cronjob:error", { code: "UPDATE_FAILED", message: "jobs.json not found" })
-          return
-        }
-        const data = JSON.parse(readFileSync(JOBS_JSON_PATH, "utf8"))
-        const list: Record<string, unknown>[] = Array.isArray(data.jobs) ? data.jobs : []
-        const idx = list.findIndex((j) => (j as { id?: string }).id === jobId)
+
+        const fileData = readJobsFile()
+        const rows = Array.isArray(fileData.jobs) ? fileData.jobs : []
+        const idx = rows.findIndex((j) => (j as { id?: string }).id === jobId)
+
         if (idx < 0) {
           socket.emit("cronjob:error", { code: "NOT_FOUND", message: "Job not found" })
           return
         }
-        const existing = list[idx] as Record<string, unknown> & { id: string; state?: unknown }
-        const merged: Record<string, unknown> = {
-          ...existing,
-          id: existing.id,
-        }
+
+        const existing = rows[idx] as Record<string, unknown>
+        const merged: Record<string, unknown> = { ...existing, updatedAtMs: Date.now() }
+
         if (patch.name !== undefined) merged.name = patch.name
         if (patch.enabled !== undefined) merged.enabled = patch.enabled
         if (patch.schedule !== undefined) merged.schedule = patch.schedule
         if (patch.payload !== undefined) merged.payload = patch.payload
         if (patch.sessionTarget !== undefined) merged.sessionTarget = patch.sessionTarget
         if (patch.delivery !== undefined) merged.delivery = patch.delivery
-        merged.updatedAtMs = Date.now()
-        list[idx] = merged
-        data.jobs = list
-        writeFileSync(JOBS_JSON_PATH, `${JSON.stringify(data, null, 2)}\n`)
-        const job = mapJsonJobRowToCronJob(merged)
-        jobsCache.set(jobId, job)
-        io.emit("cronjob:updated", { job })
-        const jobs: CronJob[] = list.map((row) => mapJsonJobRowToCronJob(row))
+
+        rows[idx] = merged
+        fileData.jobs = rows
+        writeJobsFile(fileData)
+
+        const jobs = toJobsFromFile(fileData)
+        await syncJobsToSystemCrontab(jobs)
+
+        const updated = jobs.find((j) => j.jobId === jobId)
+        if (updated) io.emit("cronjob:updated", { job: updated })
+
+        refreshCache(jobs)
         io.emit("cronjob:list_response", { jobs })
       } catch (err: any) {
-        console.error("[cronjob] update error:", err.message)
         socket.emit("cronjob:error", { code: "UPDATE_FAILED", message: err.message })
-      }
-    })
-
-    socket.on("cronjob:create", async (request: CreateCronJobRequest) => {
-      try {
-        console.log("[cronjob] create:", request.name || "Untitled")
-        let args = ["cron", "add"]
-        
-        if (request.name) args.push("--name", `"${request.name}"`)
-        
-        // Schedule
-        if (request.schedule.kind === "cron") {
-          args.push("--cron", `"${request.schedule.expr}"`)
-        } else if (request.schedule.kind === "every") {
-          const mins = Math.floor(request.schedule.everyMs / 60000)
-          args.push("--every", `${mins}m`)
-        }
-        
-        // Payload
-        // Session target and delivery based on payload type
-        if (request.payload.kind === "agentTurn") {
-          // Agent tasks: isolated session with announce
-          args.push("--session", "isolated")
-          args.push("--agent", "main")
-          args.push("--message", `"${request.payload.message}"`)
-          if (request.payload.model && request.payload.model !== "auto") {
-            args.push("--model", request.payload.model)
-          }
-          args.push("--announce")
-        } else if (request.payload.kind === "systemEvent") {
-          // System events: main session, no announce needed (auto-delivers)
-          args.push("--session", "main")
-          args.push("--system-event", `"${request.payload.text}"`)
-          // Don't add --announce for system events (causes conflict)
-        }
-        
-        // Session target
-        if (request.sessionTarget === "isolated") {
-          args.push("--agent", "main")  // isolated = run agent
-        }
-        
-        await runOpenClawCommand(args)
-        // Fetch updated list and broadcast to all clients
-        setTimeout(async () => {
-          try {
-            const output = await runOpenClawCommand(["cron", "list"])
-            const jobs = parseJobsList(output)
-            io.emit("cronjob:list_response", { jobs })
-          } catch (err) {
-            console.error("[cronjob] failed to refresh list:", err)
-          }
-        }, 500)
-      } catch (err: any) {
-        console.error("[cronjob] create error:", err.message)
-        socket.emit("cronjob:error", { code: "CREATE_FAILED", message: err.message })
       }
     })
 
     socket.on("cronjob:remove", async ({ jobId }: { jobId: string }) => {
       try {
-        console.log("[cronjob] remove:", jobId)
-        await runOpenClawCommand(["cron", "remove", jobId])
+        const fileData = readJobsFile()
+        const rows = Array.isArray(fileData.jobs) ? fileData.jobs : []
+        fileData.jobs = rows.filter((j) => (j as { id?: string }).id !== jobId)
+        writeJobsFile(fileData)
+
+        const jobs = toJobsFromFile(fileData)
+        await syncJobsToSystemCrontab(jobs)
+
         jobsCache.delete(jobId)
         io.emit("cronjob:removed", { jobId })
-        socket.emit("cronjob:removed", { jobId, success: true })
+        io.emit("cronjob:list_response", { jobs })
       } catch (err: any) {
-        console.error("[cronjob] remove error:", err.message)
         socket.emit("cronjob:error", { code: "REMOVE_FAILED", message: err.message })
-      }
-    })
-
-    socket.on("cronjob:run", async ({ jobId }: { jobId: string }) => {
-      try {
-        console.log("[cronjob] run:", jobId)
-        await runOpenClawCommand(["cron", "run", jobId])
-        socket.emit("cronjob:run_response", { success: true })
-      } catch (err: any) {
-        console.error("[cronjob] run error:", err.message)
-        socket.emit("cronjob:error", { code: "RUN_FAILED", message: err.message })
       }
     })
 
     socket.on("cronjob:toggle", async ({ jobId, enabled }: { jobId: string; enabled: boolean }) => {
       try {
-        console.log("[cronjob] toggle:", jobId, enabled)
-        await runOpenClawCommand(["cron", enabled ? "enable" : "disable", jobId])
-        const job = jobsCache.get(jobId)
-        if (job) jobsCache.set(jobId, { ...job, enabled })
-        setTimeout(() => socket.emit("cronjob:list_request"), 500)
+        const fileData = readJobsFile()
+        const rows = Array.isArray(fileData.jobs) ? fileData.jobs : []
+        const idx = rows.findIndex((j) => (j as { id?: string }).id === jobId)
+
+        if (idx < 0) {
+          socket.emit("cronjob:error", { code: "NOT_FOUND", message: "Job not found" })
+          return
+        }
+
+        const row = rows[idx] as Record<string, unknown>
+        rows[idx] = { ...row, enabled, updatedAtMs: Date.now() }
+        fileData.jobs = rows
+        writeJobsFile(fileData)
+
+        const jobs = toJobsFromFile(fileData)
+        await syncJobsToSystemCrontab(jobs)
+
+        const updated = jobs.find((j) => j.jobId === jobId)
+        if (updated) io.emit("cronjob:updated", { job: updated })
+
+        refreshCache(jobs)
+        io.emit("cronjob:list_response", { jobs })
       } catch (err: any) {
-        console.error("[cronjob] toggle error:", err.message)
         socket.emit("cronjob:error", { code: "TOGGLE_FAILED", message: err.message })
       }
     })
 
-    // Get run history
-    socket.on("cronjob:runs", async ({ jobId, limit = 10 }: { jobId: string; limit?: number }) => {
+    socket.on("cronjob:run", async ({ jobId }: { jobId: string }) => {
       try {
-        console.log("[cronjob] runs:", jobId, "limit:", limit)
-        const output = await runOpenClawCommand(["cron", "runs", jobId, "--limit", String(limit)])
-        // Parse runs from CLI output (simplified - just return raw for now)
-        socket.emit("cronjob:runs_response", { runs: [], raw: output })
+        const fileData = readJobsFile()
+        const jobs = toJobsFromFile(fileData)
+        const job = jobs.find((j) => j.jobId === jobId)
+
+        if (!job) {
+          socket.emit("cronjob:error", { code: "NOT_FOUND", message: "Job not found" })
+          return
+        }
+
+        const command = extractShellCommand(job.payload)
+        await execAsync(`/bin/bash -lc ${shQuote(command)}`, { timeout: 60000 })
+        socket.emit("cronjob:run_response", { success: true })
       } catch (err: any) {
-        console.error("[cronjob] runs error:", err.message)
-        socket.emit("cronjob:error", { code: "RUNS_FAILED", message: err.message })
+        socket.emit("cronjob:error", { code: "RUN_FAILED", message: err.message })
       }
+    })
+
+    socket.on("cronjob:runs", async (_: { jobId: string; limit?: number }) => {
+      socket.emit("cronjob:runs_response", { runs: [] })
     })
   },
 
   onSubscribe(socket: Socket) {
-    console.log("[cronjob] subscribed:", socket.id)
     socket.emit("cronjob:list_request")
   },
 
-  onUnsubscribe(socket: Socket) {
-    console.log("[cronjob] unsubscribed:", socket.id)
+  onUnsubscribe(_socket: Socket) {
+    // no-op
   },
 }
