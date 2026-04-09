@@ -2,11 +2,8 @@ import express from "express"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
-import { exec } from "node:child_process"
-import { promisify } from "node:util"
 
 const router = express.Router()
-const execAsync = promisify(exec)
 
 const CLAUDE_SETTINGS_PATH = path.join(os.homedir(), ".claude", "settings.json")
 
@@ -19,14 +16,19 @@ const AVAILABLE_MODELS = [
   "claude-3-opus-latest",
 ]
 
-async function readCurrentModel(): Promise<string | null> {
+async function readSettings(): Promise<Record<string, unknown>> {
   try {
     const raw = await fs.readFile(CLAUDE_SETTINGS_PATH, "utf8")
-    const settings = JSON.parse(raw)
-    return settings.model ?? null
+    return JSON.parse(raw) as Record<string, unknown>
   } catch {
-    return null
+    return {}
   }
+}
+
+async function readCurrentModel(): Promise<string | null> {
+  const settings = await readSettings()
+  const model = settings.model
+  return typeof model === "string" ? model : null
 }
 
 // GET /api/claude-model — read current model from ~/.claude/settings.json
@@ -46,7 +48,7 @@ router.get("/", async (_req, res) => {
   }
 })
 
-// POST /api/claude-model — change model via `claude config set model <name>`
+// POST /api/claude-model — write model directly into ~/.claude/settings.json
 router.post("/", async (req, res) => {
   try {
     const { model } = req.body as { model?: string }
@@ -66,15 +68,17 @@ router.post("/", async (req, res) => {
 
     console.log(`[claude-model] setting model to: ${trimmed}`)
 
-    await execAsync(`claude config set model ${trimmed}`)
+    // Read existing settings, update model key, write back
+    const settings = await readSettings()
+    settings.model = trimmed
+    await fs.writeFile(CLAUDE_SETTINGS_PATH, JSON.stringify(settings, null, 2), "utf8")
 
-    // Verify the change took effect
-    const current = await readCurrentModel()
+    console.log(`[claude-model] written to ${CLAUDE_SETTINGS_PATH}`)
 
     res.json({
       success: true,
       message: `Model changed to ${trimmed}`,
-      data: { model: current },
+      data: { model: trimmed },
     })
   } catch (error: any) {
     console.error("[claude-model] set error:", error.message)
