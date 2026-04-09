@@ -26,6 +26,7 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [needsRestart, setNeedsRestart] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -56,6 +57,8 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
       const res = await setClaudeModel(effectiveModel!)
       setCurrentModel(res.data.model)
       setSuccessMsg(res.message)
+      setNeedsRestart(true)
+      setCustomModel("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to change model")
     } finally {
@@ -120,7 +123,10 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
                           borderColor: theme.colors.tint,
                         },
                       ]}
-                      onPress={() => setSelectedModel(model)}
+                      onPress={() => {
+                        setSelectedModel(model)
+                        setCustomModel("") // clear custom input when radio selected
+                      }}
                       activeOpacity={0.7}
                     >
                       <View style={$modelItemContent}>
@@ -187,6 +193,11 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
         )}
         {!!successMsg && (
           <Text text={successMsg} size="xs" style={[themed($feedbackText), { color: "#10B981" }]} />
+        )}
+        {needsRestart && (
+          <View style={themed($restartBanner)}>
+            <Text tx="claudeModel:restartNote" size="xs" style={themed($restartText)} />
+          </View>
         )}
 
         {/* Apply button */}
@@ -299,4 +310,17 @@ const $customInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   paddingVertical: spacing.xs,
   fontSize: 14,
   marginTop: spacing.xs,
+})
+
+const $restartBanner: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  backgroundColor: "#FEF3C7",
+  borderRadius: 8,
+  padding: spacing.sm,
+  marginTop: spacing.xs,
+  borderLeftWidth: 4,
+  borderLeftColor: "#D97706",
+})
+
+const $restartText: ThemedStyle<TextStyle> = () => ({
+  color: "#92400E",
 })

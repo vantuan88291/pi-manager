@@ -417,6 +417,7 @@ const en = {
     activeBadge: "Active",
     applyButton: "Apply",
     customModel: "Custom model name",
+    restartNote: "⚠️ Model saved. Start a new Claude session for the change to take effect.",
     subtitle: "Manage Claude model",
   },
   fileEditor: {

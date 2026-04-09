@@ -420,6 +420,7 @@ const vi: Translations = {
     activeBadge: "Đang dùng",
     applyButton: "Áp dụng",
     customModel: "Nhập tên model tùy chỉnh",
+    restartNote: "⚠️ Đã lưu model. Hãy bắt đầu session Claude mới để áp dụng thay đổi.",
     subtitle: "Quản lý model Claude",
   },
   fileEditor: {
