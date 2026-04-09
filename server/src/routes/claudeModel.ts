@@ -5,7 +5,11 @@ import path from "path"
 
 const router = express.Router()
 
-const CLAUDE_SETTINGS_PATH = path.join(os.homedir(), ".claude", "settings.json")
+// Support CLAUDE_SETTINGS_PATH env var to handle cases where server runs as root
+// but Claude settings belong to another user (e.g. /home/vantuan88291/.claude/settings.json)
+const CLAUDE_SETTINGS_PATH =
+  process.env.CLAUDE_SETTINGS_PATH ||
+  path.join(os.homedir(), ".claude", "settings.json")
 
 const AVAILABLE_MODELS = [
   "claude-opus-4-6",
@@ -68,6 +72,9 @@ router.post("/", async (req, res) => {
     }
 
     console.log(`[claude-model] setting model to: ${trimmed}`)
+
+    // Ensure directory exists before writing
+    await fs.mkdir(path.dirname(CLAUDE_SETTINGS_PATH), { recursive: true })
 
     // Read existing settings, update model key, write back
     const settings = await readSettings()
