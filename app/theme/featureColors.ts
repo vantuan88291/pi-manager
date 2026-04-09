@@ -70,6 +70,11 @@ export const featureColors = {
     badgeLight: "#F5F3FF",
     badgeDark: "#4C1D95",
   },
+  claudeModel: {
+    accent: "#D97706",
+    badgeLight: "#FEF3C7",
+    badgeDark: "#78350F",
+  },
 } as const
 
 export type FeatureKey = keyof typeof featureColors

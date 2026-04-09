@@ -9,6 +9,7 @@ import { setupSocketServer } from "./socket/index.js"
 import filesRouter from "./routes/files.js"
 import modelUsageRouter from "./routes/modelUsage.js"
 import usageTrackerRouter from "./routes/usageTracker.js"
+import claudeModelRouter from "./routes/claudeModel.js"
 import { requireApiSession } from "./middleware/requireApiSession.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -53,6 +54,7 @@ app.use("/api/files", requireApiSession, filesRouter)
 // Model usage proxy (requires auth)
 app.use("/api/model-usage", requireApiSession, modelUsageRouter)
 app.use("/api/usage-tracker", requireApiSession, usageTrackerRouter)
+app.use("/api/claude-model", requireApiSession, claudeModelRouter)
 
 // System reboot endpoint (requires sudo + session)
 app.post("/api/system/reboot", requireApiSession, async (_req, res) => {

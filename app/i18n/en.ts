@@ -131,6 +131,7 @@ const en = {
   controlMenu: {
     title: "Control",
     modelUsage: "Model usage",
+    claudeModel: "Claude Model",
     wifi: "Wi-Fi",
     bluetooth: "Bluetooth",
     audio: "Audio",
@@ -155,6 +156,7 @@ const en = {
       system: "Process & system management",
       files: "Browse & manage files",
       modelUsage: "View recent model usage",
+      claudeModel: "Manage Claude model",
     },
   },
   wifi: {
@@ -407,6 +409,14 @@ const en = {
     renameFailed: "Failed to rename",
     moved: "Moved successfully",
     moveFailed: "Failed to move",
+  },
+  claudeModel: {
+    title: "Claude Model",
+    currentModel: "Current model",
+    selectModel: "Select model",
+    activeBadge: "Active",
+    applyButton: "Apply",
+    subtitle: "Manage Claude model",
   },
   fileEditor: {
     title: "Edit File",
