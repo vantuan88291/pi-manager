@@ -1,5 +1,5 @@
 import { FC, useCallback, useEffect, useState } from "react"
-import { ActivityIndicator, TouchableOpacity, View, ViewStyle, TextStyle } from "react-native"
+import { ActivityIndicator, TextInput, TouchableOpacity, View, ViewStyle, TextStyle } from "react-native"
 import type { NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import { Card } from "@/components/Card"
@@ -21,6 +21,7 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
   const [currentModel, setCurrentModel] = useState<string | null>(null)
   const [availableModels, setAvailableModels] = useState<string[]>([])
   const [selectedModel, setSelectedModel] = useState<string | null>(null)
+  const [customModel, setCustomModel] = useState("")
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +53,7 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
     setError(null)
     setSuccessMsg(null)
     try {
-      const res = await setClaudeModel(selectedModel)
+      const res = await setClaudeModel(effectiveModel!)
       setCurrentModel(res.data.model)
       setSuccessMsg(res.message)
     } catch (err) {
@@ -62,7 +63,8 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
     }
   }
 
-  const hasChange = selectedModel !== null && selectedModel !== currentModel
+  const effectiveModel = customModel.trim() || selectedModel
+  const hasChange = effectiveModel !== null && effectiveModel !== "" && effectiveModel !== currentModel
 
   return (
     <Screen preset="scroll">
@@ -158,6 +160,26 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
             }
           />
         )}
+
+        {/* Custom model input */}
+        <Card
+          headingTx="claudeModel:customModel"
+          style={themed($card)}
+          ContentComponent={
+            <TextInput
+              value={customModel}
+              onChangeText={(text) => {
+                setCustomModel(text)
+                if (text.trim()) setSelectedModel(null)
+              }}
+              placeholder="e.g. claude-sonnet-4-6"
+              placeholderTextColor={theme.colors.textDim}
+              style={[themed($customInput), { color: theme.colors.text }]}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          }
+        />
 
         {/* Error / Success feedback */}
         {!!error && (
@@ -268,3 +290,13 @@ const $centered: ViewStyle = {
   paddingVertical: 12,
   alignItems: "center",
 }
+
+const $customInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
+  borderWidth: 1,
+  borderColor: colors.border,
+  borderRadius: 8,
+  paddingHorizontal: spacing.sm,
+  paddingVertical: spacing.xs,
+  fontSize: 14,
+  marginTop: spacing.xs,
+})

@@ -419,6 +419,7 @@ const vi: Translations = {
     selectModel: "Chọn model",
     activeBadge: "Đang dùng",
     applyButton: "Áp dụng",
+    customModel: "Nhập tên model tùy chỉnh",
     subtitle: "Quản lý model Claude",
   },
   fileEditor: {

@@ -416,6 +416,7 @@ const en = {
     selectModel: "Select model",
     activeBadge: "Active",
     applyButton: "Apply",
+    customModel: "Custom model name",
     subtitle: "Manage Claude model",
   },
   fileEditor: {

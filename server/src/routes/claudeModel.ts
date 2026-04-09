@@ -8,12 +8,12 @@ const router = express.Router()
 const CLAUDE_SETTINGS_PATH = path.join(os.homedir(), ".claude", "settings.json")
 
 const AVAILABLE_MODELS = [
+  "claude-opus-4-6",
+  "claude-sonnet-4-6",
+  "claude-haiku-4-6",
   "claude-opus-4-5",
   "claude-sonnet-4-5",
   "claude-haiku-4-5",
-  "claude-3-5-sonnet-latest",
-  "claude-3-5-haiku-latest",
-  "claude-3-opus-latest",
 ]
 
 async function readSettings(): Promise<Record<string, unknown>> {
@@ -59,10 +59,11 @@ router.post("/", async (req, res) => {
 
     const trimmed = model.trim()
 
-    if (!AVAILABLE_MODELS.includes(trimmed)) {
+    // Basic format check: must look like a claude model name
+    if (!/^claude-[\w.-]+$/.test(trimmed)) {
       return res.status(400).json({
         success: false,
-        error: `Invalid model. Available: ${AVAILABLE_MODELS.join(", ")}`,
+        error: "Invalid model name format. Must start with 'claude-'",
       })
     }
 
