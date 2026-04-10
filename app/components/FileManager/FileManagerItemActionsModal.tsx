@@ -17,6 +17,7 @@ export interface FileManagerItemActionsModalProps {
   onRenamePress: () => void
   onMovePress: () => void
   onDeletePress: () => void
+  onDownloadPress: () => void
 }
 
 export const FileManagerItemActionsModal: FC<FileManagerItemActionsModalProps> = ({
@@ -26,6 +27,7 @@ export const FileManagerItemActionsModal: FC<FileManagerItemActionsModalProps> =
   onRenamePress,
   onMovePress,
   onDeletePress,
+  onDownloadPress,
 }) => {
   const { t } = useTranslation()
   const { themed } = useAppTheme()
@@ -47,6 +49,14 @@ export const FileManagerItemActionsModal: FC<FileManagerItemActionsModalProps> =
       }
     >
       <View style={themed($actions)}>
+        {item.type === "file" && (
+          <Pressable
+            onPress={onDownloadPress}
+            style={({ pressed }) => themed([$actionRow, pressed && $actionRowPressed])}
+          >
+            <Text tx="fileManager:download" size="md" color="text" />
+          </Pressable>
+        )}
         <Pressable
           onPress={onRenamePress}
           style={({ pressed }) => themed([$actionRow, pressed && $actionRowPressed])}

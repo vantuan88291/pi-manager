@@ -45,6 +45,7 @@ interface MenuItem {
     | "SystemControl"
     | "FileManager"
     | "ModelUsage"
+    | "ClaudeModel"
   action?: () => void
 }
 
@@ -138,6 +139,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
   const cameraColors = getMenuIcon("camera")
   const storageColors = getMenuIcon("storage")
   const modelUsageColors = getMenuIcon("modelUsage")
+  const claudeModelColors = getMenuIcon("claudeModel")
 
   function getMenuIcon(feature: keyof typeof featureColors) {
     const { accent, badgeLight, badgeDark } = featureColors[feature]
@@ -307,6 +309,19 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
       icon: { font: "Ionicons", name: "folder-open", color: "#F59E0B", badgeBg: "#FFFBEB" },
       accentColor: "#F59E0B",
       screen: "FileManager",
+    },
+    {
+      id: "claude-model",
+      titleTx: "controlMenu:claudeModel",
+      subtitleTx: "controlMenu:subtitles.claudeModel",
+      icon: {
+        font: "Ionicons",
+        name: "hardware-chip-outline",
+        color: claudeModelColors.accent,
+        badgeBg: claudeModelColors.badgeBg,
+      },
+      accentColor: claudeModelColors.accent,
+      screen: "ClaudeModel",
     },
   ]
 

@@ -2,6 +2,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import fs from 'fs/promises'
 import path from 'path'
 import multer from 'multer'
+import { createDownloadToken } from '../utils/downloadTokens.js'
 
 const router = express.Router()
 
@@ -512,6 +513,36 @@ router.post('/move', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to move',
+    })
+  }
+})
+
+// Generate a short-lived, one-time download token for a file
+router.post('/generate-download-token', async (req, res) => {
+  try {
+    const { path: filePath } = req.body as { path?: string }
+
+    if (!filePath) {
+      return res.status(400).json({ success: false, error: 'Path is required' })
+    }
+
+    if (!isPathAllowed(filePath)) {
+      return res.status(403).json({ success: false, error: 'Access denied: Path not allowed' })
+    }
+
+    const stats = await fs.stat(filePath)
+    if (!stats.isFile()) {
+      return res.status(400).json({ success: false, error: 'Path is not a file' })
+    }
+
+    const token = createDownloadToken(filePath)
+
+    res.json({ success: true, data: { token } })
+  } catch (error: any) {
+    console.error('[files] generate-download-token error:', error.message)
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate download token',
     })
   }
 })

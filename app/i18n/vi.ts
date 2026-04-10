@@ -133,6 +133,7 @@ const vi: Translations = {
   controlMenu: {
     title: "Điều khiển",
     modelUsage: "Model usage",
+    claudeModel: "Claude Model",
     wifi: "Wi-Fi",
     bluetooth: "Bluetooth",
     audio: "Âm thanh",
@@ -157,8 +158,10 @@ const vi: Translations = {
       system: "Quản lý tiến trình & hệ thống",
       files: "Duyệt & quản lý file",
       modelUsage: "Xem hoạt động mô hình gần đây",
+      claudeModel: "Quản lý model Claude",
     },
   },
+
   wifi: {
     title: "Wi-Fi",
     currentConnection: "Kết nối hiện tại",
@@ -409,6 +412,18 @@ const vi: Translations = {
     renameFailed: "Đổi tên thất bại",
     moved: "Đã chuyển",
     moveFailed: "Chuyển thất bại",
+    download: "Tải xuống",
+    downloadFailed: "Tải file thất bại",
+  },
+  claudeModel: {
+    title: "Claude Model",
+    currentModel: "Model hiện tại",
+    selectModel: "Chọn model",
+    activeBadge: "Đang dùng",
+    applyButton: "Áp dụng",
+    customModel: "Nhập tên model tùy chỉnh",
+    restartNote: "⚠️ Đã lưu model. Hãy bắt đầu session Claude mới để áp dụng thay đổi.",
+    subtitle: "Quản lý model Claude",
   },
   fileEditor: {
     title: "Chỉnh sửa file",

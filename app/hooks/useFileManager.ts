@@ -10,12 +10,15 @@ import type {
 } from "@/components/FileManager/types"
 import type { AppStackParamList } from "@/navigators/navigationTypes"
 import { postJsonApi, postMultipartApi, RestApiError } from "@/services/api"
+import { getTelegramWebApp } from "@/services/telegram"
 import {
   fileManagerDeletePath,
+  fileManagerGenerateDownloadToken,
   fileManagerListDirectory,
   fileManagerMovePath,
   fileManagerRenamePath,
 } from "@/utils/fileManagerRest"
+import { getBackendBaseUrl } from "@/utils/backendBaseUrl"
 
 import type { FileInfo, QuickAccessPath } from "../../shared/types/file-manager"
 import { QUICK_ACCESS_PATHS } from "../../shared/types/file-manager"
@@ -183,6 +186,36 @@ export function useFileManager() {
     if (item) handleDelete(item)
   }, [actionMenu.item, closeActionMenu, handleDelete])
 
+  const handleActionMenuDownload = useCallback(() => {
+    const item = actionMenu.item
+    closeActionMenu()
+    if (!item || item.type === "directory") return
+
+    void (async () => {
+      try {
+        const token = await fileManagerGenerateDownloadToken(item.path)
+        const baseUrl = getBackendBaseUrl()
+        const downloadUrl = `${baseUrl}/api/download?token=${encodeURIComponent(token)}`
+
+        const tg = getTelegramWebApp()
+        if (tg && typeof tg.downloadFile === "function") {
+          tg.downloadFile({ url: downloadUrl, file_name: item.name })
+        } else {
+          // Fallback for non-Telegram or older Telegram versions
+          window.open(downloadUrl, "_blank")
+        }
+      } catch (err: unknown) {
+        const msg =
+          err instanceof RestApiError
+            ? err.formatForUser()
+            : err instanceof Error
+              ? err.message
+              : t("fileManager:downloadFailed")
+        showAlert(t("common:error"), msg)
+      }
+    })()
+  }, [actionMenu.item, closeActionMenu, showAlert, t])
+
   const handleCreate = useCallback((type: "folder" | "file") => {
     setCreateType(type)
     setNewItemName("")
@@ -345,6 +378,7 @@ export function useFileManager() {
     handleActionMenuRename,
     handleActionMenuMove,
     handleActionMenuDelete,
+    handleActionMenuDownload,
     renameModal,
     moveModal,
     setRenameDraft,

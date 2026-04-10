@@ -45,6 +45,8 @@ interface TelegramWebApp {
   }
   colorScheme: "light" | "dark"
   platform: "android" | "ios" | "web" | "unknown"
+  /** Available since Telegram Mini App SDK v7.10 */
+  downloadFile(params: { url: string; file_name: string }): void
 }
 
 declare global {

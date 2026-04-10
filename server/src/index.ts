@@ -1,5 +1,7 @@
 import "dotenv/config"
 import http from "node:http"
+import fs from "node:fs"
+import fsPromises from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import cors from "cors"
@@ -9,7 +11,9 @@ import { setupSocketServer } from "./socket/index.js"
 import filesRouter from "./routes/files.js"
 import modelUsageRouter from "./routes/modelUsage.js"
 import usageTrackerRouter from "./routes/usageTracker.js"
+import claudeModelRouter from "./routes/claudeModel.js"
 import { requireApiSession } from "./middleware/requireApiSession.js"
+import { consumeDownloadToken } from "./utils/downloadTokens.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -47,12 +51,51 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime() })
 })
 
+// File download endpoint — no session required, validated by short-lived one-time token
+// Must be registered BEFORE the auth-guarded /api/files router
+app.get("/api/download", async (req, res) => {
+  try {
+    const token = req.query.token as string
+    if (!token) {
+      return res.status(400).json({ success: false, error: "Token is required" })
+    }
+
+    const filePath = consumeDownloadToken(token)
+    if (!filePath) {
+      return res.status(401).json({ success: false, error: "Invalid or expired download token" })
+    }
+
+    const stat = await fsPromises.stat(filePath)
+    const fileName = path.basename(filePath)
+    const encodedName = encodeURIComponent(fileName)
+
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"; filename*=UTF-8''${encodedName}`)
+    res.setHeader("Content-Type", "application/octet-stream")
+    res.setHeader("Content-Length", stat.size)
+
+    const stream = fs.createReadStream(filePath)
+    stream.pipe(res)
+    stream.on("error", (err) => {
+      console.error("[download] stream error:", err.message)
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, error: "Failed to stream file" })
+      }
+    })
+  } catch (error: any) {
+    console.error("[download] error:", error.message)
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: error.message || "Download failed" })
+    }
+  }
+})
+
 // File operations API (requires same Bearer session as Socket.IO)
 app.use("/api/files", requireApiSession, filesRouter)
 
 // Model usage proxy (requires auth)
 app.use("/api/model-usage", requireApiSession, modelUsageRouter)
 app.use("/api/usage-tracker", requireApiSession, usageTrackerRouter)
+app.use("/api/claude-model", requireApiSession, claudeModelRouter)
 
 // System reboot endpoint (requires sudo + session)
 app.post("/api/system/reboot", requireApiSession, async (_req, res) => {
