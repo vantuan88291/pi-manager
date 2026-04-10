@@ -17,6 +17,7 @@ export interface FileManagerModalsProps {
   onActionMenuRename: () => void
   onActionMenuMove: () => void
   onActionMenuDelete: () => void
+  onActionMenuDownload: () => void
   alertConfig: FileManagerAlertState
   onDismissAlert: () => void
   createModalVisible: boolean
@@ -41,6 +42,7 @@ export const FileManagerModals: FC<FileManagerModalsProps> = ({
   onActionMenuRename,
   onActionMenuMove,
   onActionMenuDelete,
+  onActionMenuDownload,
   alertConfig,
   onDismissAlert,
   createModalVisible,
@@ -80,6 +82,7 @@ export const FileManagerModals: FC<FileManagerModalsProps> = ({
         onRenamePress={onActionMenuRename}
         onMovePress={onActionMenuMove}
         onDeletePress={onActionMenuDelete}
+        onDownloadPress={onActionMenuDownload}
       />
 
       <AlertModal

@@ -412,6 +412,8 @@ const vi: Translations = {
     renameFailed: "Đổi tên thất bại",
     moved: "Đã chuyển",
     moveFailed: "Chuyển thất bại",
+    download: "Tải xuống",
+    downloadFailed: "Tải file thất bại",
   },
   claudeModel: {
     title: "Claude Model",

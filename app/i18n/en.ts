@@ -409,6 +409,8 @@ const en = {
     renameFailed: "Failed to rename",
     moved: "Moved successfully",
     moveFailed: "Failed to move",
+    download: "Download",
+    downloadFailed: "Failed to download file",
   },
   claudeModel: {
     title: "Claude Model",

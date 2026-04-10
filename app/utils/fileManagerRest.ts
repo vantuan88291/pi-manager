@@ -84,3 +84,11 @@ export async function fileManagerMovePath(
   })
   return json.message
 }
+
+export async function fileManagerGenerateDownloadToken(filePath: string): Promise<string> {
+  const json = await postJsonApi<{ success: true; data: { token: string } }>(
+    "/api/files/generate-download-token",
+    { path: filePath },
+  )
+  return json.data.token
+}
