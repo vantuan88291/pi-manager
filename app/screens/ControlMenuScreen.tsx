@@ -334,8 +334,7 @@ export const ControlMenuScreen: FC<ControlMenuScreenProps> = function ControlMen
   }
 
   return (
-    <Screen preset="scroll">
-      <Header titleTx="controlMenu:title" titleMode="center" />
+    <Screen preset="scroll" header={<Header titleTx="controlMenu:title" titleMode="center" />}>
 
       <View style={$gridContainer}>
         {MENU_ITEMS.map((item) => (

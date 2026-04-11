@@ -62,6 +62,11 @@ interface BaseScreenProps {
    */
   KeyboardAvoidingViewProps?: KeyboardAvoidingViewProps
   /**
+   * Optional component to render at the top of the screen (outside ScrollView).
+   * Useful for fixed headers that should not scroll with content.
+   */
+  header?: ReactNode
+  /**
    * Optional component to render at the bottom of the screen (outside ScrollView).
    * Useful for floating action buttons or bottom bars.
    */
@@ -178,9 +183,10 @@ function useAutoPreset(props: AutoScreenProps): {
  * @returns {JSX.Element} - The rendered `ScreenWithoutScrolling` component.
  */
 function ScreenWithoutScrolling(props: ScreenProps) {
-  const { style, contentContainerStyle, children, preset, bottomComponent } = props
+  const { style, contentContainerStyle, children, preset, bottomComponent, header } = props
   return (
     <View style={[$outerStyle, style]}>
+      {header}
       <View style={[$innerStyle, preset === "fixed" && $justifyFlexEnd, contentContainerStyle]}>
         {children}
       </View>
@@ -202,6 +208,7 @@ function ScreenWithScrolling(props: ScreenProps) {
     ScrollViewProps,
     style,
     bottomComponent,
+    header,
   } = props as ScrollScreenProps
 
   const ref = useRef<ScrollView>(null)
@@ -214,6 +221,7 @@ function ScreenWithScrolling(props: ScreenProps) {
 
   return (
     <View style={[$outerStyle, style]}>
+      {header}
       <KeyboardAwareScrollView
         bottomOffset={keyboardBottomOffset}
         {...{ keyboardShouldPersistTaps, scrollEnabled, ref }}

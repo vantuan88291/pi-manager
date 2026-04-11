@@ -130,11 +130,11 @@ export const DashboardScreen: FC = function DashboardScreen() {
   return (
     <Screen
       preset="scroll"
+      header={<Header titleTx="dashboard:title" titleMode="center" />}
       ScrollViewProps={{
         refreshControl: <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />,
       }}
     >
-      <Header titleTx="dashboard:title" titleMode="center" />
 
       <View style={themed($statusRow)}>
         <ConnectionBadge status={connectionStatus} />

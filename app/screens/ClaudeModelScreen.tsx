@@ -70,13 +70,17 @@ export const ClaudeModelScreen: FC<ClaudeModelScreenProps> = function ClaudeMode
   const hasChange = effectiveModel !== null && effectiveModel !== "" && effectiveModel !== currentModel
 
   return (
-    <Screen preset="scroll">
-      <Header
-        titleTx="claudeModel:title"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
-        titleMode="center"
-      />
+    <Screen
+      preset="scroll"
+      header={
+        <Header
+          titleTx="claudeModel:title"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+          titleMode="center"
+        />
+      }
+    >
 
       <View style={themed($content)}>
         {/* Current model card */}

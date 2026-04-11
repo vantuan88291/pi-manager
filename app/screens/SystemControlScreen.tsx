@@ -241,15 +241,17 @@ export const SystemControlScreen: FC<SystemControlScreenProps> = function System
   return (
     <Screen
       preset="scroll"
+      header={
+        <Header
+          titleTx="systemControl:title"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+        />
+      }
       ScrollViewProps={{
         refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
       }}
     >
-      <Header
-        titleTx="systemControl:title"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
-      />
 
       {/* Content wrapper with padding */}
       <View style={themed($contentWrapper)}>

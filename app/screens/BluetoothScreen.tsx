@@ -226,13 +226,17 @@ export const BluetoothScreen: FC<BluetoothScreenProps> = function BluetoothScree
   }
 
   return (
-    <Screen preset="scroll">
-      <Header
-        titleTx="bluetooth:title"
-        titleMode="center"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
-      />
+    <Screen
+      preset="scroll"
+      header={
+        <Header
+          titleTx="bluetooth:title"
+          titleMode="center"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+        />
+      }
+    >
 
       {/* Power Toggle */}
       <View style={themed($card)}>
