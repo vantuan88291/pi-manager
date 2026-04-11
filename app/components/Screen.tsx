@@ -212,6 +212,7 @@ function ScreenWithScrolling(props: ScreenProps) {
   } = props as ScrollScreenProps
 
   const ref = useRef<ScrollView>(null)
+  const [headerHeight, setHeaderHeight] = useState(0)
 
   const { scrollEnabled, onContentSizeChange, onLayout } = useAutoPreset(props as AutoScreenProps)
 
@@ -221,7 +222,14 @@ function ScreenWithScrolling(props: ScreenProps) {
 
   return (
     <View style={[$outerStyle, style]}>
-      {header}
+      {header && (
+        <View
+          style={$headerWrapper}
+          onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
+        >
+          {header}
+        </View>
+      )}
       <KeyboardAwareScrollView
         bottomOffset={keyboardBottomOffset}
         {...{ keyboardShouldPersistTaps, scrollEnabled, ref }}
@@ -237,6 +245,7 @@ function ScreenWithScrolling(props: ScreenProps) {
         style={[$outerStyle, ScrollViewProps?.style]}
         contentContainerStyle={[
           $innerStyle,
+          headerHeight > 0 ? { paddingTop: headerHeight } : undefined,
           ScrollViewProps?.contentContainerStyle,
           contentContainerStyle,
         ]}
@@ -320,4 +329,12 @@ const $justifyFlexEnd: ViewStyle = {
 const $innerStyle: ViewStyle = {
   justifyContent: "flex-start",
   alignItems: "stretch",
+}
+
+const $headerWrapper: ViewStyle = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 10,
 }
