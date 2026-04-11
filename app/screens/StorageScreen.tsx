@@ -109,16 +109,18 @@ export const StorageScreen: FC = function StorageScreen() {
   return (
     <Screen
       preset="scroll"
+      header={
+        <Header
+          titleTx="storage:title"
+          titleMode="center"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+        />
+      }
       ScrollViewProps={{
         refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />,
       }}
     >
-      <Header
-        titleTx="storage:title"
-        titleMode="center"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
-      />
 
       {/* Health Overview Card */}
       {health && (

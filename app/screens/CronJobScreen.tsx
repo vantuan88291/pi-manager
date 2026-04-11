@@ -270,13 +270,18 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   // Render loading state
   if (loading) {
     return (
-      <Screen preset="scroll" bottomComponent={null}>
-        <Header
-          titleTx="cronjob:title"
-          titleMode="center"
-          leftIcon="back"
-          onLeftPress={() => navigation.goBack()}
-        />
+      <Screen
+        preset="scroll"
+        bottomComponent={null}
+        header={
+          <Header
+            titleTx="cronjob:title"
+            titleMode="center"
+            leftIcon="back"
+            onLeftPress={() => navigation.goBack()}
+          />
+        }
+      >
         <View style={themed($loadingContainer)}>
           <ActivityIndicator size="large" color={theme.colors.tint} />
           <Text tx="cronjob:loading" size="md" color="textDim" style={themed($loadingText)} />
@@ -288,13 +293,18 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   // Render error state
   if (error && jobs.length === 0) {
     return (
-      <Screen preset="scroll" bottomComponent={null}>
-        <Header
-          titleTx="cronjob:title"
-          titleMode="center"
-          leftIcon="back"
-          onLeftPress={() => navigation.goBack()}
-        />
+      <Screen
+        preset="scroll"
+        bottomComponent={null}
+        header={
+          <Header
+            titleTx="cronjob:title"
+            titleMode="center"
+            leftIcon="back"
+            onLeftPress={() => navigation.goBack()}
+          />
+        }
+      >
         <View style={themed($errorContainer)}>
           <Text text="❌" size="xxl" style={themed($errorIcon)} />
           <Text
@@ -333,6 +343,14 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
   return (
     <Screen
       preset="scroll"
+      header={
+        <Header
+          titleTx="cronjob:title"
+          titleMode="center"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+        />
+      }
       bottomComponent={
         <Pressable
           onPress={handleCreateJob}
@@ -345,12 +363,6 @@ export const CronJobScreen: FC<CronJobScreenProps> = function CronJobScreen({ na
         </Pressable>
       }
     >
-      <Header
-        titleTx="cronjob:title"
-        titleMode="center"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
-      />
 
       <View style={themed($container)}>
         {/* Refreshing Indicator */}

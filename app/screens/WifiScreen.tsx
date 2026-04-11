@@ -175,13 +175,17 @@ export const WifiScreen: FC<WifiScreenProps> = function WifiScreen({ navigation 
   }
 
   return (
-    <Screen preset="scroll">
-      <Header
-        titleTx="wifi:title"
-        titleMode="center"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
-      />
+    <Screen
+      preset="scroll"
+      header={
+        <Header
+          titleTx="wifi:title"
+          titleMode="center"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+        />
+      }
+    >
 
       {/* Current Connection */}
       {currentConnection && (

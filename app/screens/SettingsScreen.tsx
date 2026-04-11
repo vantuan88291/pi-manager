@@ -72,8 +72,7 @@ export const SettingsScreen: FC<SettingsScreenProps> = function SettingsScreen()
   const connectionStatus = getConnectionStatus()
 
   return (
-    <Screen preset="scroll">
-      <Header titleTx="settings:title" titleMode="center" />
+    <Screen preset="scroll" header={<Header titleTx="settings:title" titleMode="center" />}>
 
       <View style={themed($content)}>
         <Card

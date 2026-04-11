@@ -23,8 +23,12 @@ export const FileManagerScreen: FC<FileManagerScreenProps> = function FileManage
   const fm = useFileManager()
 
   return (
-    <Screen preset="scroll">
-      <Header titleTx="fileManager:title" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+    <Screen
+      preset="scroll"
+      header={
+        <Header titleTx="fileManager:title" leftIcon="back" onLeftPress={() => navigation.goBack()} />
+      }
+    >
 
       <View style={themed($contentWrapper)}>
         <FileManagerHeader

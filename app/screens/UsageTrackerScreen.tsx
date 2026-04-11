@@ -45,18 +45,20 @@ export const UsageTrackerScreen: FC<UsageTrackerScreenProps> = function UsageTra
   return (
     <Screen
       preset="scroll"
+      header={
+        <Header
+          titleTx="usageTracker:title"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+          titleMode="center"
+        />
+      }
       ScrollViewProps={{
         refreshControl: (
           <RefreshControl refreshing={loading} onRefresh={loadConnections} />
         ),
       }}
     >
-      <Header
-        titleTx="usageTracker:title"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
-        titleMode="center"
-      />
 
       <View style={themed($content)}>
         {loading && (

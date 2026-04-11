@@ -106,20 +106,22 @@ export const ModelUsageScreen: FC<ModelUsageScreenProps> = function ModelUsageSc
   return (
     <Screen
       preset="scroll"
+      header={
+        <Header
+          titleTx="modelUsageScreen:title"
+          leftIcon="back"
+          onLeftPress={() => navigation.goBack()}
+          titleMode="center"
+          rightTx="modelUsageScreen:status"
+          onRightPress={() => navigation.navigate("UsageTracker")}
+        />
+      }
       ScrollViewProps={{
         refreshControl: (
           <RefreshControl refreshing={loading} onRefresh={loadRequests} />
         ),
       }}
     >
-      <Header
-        titleTx="modelUsageScreen:title"
-        leftIcon="back"
-        onLeftPress={() => navigation.goBack()}
-        titleMode="center"
-        rightTx="modelUsageScreen:status"
-        onRightPress={() => navigation.navigate("UsageTracker")}
-      />
 
       <View style={themed($content)}>
         <Card

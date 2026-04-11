@@ -97,8 +97,10 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
 
   if (isMediaFile && mediaType) {
     return (
-      <Screen preset="scroll">
-        <Header titleTx="fileEditor:title" leftIcon="back" onLeftPress={handleBackPress} />
+      <Screen
+        preset="scroll"
+        header={<Header titleTx="fileEditor:title" leftIcon="back" onLeftPress={handleBackPress} />}
+      >
 
         <View style={themed($mediaContainer)}>
           {mediaType === "image" && (
@@ -171,14 +173,18 @@ export const FileEditorScreen: FC = function FileEditorScreen() {
   }
 
   return (
-    <Screen preset="scroll">
-      <Header
-        titleTx="fileEditor:title"
-        leftIcon="back"
-        onLeftPress={handleBackPress}
-        rightText={saveButtonText}
-        onRightPress={handleSavePress}
-      />
+    <Screen
+      preset="scroll"
+      header={
+        <Header
+          titleTx="fileEditor:title"
+          leftIcon="back"
+          onLeftPress={handleBackPress}
+          rightText={saveButtonText}
+          onRightPress={handleSavePress}
+        />
+      }
+    >
 
       <View style={themed($editorContainer)}>
         {loading ? (
